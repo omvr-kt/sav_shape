@@ -203,8 +203,8 @@ class ClientApp {
     }
   }
 
-  logout() {
-    api.logout();
+  async logout() {
+    await api.logout();
     this.currentUser = null;
     this.projects = [];
     this.tickets = [];

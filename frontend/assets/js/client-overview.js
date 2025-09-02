@@ -46,8 +46,8 @@ class OverviewApp {
 
   setupEventListeners() {
     // Logout button
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-      this.handleLogout();
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await this.handleLogout();
     });
 
     // Navigation tabs - let them work as normal links, no preventDefault
@@ -153,9 +153,9 @@ class OverviewApp {
     }
   }
 
-  handleLogout() {
-    localStorage.removeItem('token');
-    window.location.href = '/client/';
+  async handleLogout() {
+    await api.logout();
+    window.location.href = '/';
   }
 }
 

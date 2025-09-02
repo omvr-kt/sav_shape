@@ -89,8 +89,8 @@ class ProfileApp {
     // Logout button
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
-      logoutBtn.addEventListener('click', () => {
-        this.handleLogout();
+      logoutBtn.addEventListener('click', async () => {
+        await this.handleLogout();
       });
     }
 
@@ -353,9 +353,9 @@ class ProfileApp {
     }
   }
 
-  handleLogout() {
-    localStorage.removeItem('token');
-    window.location.href = '/client/';
+  async handleLogout() {
+    await api.logout();
+    window.location.href = '/';
   }
 }
 

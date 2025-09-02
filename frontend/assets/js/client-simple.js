@@ -62,8 +62,8 @@ class ClientApp {
     });
 
     // Logout button
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-      this.handleLogout();
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await this.handleLogout();
     });
 
     // Navigation tabs
@@ -181,10 +181,10 @@ class ClientApp {
     }
   }
 
-  handleLogout() {
-    localStorage.removeItem('token');
+  async handleLogout() {
+    await api.logout();
     this.currentUser = null;
-    this.showLogin();
+    window.location.href = '/';
   }
 
   async loadProjects() {

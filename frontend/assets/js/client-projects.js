@@ -46,8 +46,8 @@ class ProjectsApp {
 
   setupEventListeners() {
     // Logout button
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-      this.handleLogout();
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await this.handleLogout();
     });
 
     // Search input
@@ -419,9 +419,9 @@ class ProjectsApp {
     return labels[status] || status;
   }
 
-  handleLogout() {
-    localStorage.removeItem('token');
-    window.location.href = '/client/';
+  async handleLogout() {
+    await api.logout();
+    window.location.href = '/';
   }
 }
 

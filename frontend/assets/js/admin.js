@@ -90,8 +90,8 @@ class AdminApp {
   }
 
 
-  logout() {
-    api.logout();
+  async logout() {
+    await api.logout();
     this.currentUser = null;
     window.location.href = '/';
   }

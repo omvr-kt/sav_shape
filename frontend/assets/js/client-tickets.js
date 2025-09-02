@@ -94,8 +94,8 @@ class TicketsApp {
     }
 
     if (logoutBtn) {
-      logoutBtn.addEventListener('click', () => {
-        this.handleLogout();
+      logoutBtn.addEventListener('click', async () => {
+        await this.handleLogout();
       });
     }
 
@@ -760,14 +760,14 @@ class TicketsApp {
     }
   }
 
-  handleLogout() {
+  async handleLogout() {
     // Clear countdown interval
     if (this.countdownInterval) {
       clearInterval(this.countdownInterval);
     }
     
-    localStorage.removeItem('token');
-    window.location.href = '/client/';
+    await api.logout();
+    window.location.href = '/';
   }
 }
 

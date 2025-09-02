@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mes Tickets - Espace Client</title>
+    <link rel="stylesheet" href="/assets/css/main.css?v=1756818165">
+    <link rel="stylesheet" href="/assets/css/client.css?v=1756818165">
+</head>
+<body>
+    <div id="app">
+        <div id="mainApp">
+            <!-- Header -->
+            <header class="client-header">
+                <div class="container">
+                    <div class="header-left">
+                        <h1>👤 Mon Espace Client</h1>
+                        <div class="project-selector">
+                            <label for="projectSelect">📁 Projet :</label>
+                            <select id="projectSelect" class="project-dropdown">
+                                <option value="">Chargement des projets...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="header-right">
+                        <div class="profile-menu">
+                            <div class="profile-avatar" id="profileAvatar">
+                                <span id="profileInitials"></span>
+                            </div>
+                            <div class="profile-dropdown" id="profileDropdown">
+                                <div class="profile-info">
+                                    <strong id="profileName"></strong>
+                                    <span id="profileEmail"></span>
+                                </div>
+                                <hr>
+                                <button id="profileBtn" class="dropdown-item">👤 Mon Profil</button>
+                                <button id="logoutBtn" class="dropdown-item">🚪 Déconnexion</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="client-main">
+                <div class="container">
+                    <div class="tickets-header">
+                        <h2>🎫 Mes Tickets</h2>
+                        <div class="tickets-actions">
+                            <button id="newTicketBtn" class="btn btn-primary">+ Nouveau Ticket</button>
+                            <input type="text" id="ticketSearch" placeholder="Rechercher dans vos tickets..." class="search-input">
+                            <select id="ticketStatusFilter" class="filter-select">
+                                <option value="">Tous les statuts</option>
+                                <option value="open">Ouvert</option>
+                                <option value="in_progress">En cours</option>
+                                <option value="waiting_client">En attente</option>
+                                <option value="resolved">Résolu</option>
+                                <option value="closed">Fermé</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="ticketsList" class="simple-tickets-list">
+                        <div class="loading">Chargement des tickets...</div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal for new ticket -->
+    <div id="modalContainer"></div>
+
+    <script src="/assets/js/api.js?v=1756820467"></script>
+    <script src="/assets/js/business-hours.js?v=1756820467"></script>
+    <script src="/assets/js/client-tickets.js?v=1756820467"></script>
+</body>
+</html>

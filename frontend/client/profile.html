@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Profil - Espace Client</title>
+    <link rel="stylesheet" href="/assets/css/main.css?v=1756818165">
+    <link rel="stylesheet" href="/assets/css/client.css?v=1756818165">
+</head>
+<body>
+    <div id="app">
+        <div id="mainApp">
+            <!-- Header -->
+            <header class="client-header">
+                <div class="container">
+                    <div class="header-left">
+                        <h1>👤 Mon Espace Client</h1>
+                        <div class="breadcrumb">
+                            <a href="/client/tickets.html" class="breadcrumb-link">🎫 Mes Tickets</a>
+                            <span class="breadcrumb-separator">></span>
+                            <span class="breadcrumb-current">👤 Mon Profil</span>
+                        </div>
+                    </div>
+                    <div class="header-right">
+                        <div class="profile-menu">
+                            <div class="profile-avatar" id="profileAvatar">
+                                <span id="profileInitials"></span>
+                            </div>
+                            <div class="profile-dropdown" id="profileDropdown">
+                                <div class="profile-info">
+                                    <strong id="profileName"></strong>
+                                    <span id="profileEmail"></span>
+                                </div>
+                                <hr>
+                                <button id="backToTicketsBtn" class="dropdown-item">🎫 Mes Tickets</button>
+                                <button id="logoutBtn" class="dropdown-item">🚪 Déconnexion</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="client-main">
+                <div class="container">
+                    <h2>👤 Mon Profil</h2>
+                    
+                    <div class="profile-simple">
+                        <div class="profile-info-card">
+                            <h3>Informations personnelles</h3>
+                            <div id="profileInfo" class="profile-info">
+                                <div class="loading">Chargement...</div>
+                            </div>
+                        </div>
+
+                        <div class="profile-info-card">
+                            <h3>Changer le mot de passe</h3>
+                            <form id="changePasswordForm" class="form">
+                                <div class="form-group">
+                                    <label class="form-label" for="currentPassword">Mot de passe actuel</label>
+                                    <input type="password" id="currentPassword" name="currentPassword" class="form-input" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="newPassword">Nouveau mot de passe</label>
+                                    <input type="password" id="newPassword" name="newPassword" class="form-input" required minlength="6">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="confirmPassword">Confirmer le mot de passe</label>
+                                    <input type="password" id="confirmPassword" name="confirmPassword" class="form-input" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Changer le mot de passe</button>
+                                <div id="passwordChangeResult" style="display: none;"></div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="/assets/js/api.js?v=1756818386"></script>
+    <script src="/assets/js/client-profile.js?v=1756818386"></script>
+</body>
+</html>

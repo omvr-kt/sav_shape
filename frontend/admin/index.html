@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Espace Agence - Administration</title>
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <link rel="stylesheet" href="/assets/css/admin.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Main App -->
+        <div id="mainApp">
+            <!-- Header -->
+            <header class="admin-header">
+                <div class="container">
+                    <div class="header-left">
+                        <h1>🏢 Espace Agence</h1>
+                        <span class="user-info">
+                            Connecté en tant que: <strong id="currentUser"></strong>
+                        </span>
+                    </div>
+                    <div class="header-right">
+                        <button id="logoutBtn" class="btn btn-secondary btn-sm">Déconnexion</button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Navigation -->
+            <nav class="admin-nav">
+                <div class="container">
+                    <ul class="nav-tabs">
+                        <li><a href="#dashboard" class="nav-tab active" data-tab="dashboard">📊 Tableau de bord</a></li>
+                        <li><a href="#tickets" class="nav-tab" data-tab="tickets">🎫 Tickets</a></li>
+                        <li><a href="#projects" class="nav-tab" data-tab="projects">📁 Projets</a></li>
+                        <li><a href="#clients" class="nav-tab" data-tab="clients">👥 Clients</a></li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <main class="admin-main">
+                <div class="container">
+                    <!-- Dashboard Tab -->
+                    <div id="dashboard" class="tab-content active">
+                        <h2>Tableau de bord</h2>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-number" id="totalTickets">-</div>
+                                <div class="stat-label">Total Tickets</div>
+                            </div>
+                            <div class="stat-card urgent">
+                                <div class="stat-number" id="urgentTickets">-</div>
+                                <div class="stat-label">Tickets Urgents</div>
+                            </div>
+                            <div class="stat-card warning">
+                                <div class="stat-number" id="overdueTickets">-</div>
+                                <div class="stat-label">En Retard</div>
+                            </div>
+                            <div class="stat-card success">
+                                <div class="stat-number" id="resolvedTickets">-</div>
+                                <div class="stat-label">Résolus</div>
+                            </div>
+                        </div>
+
+                        <div class="dashboard-sections">
+                            <div class="section">
+                                <h3>⚠️ Tickets en retard</h3>
+                                <div id="overdueTicketsList" class="ticket-list">
+                                    <div class="loading">Chargement...</div>
+                                </div>
+                            </div>
+
+                            <div class="section">
+                                <h3>🆕 Derniers tickets</h3>
+                                <div id="recentTicketsList" class="ticket-list">
+                                    <div class="loading">Chargement...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tickets Tab -->
+                    <div id="tickets" class="tab-content">
+                        <div class="section-header">
+                            <h2>Gestion des Tickets</h2>
+                            <div class="filters">
+                                <select id="statusFilter" class="filter-select">
+                                    <option value="">Tous les statuts</option>
+                                    <option value="open">Ouvert</option>
+                                    <option value="in_progress">En cours</option>
+                                    <option value="waiting_client">Attente client</option>
+                                    <option value="resolved">Résolu</option>
+                                    <option value="closed">Fermé</option>
+                                </select>
+                                <select id="priorityFilter" class="filter-select">
+                                    <option value="">Toutes les priorités</option>
+                                    <option value="urgent">Urgent</option>
+                                    <option value="high">Élevée</option>
+                                    <option value="normal">Normale</option>
+                                    <option value="low">Faible</option>
+                                </select>
+                                <button id="refreshTickets" class="btn btn-secondary btn-sm">🔄 Actualiser</button>
+                            </div>
+                        </div>
+                        <div id="ticketsList" class="data-table-container">
+                            <div class="loading">Chargement des tickets...</div>
+                        </div>
+                    </div>
+
+                    <!-- Projects Tab -->
+                    <div id="projects" class="tab-content">
+                        <div class="section-header">
+                            <h2>Gestion des Projets</h2>
+                            <button id="addProjectBtn" class="btn btn-primary">+ Nouveau Projet</button>
+                        </div>
+                        <div id="projectsList" class="data-table-container">
+                            <div class="loading">Chargement des projets...</div>
+                        </div>
+                    </div>
+
+                    <!-- Clients Tab -->
+                    <div id="clients" class="tab-content">
+                        <div class="section-header">
+                            <h2>Gestion des Clients</h2>
+                            <button id="addClientBtn" class="btn btn-primary">+ Nouveau Client</button>
+                        </div>
+                        <div id="clientsList" class="data-table-container">
+                            <div class="loading">Chargement des clients...</div>
+                        </div>
+                    </div>
+
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modals will be injected here -->
+    <div id="modalContainer"></div>
+
+    <script src="/assets/js/api.js?v=1756813750"></script>
+    <script src="/assets/js/admin.js?v=1756813750"></script>
+</body>
+</html>

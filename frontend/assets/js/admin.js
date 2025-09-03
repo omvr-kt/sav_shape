@@ -83,6 +83,10 @@ class AdminApp {
       this.showAddClientModal();
     });
 
+    document.getElementById('newInvoiceBtn')?.addEventListener('click', () => {
+      this.showNewInvoiceModal();
+    });
+
     // Filters
     document.getElementById('statusFilter')?.addEventListener('change', () => {
       this.loadTickets();
@@ -1963,6 +1967,50 @@ class AdminApp {
       console.log('Form submitted - handleAddClient called');
       await this.handleAddClient(e.target);
     });
+  }
+
+  async showNewInvoiceModal() {
+    try {
+      // Charger la liste des clients
+      const response = await api.getClients();
+      const clients = response.data.clients;
+      
+      if (clients.length === 0) {
+        this.showNotification('Aucun client disponible. Créez d\'abord un client avant de créer une facture.', 'warning');
+        return;
+      }
+      
+      const modal = this.createModal('Nouvelle Facture', `
+        <form id="newInvoiceForm" class="form">
+          <div class="form-group">
+            <label class="form-label" for="invoiceClient">Client *</label>
+            <select id="invoiceClient" name="client_id" class="form-select" required>
+              <option value="">-- Sélectionner un client --</option>
+              ${clients.map(client => 
+                `<option value="${client.id}">${client.company || (client.first_name + ' ' + client.last_name)} - ${client.email}</option>`
+              ).join('')}
+            </select>
+          </div>
+          
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary cancel-btn" onclick="adminApp.closeModal()">Annuler</button>
+            <button type="submit" class="btn btn-primary">Continuer</button>
+          </div>
+        </form>
+      `);
+
+      document.getElementById('newInvoiceForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const clientId = parseInt(document.getElementById('invoiceClient').value);
+        if (clientId) {
+          this.closeModal();
+          this.showCreateInvoiceModal(clientId);
+        }
+      });
+    } catch (error) {
+      console.error('Load clients error:', error);
+      this.showNotification('Erreur lors du chargement des clients', 'error');
+    }
   }
 
   async handleAddClient(form) {

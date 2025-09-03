@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket #TCK-2024-001 - Shape SAV</title>
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <link rel="stylesheet" href="/assets/css/sidebar.css">
+    <link rel="stylesheet" href="/assets/css/components.css">
+    <link rel="stylesheet" href="/assets/css/client.css">
+</head>
+<body>
+    <!-- Layout avec sidebar -->
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="app-sidebar">
+            <!-- Logo -->
+            <div class="sidebar-logo">
+                <h1>Shape</h1>
+            </div>
+            
+            <!-- Navigation principale -->
+            <nav class="sidebar-nav">
+                <a href="/client/dashboard.html" class="sidebar-nav-item" data-tooltip="Dashboard">
+                    <span class="sidebar-nav-icon">📊</span>
+                    <span class="sidebar-nav-label">Dashboard</span>
+                </a>
+                <a href="/client/tickets.html" class="sidebar-nav-item active" data-tooltip="Mes Tickets">
+                    <span class="sidebar-nav-icon">🎫</span>
+                    <span class="sidebar-nav-label">Mes Tickets</span>
+                </a>
+                <a href="/client/invoices.html" class="sidebar-nav-item" data-tooltip="Mes Factures">
+                    <span class="sidebar-nav-icon">🧾</span>
+                    <span class="sidebar-nav-label">Mes Factures</span>
+                </a>
+                <a href="/client/projects.html" class="sidebar-nav-item" data-tooltip="Mes Projets">
+                    <span class="sidebar-nav-icon">📁</span>
+                    <span class="sidebar-nav-label">Mes Projets</span>
+                </a>
+            </nav>
+            
+            <!-- Navigation du bas -->
+            <div class="sidebar-footer">
+                <nav class="sidebar-nav">
+                    <a href="/client/profile.html" class="sidebar-nav-item" data-tooltip="Mon Profil">
+                        <span class="sidebar-nav-icon">👤</span>
+                        <span class="sidebar-nav-label">Mon Profil</span>
+                    </a>
+                    <a href="/client/confidential.html" class="sidebar-nav-item" data-tooltip="Fichier Confidentiel">
+                        <span class="sidebar-nav-icon">🔒</span>
+                        <span class="sidebar-nav-label">Fichier Confidentiel</span>
+                    </a>
+                    <a href="/logout" class="sidebar-nav-item" data-tooltip="Déconnexion">
+                        <span class="sidebar-nav-icon">🚪</span>
+                        <span class="sidebar-nav-label">Déconnexion</span>
+                    </a>
+                </nav>
+            </div>
+        </aside>
+        
+        <!-- Overlay pour mobile -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        
+        <!-- Contenu principal -->
+        <main class="app-main">
+            <!-- Header -->
+            <header class="client-header">
+                <div class="container">
+                    <div style="display: flex; align-items: center; gap: var(--space-3);">
+                        <!-- Bouton burger pour mobile -->
+                        <button class="sidebar-toggle" id="sidebarToggle" style="display: none;">
+                            ☰
+                        </button>
+                        
+                        <div>
+                            <h1>Ticket #TCK-2024-001</h1>
+                            <!-- Breadcrumb -->
+                            <nav class="breadcrumb">
+                                <a href="/client/dashboard.html" class="breadcrumb-link">Dashboard</a>
+                                <span class="breadcrumb-item">•</span>
+                                <a href="/client/tickets.html" class="breadcrumb-link">Mes Tickets</a>
+                                <span class="breadcrumb-item">•</span>
+                                <span class="breadcrumb-current">#TCK-2024-001</span>
+                            </nav>
+                        </div>
+                    </div>
+                    
+                    <div class="header-right">
+                        <div style="display: flex; gap: var(--space-2);">
+                            <button class="btn btn-outline">
+                                ← Retour à la liste
+                            </button>
+                            <div class="dropdown">
+                                <button class="dropdown-toggle">
+                                    Actions
+                                    <span>▼</span>
+                                </button>
+                                <div class="dropdown-menu">
+                                    <a href="#" class="dropdown-item">📧 Transférer par email</a>
+                                    <a href="#" class="dropdown-item">📋 Copier le lien</a>
+                                    <div class="dropdown-divider"></div>
+                                    <a href="#" class="dropdown-item">⭐ Marquer comme favori</a>
+                                    <a href="#" class="dropdown-item">🔔 Activer les notifications</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Contenu de la page -->
+            <div style="padding: var(--space-5) var(--space-6);">
+                
+                <!-- Informations principales du ticket -->
+                <div class="card" style="margin-bottom: var(--space-6);">
+                    <div class="card-header">
+                        <div>
+                            <h2 style="font-family: var(--font-heading); font-size: 24px; margin: 0; color: var(--color-primary);">
+                                Problème de connexion sur l'espace admin
+                            </h2>
+                            <div style="display: flex; gap: var(--space-3); align-items: center; margin-top: var(--space-2);">
+                                <span class="badge status-en-cours">En cours</span>
+                                <span class="badge" style="background: var(--color-error); color: var(--color-surface);">Urgent</span>
+                                <span style="color: var(--color-muted); font-size: 14px;">
+                                    📁 Site Web E-commerce
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-warning" style="margin: 0; max-width: 300px;">
+                            <div style="font-weight: 600;">⚠️ SLA dans 4h</div>
+                            <div style="font-size: 12px; margin-top: 4px;">
+                                Temps de réponse contractuel bientôt dépassé
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-body">
+                        <!-- Métadonnées du ticket -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-5); margin-bottom: var(--space-5); padding: var(--space-4); background: var(--color-bg); border-radius: var(--radius-md);">
+                            <div>
+                                <div style="font-size: 12px; font-weight: 600; color: var(--color-muted); text-transform: uppercase; letter-spacing: 0.05em;">Créé le</div>
+                                <div style="font-size: 16px; color: var(--color-text); margin-top: 4px;">15 janvier 2024, 14:30</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; font-weight: 600; color: var(--color-muted); text-transform: uppercase; letter-spacing: 0.05em;">Dernière mise à jour</div>
+                                <div style="font-size: 16px; color: var(--color-text); margin-top: 4px;">Il y a 2 heures</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; font-weight: 600; color: var(--color-muted); text-transform: uppercase; letter-spacing: 0.05em;">Assigné à</div>
+                                <div style="font-size: 16px; color: var(--color-text); margin-top: 4px;">Thomas Martin</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; font-weight: 600; color: var(--color-muted); text-transform: uppercase; letter-spacing: 0.05em;">Temps de résolution</div>
+                                <div style="font-size: 16px; color: var(--color-text); margin-top: 4px;">6h restantes</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Description -->
+                        <div style="margin-bottom: var(--space-5);">
+                            <h4 style="font-family: var(--font-heading); font-size: 18px; color: var(--color-primary); margin-bottom: var(--space-3);">
+                                Description du problème
+                            </h4>
+                            <div style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-4); line-height: 1.6;">
+                                <p>Bonjour,</p>
+                                <p>Depuis hier soir (14 janvier vers 23h), il m'est impossible de me connecter à l'interface d'administration de notre site e-commerce.</p>
+                                <p>Quand je saisis mes identifiants habituels, j'obtiens systématiquement le message d'erreur : <code style="background: var(--color-bg); padding: 2px 4px; border-radius: 3px; font-family: monospace;">"Identifiants incorrects"</code></p>
+                                <p><strong>Informations techniques :</strong></p>
+                                <ul>
+                                    <li>URL concernée : <a href="https://admin.monsite.com" style="color: var(--color-primary);">https://admin.monsite.com</a></li>
+                                    <li>Navigateur testé : Chrome 120.0.6099.109 et Firefox 121.0</li>
+                                    <li>J'ai essayé de vider le cache et les cookies</li>
+                                    <li>Le problème persiste en navigation privée</li>
+                                </ul>
+                                <p>Ce problème bloque complètement la gestion de notre boutique en ligne. Nous avons besoin d'une résolution rapide.</p>
+                                <p>Merci de votre aide,<br>Marie Dubois</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Pièces jointes -->
+                        <div style="margin-bottom: var(--space-5);">
+                            <h4 style="font-family: var(--font-heading); font-size: 18px; color: var(--color-primary); margin-bottom: var(--space-3);">
+                                Pièces jointes (2)
+                            </h4>
+                            <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+                                <div style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-md);">
+                                    <div style="font-size: 24px;">🖼️</div>
+                                    <div style="flex: 1;">
+                                        <a href="#" style="color: var(--color-primary); font-weight: 500; text-decoration: none;">screenshot-erreur-connexion.png</a>
+                                        <div style="font-size: 14px; color: var(--color-muted);">Image • 342 Ko</div>
+                                    </div>
+                                    <button class="btn btn-outline" style="padding: 6px 12px;">
+                                        📥 Télécharger
+                                    </button>
+                                </div>
+                                
+                                <div style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-md);">
+                                    <div style="font-size: 24px;">📄</div>
+                                    <div style="flex: 1;">
+                                        <a href="#" style="color: var(--color-primary); font-weight: 500; text-decoration: none;">logs-navigateur.txt</a>
+                                        <div style="font-size: 14px; color: var(--color-muted);">Texte • 12 Ko</div>
+                                    </div>
+                                    <button class="btn btn-outline" style="padding: 6px 12px;">
+                                        📥 Télécharger
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Historique des échanges -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Historique des échanges (3)</h3>
+                        <div style="font-size: 14px; color: var(--color-muted);">
+                            Dernière réponse il y a 2 heures
+                        </div>
+                    </div>
+                    <div class="card-body" style="padding: 0;">
+                        <div style="display: flex; flex-direction: column;">
+                            
+                            <!-- Message 1 - Création du ticket -->
+                            <div style="padding: var(--space-5); border-bottom: 1px solid var(--color-border);">
+                                <div style="display: flex; gap: var(--space-3);">
+                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--color-primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                        <span style="color: var(--color-surface); font-weight: 600; font-size: 14px;">MD</span>
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2);">
+                                            <div>
+                                                <div style="font-weight: 600; color: var(--color-primary);">Marie Dubois</div>
+                                                <div style="font-size: 14px; color: var(--color-muted);">Client</div>
+                                            </div>
+                                            <div style="font-size: 14px; color: var(--color-muted);">
+                                                15 jan. 2024, 14:30
+                                            </div>
+                                        </div>
+                                        <div style="background: var(--color-bg); padding: var(--space-3); border-radius: var(--radius-md); border-left: 3px solid var(--color-primary);">
+                                            <strong>Ticket créé</strong><br>
+                                            Problème de connexion sur l'espace admin - [Voir description complète ci-dessus]
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Message 2 - Réponse du support -->
+                            <div style="padding: var(--space-5); border-bottom: 1px solid var(--color-border);">
+                                <div style="display: flex; gap: var(--space-3);">
+                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--color-accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                        <span style="color: var(--color-primary); font-weight: 600; font-size: 14px;">TM</span>
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2);">
+                                            <div>
+                                                <div style="font-weight: 600; color: var(--color-primary);">Thomas Martin</div>
+                                                <div style="font-size: 14px; color: var(--color-muted);">Support technique</div>
+                                            </div>
+                                            <div style="font-size: 14px; color: var(--color-muted);">
+                                                15 jan. 2024, 15:45
+                                            </div>
+                                        </div>
+                                        <div style="background: var(--color-surface); padding: var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-border);">
+                                            <p>Bonjour Marie,</p>
+                                            <p>Merci pour votre signalement. J'ai pris en charge votre ticket et je vais investiguer immédiatement.</p>
+                                            <p>J'ai identifié un problème avec notre serveur d'authentification qui affecte certains comptes admin. Nous travaillons actuellement sur une correction.</p>
+                                            <p><strong>Solution temporaire :</strong> Puis-je vous demander d'essayer de vous connecter avec ce lien de récupération : <a href="#" style="color: var(--color-primary);">admin.monsite.com/recovery</a></p>
+                                            <p>Je vous tiens informée de l'avancement.</p>
+                                            <p>Cordialement,<br>Thomas Martin</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Message 3 - Réponse du client -->
+                            <div style="padding: var(--space-5);">
+                                <div style="display: flex; gap: var(--space-3);">
+                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--color-primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                        <span style="color: var(--color-surface); font-weight: 600; font-size: 14px;">MD</span>
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2);">
+                                            <div>
+                                                <div style="font-weight: 600; color: var(--color-primary);">Marie Dubois</div>
+                                                <div style="font-size: 14px; color: var(--color-muted);">Client</div>
+                                            </div>
+                                            <div style="font-size: 14px; color: var(--color-muted);">
+                                                Aujourd'hui, 09:15
+                                            </div>
+                                        </div>
+                                        <div style="background: var(--color-bg); padding: var(--space-3); border-radius: var(--radius-md); border-left: 3px solid var(--color-primary);">
+                                            <p>Bonjour Thomas,</p>
+                                            <p>Merci pour votre réponse rapide ! 🙏</p>
+                                            <p>J'ai essayé le lien de récupération que vous m'avez envoyé, mais j'obtiens toujours la même erreur. Pouvez-vous vérifier si mon compte n'est pas bloqué ?</p>
+                                            <p>En attendant, cela nous bloque pour traiter les commandes du jour.</p>
+                                            <p>Merci,<br>Marie</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Zone de réponse -->
+                    <div class="card-footer" style="background: var(--color-bg);">
+                        <div style="margin-bottom: var(--space-3);">
+                            <h4 style="font-family: var(--font-heading); font-size: 16px; color: var(--color-primary); margin-bottom: var(--space-2);">
+                                Ajouter une réponse
+                            </h4>
+                            <div class="alert alert-info" style="margin-bottom: var(--space-3);">
+                                <strong>💡 Conseil :</strong> Soyez précis dans votre description et n'hésitez pas à joindre des captures d'écran pour nous aider à mieux comprendre le problème.
+                            </div>
+                        </div>
+                        
+                        <form style="display: flex; flex-direction: column; gap: var(--space-3);">
+                            <div class="form-group">
+                                <textarea 
+                                    class="form-textarea" 
+                                    placeholder="Décrivez votre problème ou votre question..."
+                                    rows="4"
+                                    style="resize: vertical;"
+                                ></textarea>
+                            </div>
+                            
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="display: flex; gap: var(--space-2); align-items: center;">
+                                    <button type="button" class="btn btn-outline">
+                                        📎 Joindre un fichier
+                                    </button>
+                                    <input type="file" multiple style="display: none;">
+                                </div>
+                                
+                                <div style="display: flex; gap: var(--space-2);">
+                                    <button type="button" class="btn btn-outline">
+                                        💾 Brouillon
+                                    </button>
+                                    <button type="submit" class="btn btn-primary">
+                                        📤 Envoyer la réponse
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Scripts -->
+    <script>
+        // Toggle sidebar sur mobile
+        document.getElementById('sidebarToggle').addEventListener('click', function() {
+            document.querySelector('.app-sidebar').classList.add('open');
+            document.getElementById('sidebarOverlay').classList.add('active');
+        });
+        
+        // Fermer sidebar avec overlay
+        document.getElementById('sidebarOverlay').addEventListener('click', function() {
+            document.querySelector('.app-sidebar').classList.remove('open');
+            this.classList.remove('active');
+        });
+        
+        // Responsive : afficher le bouton burger sur mobile
+        function checkMobile() {
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            if (window.innerWidth <= 768) {
+                sidebarToggle.style.display = 'flex';
+            } else {
+                sidebarToggle.style.display = 'none';
+                document.querySelector('.app-sidebar').classList.remove('open');
+                document.getElementById('sidebarOverlay').classList.remove('active');
+            }
+        }
+        
+        window.addEventListener('resize', checkMobile);
+        checkMobile();
+        
+        // Gestion des dropdowns
+        document.querySelectorAll('.dropdown').forEach(dropdown => {
+            const toggle = dropdown.querySelector('.dropdown-toggle');
+            
+            toggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                dropdown.classList.toggle('active');
+            });
+            
+            // Fermer si on clique ailleurs
+            document.addEventListener('click', (e) => {
+                if (!dropdown.contains(e.target)) {
+                    dropdown.classList.remove('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

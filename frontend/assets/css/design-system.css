@@ -1,0 +1,198 @@
+/* Design System - Shape SAV */
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=Inter:wght@400;500;600&display=swap');
+
+/* Variables CSS - Design System Shape SAV */
+:root {
+  /* === POLICES === */
+  --font-heading: "Fraunces", serif;
+  --font-body: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* === PALETTE DE COULEURS (HEX) === */
+  /* Couleurs principales */
+  --color-primary: #0E2433;        /* Bleu marine (titres, actions) */
+  --color-accent: #C7A16B;         /* Beige doré (liens secondaires, indicateurs) */
+  
+  /* Couleurs de texte */
+  --color-text: #1F2937;           /* Texte principal */
+  --color-muted: #667085;          /* Texte secondaire */
+  
+  /* Couleurs de fond */
+  --color-bg: #F7F7F5;             /* Fond page (très clair, légèrement chaud) */
+  --color-surface: #FFFFFF;        /* Surface (cartes, panneaux, sidebar) */
+  --color-border: #E6E8EB;         /* Bordures / séparateurs */
+
+  /* === ÉTATS === */
+  --color-success: #1A7F5A;        /* Succès */
+  --color-warning: #DC9A00;        /* Alerte */
+  --color-error: #C0392B;          /* Erreur */
+  --color-info: #2F6CAD;           /* Info */
+
+  /* === RAYONS === */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  /* === OMBRES === */
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --shadow-md: 0 6px 18px rgba(16, 24, 40, 0.10);
+
+  /* === ESPACEMENTS (BASE 8) === */
+  --space-1: 8px;
+  --space-2: 12px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+  --space-6: 48px;
+
+  /* === LAYOUT === */
+  --sidebar-width: 264px;          /* Desktop */
+  --sidebar-compact: 88px;         /* Mode compact ≤ 1024px */
+}
+
+/* === RESET ET BASE === */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  font-weight: 400;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  overflow-x: hidden;
+}
+
+/* === ÉCHELLE TYPOGRAPHIQUE === */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  color: var(--color-primary);
+  font-weight: 700;
+  margin: 0;
+}
+
+h1 {
+  font-size: 48px;
+  line-height: 1.1;
+  font-weight: 900;
+}
+
+h2 {
+  font-size: 36px;
+  line-height: 1.15;
+  font-weight: 700;
+}
+
+h3 {
+  font-size: 28px;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+h4 {
+  font-size: 22px;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+p, body {
+  font-size: 16px;
+  line-height: 1.6;
+  font-weight: 400;
+  color: var(--color-text);
+}
+
+small {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-muted);
+}
+
+/* === LAYOUT DE BASE === */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-3);
+}
+
+/* === CLASSES UTILITAIRES === */
+.text-muted {
+  color: var(--color-muted);
+}
+
+.text-primary {
+  color: var(--color-primary);
+}
+
+.text-success {
+  color: var(--color-success);
+}
+
+.text-warning {
+  color: var(--color-warning);
+}
+
+.text-error {
+  color: var(--color-error);
+}
+
+.text-info {
+  color: var(--color-info);
+}
+
+.bg-surface {
+  background-color: var(--color-surface);
+}
+
+.border {
+  border: 1px solid var(--color-border);
+}
+
+.rounded {
+  border-radius: var(--radius-md);
+}
+
+.shadow {
+  box-shadow: var(--shadow-md);
+}
+
+.transition {
+  transition: all 200ms ease;
+}
+
+/* === RESPONSIVE BREAKPOINTS === */
+@media (max-width: 1279px) {
+  :root {
+    --sidebar-width: var(--sidebar-compact);
+  }
+  
+  h1 {
+    font-size: 36px;
+  }
+  
+  h2 {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 768px) {
+  h1 {
+    font-size: 28px;
+  }
+  
+  h2 {
+    font-size: 24px;
+  }
+  
+  h3 {
+    font-size: 20px;
+  }
+  
+  .container {
+    padding: 0 var(--space-4);
+  }
+}

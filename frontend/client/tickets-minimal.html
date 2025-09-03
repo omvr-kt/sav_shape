@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mes Tickets - Shape SAV</title>
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <link rel="stylesheet" href="/assets/css/sidebar.css">
+    <link rel="stylesheet" href="/assets/css/components.css">
+    <link rel="stylesheet" href="/assets/css/client.css">
+</head>
+<body>
+    <!-- Layout avec sidebar -->
+    <div class="app-layout">
+        <!-- Sidebar minimaliste -->
+        <aside class="app-sidebar">
+            <!-- Logo -->
+            <div class="sidebar-logo">
+                <h1>Shape</h1>
+            </div>
+            
+            <!-- Navigation principale -->
+            <nav class="sidebar-nav">
+                <a href="/client/dashboard.html" class="sidebar-nav-item" data-tooltip="Dashboard">
+                    <span class="sidebar-nav-label">Dashboard</span>
+                </a>
+                <a href="/client/tickets.html" class="sidebar-nav-item active notification" data-tooltip="Mes Tickets">
+                    <span class="sidebar-nav-label">Tickets</span>
+                </a>
+                <a href="/client/invoices.html" class="sidebar-nav-item" data-tooltip="Mes Factures">
+                    <span class="sidebar-nav-label">Factures</span>
+                </a>
+                <a href="/client/projects.html" class="sidebar-nav-item" data-tooltip="Mes Projets">
+                    <span class="sidebar-nav-label">Projets</span>
+                </a>
+            </nav>
+            
+            <!-- Navigation du bas -->
+            <div class="sidebar-footer">
+                <nav class="sidebar-nav">
+                    <a href="/client/profile.html" class="sidebar-nav-item" data-tooltip="Mon Profil">
+                        <span class="sidebar-nav-label">Profil</span>
+                    </a>
+                    <a href="/logout" class="sidebar-nav-item" data-tooltip="Déconnexion">
+                        <span class="sidebar-nav-label">Déconnexion</span>
+                    </a>
+                </nav>
+            </div>
+        </aside>
+        
+        <!-- Overlay pour mobile -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        
+        <!-- Contenu principal -->
+        <main class="app-main">
+            <!-- Header simplifié -->
+            <header class="client-header">
+                <div class="container">
+                    <div style="display: flex; align-items: center; gap: var(--space-3);">
+                        <!-- Bouton burger pour mobile -->
+                        <button class="sidebar-toggle" id="sidebarToggle" style="display: none;">
+                            ☰
+                        </button>
+                        
+                        <div>
+                            <h1>Tickets</h1>
+                            <nav class="breadcrumb" style="font-size: 13px; color: var(--color-muted);">
+                                <span>Gestion de vos demandes de support</span>
+                            </nav>
+                        </div>
+                    </div>
+                    
+                    <div class="header-right">
+                        <!-- Sélecteur de projet minimaliste -->
+                        <div class="project-selector">
+                            <label for="projectSelect">Projet</label>
+                            <select id="projectSelect" class="project-dropdown">
+                                <option value="">Tous</option>
+                                <option value="1">Site Web E-commerce</option>
+                                <option value="2">Application Mobile</option>
+                                <option value="3">Refonte Interface</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Contenu de la page -->
+            <div style="padding: var(--space-5) var(--space-6);">
+                <!-- Actions principales minimalistes -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-6);">
+                    <div style="display: flex; gap: var(--space-3); align-items: center;">
+                        <button class="btn btn-primary" id="newTicketBtn">
+                            Nouveau ticket
+                        </button>
+                        
+                        <div class="dropdown">
+                            <button class="dropdown-toggle">
+                                <span>Statut</span>
+                                <span style="margin-left: 4px;">↓</span>
+                            </button>
+                            <div class="dropdown-menu">
+                                <a href="#" class="dropdown-item">Tous</a>
+                                <div class="dropdown-divider"></div>
+                                <a href="#" class="dropdown-item">Nouveau</a>
+                                <a href="#" class="dropdown-item">En cours</a>
+                                <a href="#" class="dropdown-item">En attente</a>
+                                <a href="#" class="dropdown-item">Résolu</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: var(--space-2); align-items: center;">
+                        <input 
+                            type="text" 
+                            placeholder="Rechercher..." 
+                            class="form-input"
+                            style="min-width: 200px; font-size: 14px;"
+                        >
+                    </div>
+                </div>
+                
+                <!-- Statistiques minimalistes -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6);">
+                    <div class="card" style="border-left: 3px solid var(--color-primary);">
+                        <div class="card-body" style="padding: var(--space-4);">
+                            <div style="font-size: 28px; font-weight: 700; color: var(--color-primary); margin-bottom: 4px;">12</div>
+                            <div style="font-size: 14px; color: var(--color-muted);">Total</div>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="border-left: 3px solid var(--color-warning);">
+                        <div class="card-body" style="padding: var(--space-4);">
+                            <div style="font-size: 28px; font-weight: 700; color: var(--color-warning); margin-bottom: 4px;">3</div>
+                            <div style="font-size: 14px; color: var(--color-muted);">En cours</div>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="border-left: 3px solid var(--color-info);">
+                        <div class="card-body" style="padding: var(--space-4);">
+                            <div style="font-size: 28px; font-weight: 700; color: var(--color-info); margin-bottom: 4px;">2</div>
+                            <div style="font-size: 14px; color: var(--color-muted);">En attente</div>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="border-left: 3px solid var(--color-success);">
+                        <div class="card-body" style="padding: var(--space-4);">
+                            <div style="font-size: 28px; font-weight: 700; color: var(--color-success); margin-bottom: 4px;">7</div>
+                            <div style="font-size: 14px; color: var(--color-muted);">Résolus</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Liste des tickets minimaliste -->
+                <div class="card">
+                    <div class="card-header" style="border-bottom: 1px solid var(--color-border);">
+                        <h3 class="card-title" style="font-size: 16px;">Liste des tickets</h3>
+                    </div>
+                    <div class="card-body" style="padding: 0;">
+                        <div class="list">
+                            <!-- Ticket 1 -->
+                            <div class="list-item" style="padding: var(--space-4) var(--space-5);">
+                                <div class="list-item-header">
+                                    <div style="flex: 1;">
+                                        <h4 class="list-item-title" style="font-size: 15px; margin-bottom: 6px;">
+                                            Problème de connexion sur l'espace admin
+                                        </h4>
+                                        <div class="list-item-meta" style="font-size: 13px;">
+                                            <span style="font-family: monospace; background: var(--color-bg); padding: 2px 6px; border-radius: 3px; font-size: 11px;">#TCK-001</span>
+                                            <span style="color: var(--color-border);">•</span>
+                                            <span>Site Web E-commerce</span>
+                                            <span style="color: var(--color-border);">•</span>
+                                            <span>15 jan. 2024</span>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; gap: var(--space-2); align-items: flex-start;">
+                                        <span class="badge status-en-cours">En cours</span>
+                                        <span class="badge" style="background: transparent; color: var(--color-error); border-color: var(--color-error);">Urgent</span>
+                                    </div>
+                                </div>
+                                <div class="list-item-content" style="margin: var(--space-3) 0; font-size: 14px; line-height: 1.5;">
+                                    Impossible de se connecter à l'interface d'administration depuis hier. L'erreur "Identifiants incorrects" apparaît même avec les bons identifiants.
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: var(--space-3); border-top: 1px solid var(--color-border);">
+                                    <div class="list-item-meta" style="font-size: 12px;">
+                                        <span>Mis à jour il y a 2h</span>
+                                        <span style="color: var(--color-border);">•</span>
+                                        <span style="color: var(--color-warning); font-weight: 500;">SLA dans 4h</span>
+                                    </div>
+                                    <div class="table-actions">
+                                        <button class="btn btn-outline" style="padding: 6px 12px; font-size: 13px;">Voir</button>
+                                        <button class="btn btn-tertiary" style="padding: 6px 12px; font-size: 13px;">Répondre</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Ticket 2 -->
+                            <div class="list-item" style="padding: var(--space-4) var(--space-5);">
+                                <div class="list-item-header">
+                                    <div style="flex: 1;">
+                                        <h4 class="list-item-title" style="font-size: 15px; margin-bottom: 6px;">
+                                            Modification design page d'accueil
+                                        </h4>
+                                        <div class="list-item-meta" style="font-size: 13px;">
+                                            <span style="font-family: monospace; background: var(--color-bg); padding: 2px 6px; border-radius: 3px; font-size: 11px;">#TCK-002</span>
+                                            <span style="color: var(--color-border);">•</span>
+                                            <span>Refonte Interface</span>
+                                            <span style="color: var(--color-border);">•</span>
+                                            <span>10 jan. 2024</span>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; gap: var(--space-2); align-items: flex-start;">
+                                        <span class="badge status-attente-client">En attente</span>
+                                        <span class="badge" style="background: transparent; color: var(--color-info); border-color: var(--color-info);">Normal</span>
+                                    </div>
+                                </div>
+                                <div class="list-item-content" style="margin: var(--space-3) 0; font-size: 14px; line-height: 1.5;">
+                                    Demande de modification de la section héro pour un rendu plus moderne et attractif.
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: var(--space-3); border-top: 1px solid var(--color-border);">
+                                    <div class="list-item-meta" style="font-size: 12px;">
+                                        <span>Mis à jour il y a 1 jour</span>
+                                        <span style="color: var(--color-border);">•</span>
+                                        <span style="color: var(--color-success); font-weight: 500;">SLA respecté</span>
+                                    </div>
+                                    <div class="table-actions">
+                                        <button class="btn btn-outline" style="padding: 6px 12px; font-size: 13px;">Voir</button>
+                                        <button class="btn btn-tertiary" style="padding: 6px 12px; font-size: 13px;">Répondre</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Ticket 3 -->
+                            <div class="list-item" style="padding: var(--space-4) var(--space-5);">
+                                <div class="list-item-header">
+                                    <div style="flex: 1;">
+                                        <h4 class="list-item-title" style="font-size: 15px; margin-bottom: 6px;">
+                                            Bug processus commande mobile
+                                        </h4>
+                                        <div class="list-item-meta" style="font-size: 13px;">
+                                            <span style="font-family: monospace; background: var(--color-bg); padding: 2px 6px; border-radius: 3px; font-size: 11px;">#TCK-003</span>
+                                            <span style="color: var(--color-border);">•</span>
+                                            <span>Application Mobile</span>
+                                            <span style="color: var(--color-border);">•</span>
+                                            <span>8 jan. 2024</span>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; gap: var(--space-2); align-items: flex-start;">
+                                        <span class="badge status-resolu">Résolu</span>
+                                        <span class="badge" style="background: transparent; color: var(--color-warning); border-color: var(--color-warning);">Élevé</span>
+                                    </div>
+                                </div>
+                                <div class="list-item-content" style="margin: var(--space-3) 0; font-size: 14px; line-height: 1.5;">
+                                    Erreur lors de la validation des commandes sur l'application Android.
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: var(--space-3); border-top: 1px solid var(--color-border);">
+                                    <div class="list-item-meta" style="font-size: 12px;">
+                                        <span>Résolu le 12 jan. 2024</span>
+                                        <span style="color: var(--color-border);">•</span>
+                                        <span style="color: var(--color-success); font-weight: 500;">Résolu en 2 jours</span>
+                                    </div>
+                                    <div class="table-actions">
+                                        <button class="btn btn-outline" style="padding: 6px 12px; font-size: 13px;">Voir</button>
+                                        <button class="btn btn-tertiary" style="padding: 6px 12px; font-size: 13px;">Évaluer</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Pagination minimaliste -->
+                <div class="pagination" style="margin-top: var(--space-5);">
+                    <a href="#" class="pagination-item">← Précédent</a>
+                    <a href="#" class="pagination-item active">1</a>
+                    <a href="#" class="pagination-item">2</a>
+                    <a href="#" class="pagination-item">3</a>
+                    <a href="#" class="pagination-item">Suivant →</a>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Scripts -->
+    <script>
+        // Toggle sidebar sur mobile
+        document.getElementById('sidebarToggle').addEventListener('click', function() {
+            document.querySelector('.app-sidebar').classList.add('open');
+            document.getElementById('sidebarOverlay').classList.add('active');
+        });
+        
+        // Fermer sidebar avec overlay
+        document.getElementById('sidebarOverlay').addEventListener('click', function() {
+            document.querySelector('.app-sidebar').classList.remove('open');
+            this.classList.remove('active');
+        });
+        
+        // Responsive : afficher le bouton burger sur mobile
+        function checkMobile() {
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            if (window.innerWidth <= 768) {
+                sidebarToggle.style.display = 'flex';
+            } else {
+                sidebarToggle.style.display = 'none';
+                document.querySelector('.app-sidebar').classList.remove('open');
+                document.getElementById('sidebarOverlay').classList.remove('active');
+            }
+        }
+        
+        window.addEventListener('resize', checkMobile);
+        checkMobile();
+        
+        // Gestion des dropdowns
+        document.querySelectorAll('.dropdown').forEach(dropdown => {
+            const toggle = dropdown.querySelector('.dropdown-toggle');
+            
+            toggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                dropdown.classList.toggle('active');
+            });
+            
+            // Fermer si on clique ailleurs
+            document.addEventListener('click', (e) => {
+                if (!dropdown.contains(e.target)) {
+                    dropdown.classList.remove('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

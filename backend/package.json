@@ -1,5 +1,5 @@
 {
-  "name": "saas-client-feedback-platform",
+  "name": "sav-client-feedback-platform",
   "version": "1.0.0",
   "description": "Plateforme de gestion des retours clients et suivi projet",
   "main": "src/server.js",

@@ -18,18 +18,33 @@ class LoginApp {
         const currentTime = Date.now() / 1000;
         
         if (tokenData.exp && tokenData.exp > currentTime) {
-          // Token still valid, redirect to tickets
-          window.location.href = '/client/tickets.html';
+          // Token valide, rediriger selon le rôle
+          const userRole = tokenData.role;
+          let redirectUrl = '/client/tickets.html';
+          
+          if (userRole === 'admin' || userRole === 'team') {
+            redirectUrl = '/admin/';
+          }
+          
+          console.log(`Utilisateur déjà connecté (${userRole}), redirection vers ${redirectUrl}`);
+          window.location.href = redirectUrl;
           return;
         } else {
-          // Token expired, remove it
-          localStorage.removeItem('token');
+          // Token expiré, le supprimer
+          console.log('Token expiré détecté');
+          this.clearStoredAuth();
         }
       } catch (error) {
-        // Invalid token, remove it
-        localStorage.removeItem('token');
+        // Token invalide, le supprimer
+        console.error('Token invalide détecté:', error);
+        this.clearStoredAuth();
       }
     }
+  }
+  
+  clearStoredAuth() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
   }
 
   setupEventListeners() {
@@ -41,10 +56,21 @@ class LoginApp {
   }
 
   async handleLogin() {
-    const email = document.getElementById('email').value;
+    const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
     const errorDiv = document.getElementById('loginError');
     const submitBtn = document.querySelector('button[type="submit"]');
+
+    // Validation côté client
+    if (!email || !password) {
+      this.showError('Veuillez saisir votre email et mot de passe', errorDiv);
+      return;
+    }
+
+    if (!this.validateEmail(email)) {
+      this.showError('Format d\'email invalide', errorDiv);
+      return;
+    }
 
     // Reset error state
     errorDiv.style.display = 'none';
@@ -56,22 +82,50 @@ class LoginApp {
     try {
       const response = await api.login(email, password);
       
-      if (response.success) {
+      if (response && response.success) {
+        // Stocker les informations utilisateur
         localStorage.setItem('token', response.data.token);
-        window.location.href = '/client/tickets.html';
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        
+        // Redirection selon le rôle
+        const userRole = response.data.user.role;
+        let redirectUrl = '/client/tickets.html';
+        
+        if (userRole === 'admin' || userRole === 'team') {
+          redirectUrl = '/admin/';
+        }
+        
+        console.log(`Connexion réussie, redirection vers ${redirectUrl}`);
+        window.location.href = redirectUrl;
       } else {
-        errorDiv.textContent = response.message;
-        errorDiv.style.display = 'block';
+        this.showError(response?.message || 'Erreur de connexion inconnue', errorDiv);
       }
     } catch (error) {
       console.error('Login error:', error);
-      errorDiv.textContent = 'Erreur de connexion. Veuillez vérifier vos identifiants.';
-      errorDiv.style.display = 'block';
+      let errorMessage = 'Erreur de connexion. Veuillez vérifier vos identifiants.';
+      
+      if (error.message.includes('connexion au serveur')) {
+        errorMessage = 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
+      } else if (error.message.includes('401')) {
+        errorMessage = 'Email ou mot de passe incorrect.';
+      }
+      
+      this.showError(errorMessage, errorDiv);
     } finally {
       // Re-enable submit button
       submitBtn.disabled = false;
       submitBtn.textContent = 'Se connecter';
     }
+  }
+  
+  showError(message, errorDiv) {
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+  }
+  
+  validateEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   }
 }
 

@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const path = require('path');
 
 // Créer ou ouvrir la base de données
-const db = new sqlite3.Database('saas.db');
+const db = new sqlite3.Database('sav_shape.db');
 
 console.log('🗄️ Initialisation de la base de données...');
 
@@ -19,11 +19,12 @@ db.serialize(() => {
       first_name TEXT NOT NULL,
       last_name TEXT NOT NULL,
       email TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
+      password_hash TEXT NOT NULL,
       role TEXT NOT NULL DEFAULT 'client',
       company TEXT,
-      quote_file TEXT,
-      specifications_file TEXT,
+      phone TEXT,
+      is_active INTEGER DEFAULT 1,
+      confidential_file TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
@@ -135,9 +136,9 @@ db.serialize(() => {
 
   // Admin
   db.run(`
-    INSERT OR IGNORE INTO users (first_name, last_name, email, password, role) 
+    INSERT OR IGNORE INTO users (first_name, last_name, email, password_hash, role) 
     VALUES (?, ?, ?, ?, ?)
-  `, ['Admin', 'System', 'admin@saas.com', hashedPassword, 'admin'], function(err) {
+  `, ['Admin', 'System', 'admin@sav.com', hashedPassword, 'admin'], function(err) {
     if (err) {
       console.error('Erreur création admin:', err);
     } else {
@@ -147,7 +148,7 @@ db.serialize(() => {
 
   // Jean Dupont (client)
   db.run(`
-    INSERT OR IGNORE INTO users (first_name, last_name, email, password, role) 
+    INSERT OR IGNORE INTO users (first_name, last_name, email, password_hash, role) 
     VALUES (?, ?, ?, ?, ?)
   `, ['Jean', 'Dupont', 'jean.dupont@email.com', hashedPassword, 'client'], function(err) {
     if (err) {
@@ -310,7 +311,7 @@ db.serialize(() => {
 
   // Marie Martin (autre client pour test)
   db.run(`
-    INSERT OR IGNORE INTO users (first_name, last_name, email, password, role) 
+    INSERT OR IGNORE INTO users (first_name, last_name, email, password_hash, role) 
     VALUES (?, ?, ?, ?, ?)
   `, ['Marie', 'Martin', 'marie.martin@email.com', hashedPassword, 'client'], function(err) {
     if (err) {
@@ -334,7 +335,7 @@ db.serialize(() => {
                 console.log(`🎫 Tickets: ${ticketCount.count}`);
                 
                 console.log('\n🔑 Informations de connexion:');
-                console.log('Admin: admin@saas.com / password123');
+                console.log('Admin: admin@sav.com / password123');
                 console.log('Client: jean.dupont@email.com / password123');
                 console.log('Client: marie.martin@email.com / password123');
                 

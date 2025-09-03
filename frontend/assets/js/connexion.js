@@ -21,23 +21,50 @@ function checkExistingAuth() {
                 
                 console.log(`Utilisateur déjà connecté (${userRole}), redirection vers ${redirectUrl}`);
                 window.location.href = redirectUrl;
+            } else {
+                // Token expiré
+                console.log('Token expiré détecté');
+                clearStoredAuth();
             }
         } catch (error) {
             // Token invalide, le supprimer
-            localStorage.removeItem('token');
+            console.error('Token invalide détecté:', error);
+            clearStoredAuth();
         }
     }
+}
+
+function clearStoredAuth() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+}
+
+// Fonction de validation email
+function validateEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
 }
 
 // Fonction de connexion
 async function handleLogin(e) {
     e.preventDefault();
     
-    const email = document.getElementById('email').value;
+    const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
     const submitBtn = document.getElementById('submitBtn');
     const errorDiv = document.getElementById('error');
     const successDiv = document.getElementById('success');
+    
+    // Validation côté client
+    if (!email || !password) {
+        showError('Veuillez saisir votre email et mot de passe', errorDiv);
+        return;
+    }
+
+    if (!validateEmail(email)) {
+        showError('Format d\'email invalide', errorDiv);
+        return;
+    }
     
     // Réinitialiser les messages
     errorDiv.style.display = 'none';
@@ -60,12 +87,24 @@ async function handleLogin(e) {
         
         console.log('Response status:', response.status);
         
+        if (!response.ok) {
+            let errorMessage = 'Erreur de connexion';
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.message || errorMessage;
+            } catch (e) {
+                errorMessage = `Erreur ${response.status}: ${response.statusText}`;
+            }
+            throw new Error(errorMessage);
+        }
+        
         const data = await response.json();
         console.log('Response data:', data);
         
         if (data.success) {
             // Connexion réussie
             localStorage.setItem('token', data.data.token);
+            localStorage.setItem('user', JSON.stringify(data.data.user));
             
             const userRole = data.data.user.role;
             let redirectUrl = '/client/tickets.html'; // Par défaut
@@ -95,19 +134,30 @@ async function handleLogin(e) {
             
         } else {
             // Erreur de connexion
-            errorDiv.textContent = data.message || 'Erreur de connexion';
-            errorDiv.style.display = 'block';
+            showError(data.message || 'Erreur de connexion', errorDiv);
         }
         
     } catch (error) {
         console.error('Erreur:', error);
-        errorDiv.textContent = 'Erreur de connexion au serveur';
-        errorDiv.style.display = 'block';
+        let errorMessage = 'Erreur de connexion au serveur';
+        
+        if (error.message.includes('TypeError') && error.message.includes('fetch')) {
+            errorMessage = 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+        
+        showError(errorMessage, errorDiv);
     }
     
     // Réactiver le bouton
     submitBtn.disabled = false;
     submitBtn.textContent = 'Se connecter';
+}
+
+function showError(message, errorDiv) {
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
 }
 
 // Initialisation quand le DOM est chargé

@@ -9,8 +9,18 @@ router.post('/login', validateLogin, async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findByEmail(email);
+    // Validation des entrées
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email et mot de passe requis'
+      });
+    }
+
+    const user = await User.findByEmail(email.toLowerCase().trim());
     if (!user) {
+      // Log pour débogage sans exposer d'informations sensibles
+      console.log(`Tentative de connexion avec email inexistant: ${email}`);
       return res.status(401).json({
         success: false,
         message: 'Email ou mot de passe incorrect'
@@ -18,29 +28,36 @@ router.post('/login', validateLogin, async (req, res) => {
     }
 
     if (!user.is_active) {
+      console.log(`Tentative de connexion avec compte inactif: ${email}`);
       return res.status(401).json({
         success: false,
-        message: 'Compte désactivé'
+        message: 'Compte désactivé. Contactez l\'administrateur.'
       });
     }
 
     const isValidPassword = await User.validatePassword(user, password);
     if (!isValidPassword) {
+      console.log(`Tentative de connexion avec mot de passe incorrect: ${email}`);
       return res.status(401).json({
         success: false,
         message: 'Email ou mot de passe incorrect'
       });
     }
 
+    // Générer le token
     const token = generateToken(user);
 
-    delete user.password_hash;
+    // Supprimer le hash du mot de passe avant de renvoyer l'utilisateur
+    const userResponse = { ...user };
+    delete userResponse.password_hash;
+
+    console.log(`Connexion réussie pour: ${email} (${user.role})`);
 
     res.json({
       success: true,
       message: 'Connexion réussie',
       data: {
-        user,
+        user: userResponse,
         token
       }
     });
@@ -48,7 +65,7 @@ router.post('/login', validateLogin, async (req, res) => {
     console.error('Login error:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur lors de la connexion'
+      message: 'Erreur interne du serveur. Veuillez réessayer.'
     });
   }
 });
@@ -61,6 +78,13 @@ router.get('/me', verifyToken, async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Utilisateur non trouvé'
+      });
+    }
+
+    if (!user.is_active) {
+      return res.status(401).json({
+        success: false,
+        message: 'Compte désactivé'
       });
     }
 

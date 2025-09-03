@@ -14,7 +14,7 @@ const rl = readline.createInterface({
 const question = (query) => new Promise(resolve => rl.question(query, resolve));
 
 async function setup() {
-  console.log('🔧 Configuration initiale du projet SaaS Platform\n');
+  console.log('🔧 Configuration initiale du projet sav Platform\n');
 
   const envPath = path.join(__dirname, '.env');
   const envExamplePath = path.join(__dirname, '.env.example');

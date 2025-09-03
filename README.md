@@ -265,7 +265,7 @@ Pour un déploiement en production :
 4. **Process Manager**
    ```bash
    npm install -g pm2
-   pm2 start src/server.js --name saas-platform
+   pm2 start src/server.js --name sav-platform
    ```
 
 ## 📞 Support

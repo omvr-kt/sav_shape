@@ -2,6 +2,27 @@ class ApiClient {
   constructor(baseURL = '/api') {
     this.baseURL = baseURL;
     this.token = localStorage.getItem('token');
+    
+    // Vérifier la validité du token au démarrage
+    this.validateStoredToken();
+  }
+  
+  validateStoredToken() {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const tokenData = JSON.parse(atob(token.split('.')[1]));
+        const currentTime = Date.now() / 1000;
+        
+        if (tokenData.exp && tokenData.exp <= currentTime) {
+          console.warn('Token expiré détecté, suppression');
+          this.clearToken();
+        }
+      } catch (error) {
+        console.warn('Token invalide détecté, suppression');
+        this.clearToken();
+      }
+    }
   }
 
   getHeaders() {
@@ -9,8 +30,11 @@ class ApiClient {
       'Content-Type': 'application/json',
     };
     
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+    // Récupérer le token le plus récent du localStorage
+    const currentToken = localStorage.getItem('token');
+    if (currentToken) {
+      this.token = currentToken;
+      headers['Authorization'] = `Bearer ${currentToken}`;
     }
     
     return headers;
@@ -18,12 +42,15 @@ class ApiClient {
 
   setToken(token) {
     this.token = token;
-    localStorage.setItem('token', token);
+    if (token) {
+      localStorage.setItem('token', token);
+    }
   }
 
   clearToken() {
     this.token = null;
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
   }
 
   async request(endpoint, options = {}) {
@@ -35,21 +62,37 @@ class ApiClient {
 
     try {
       const response = await fetch(url, config);
-      const data = await response.json();
-
+      
+      // Vérifier si la réponse est valide
       if (!response.ok) {
-        console.error('API Error Response:', data);
-        if (data.errors) {
-          console.error('Validation errors:', data.errors);
+        // Gestion spéciale des erreurs 401
+        if (response.status === 401) {
+          console.warn('Token invalide ou expiré, redirection vers la page de connexion');
+          this.clearToken();
+          window.location.href = '/';
+          return;
         }
-        throw new Error(data.message || 'Une erreur est survenue');
+        
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+        }
+        
+        console.error('API Error Response:', errorData);
+        if (errorData.errors) {
+          console.error('Validation errors:', errorData.errors);
+        }
+        throw new Error(errorData.message || `Erreur ${response.status}`);
       }
-
+      
+      const data = await response.json();
       return data;
     } catch (error) {
-      if (error.message.includes('401') || error.message.includes('Token')) {
-        this.clearToken();
-        window.location.reload();
+      // Gestion des erreurs réseau ou de parsing
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error('Erreur de connexion au serveur');
       }
       throw error;
     }

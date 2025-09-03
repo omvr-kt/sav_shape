@@ -68,7 +68,11 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-app.use(express.static(path.join(__dirname, '../../frontend')));
+
+// Routes spécifiques AVANT le middleware statique
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../../frontend/connexion.html'));
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -83,9 +87,8 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../../frontend/connexion.html'));
-});
+// Middleware statique APRÈS les routes spécifiques
+app.use(express.static(path.join(__dirname, '../../frontend')));
 
 // Client routes
 app.get('/connexion', (req, res) => {

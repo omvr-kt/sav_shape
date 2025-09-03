@@ -433,18 +433,10 @@ class ClientInvoicesApp {
     const statusY = totalY + 30;
     doc.text('Statut:', 20, statusY);
     
-    // Couleur selon le statut
-    switch(invoice.status) {
-      case 'paid':
-        doc.setTextColor(40, 167, 69);
-        break;
-      case 'overdue':
-        doc.setTextColor(220, 53, 69);
-        break;
-      default:
-        doc.setTextColor(255, 193, 7);
-    }
-    doc.text(this.getStatusLabel(invoice.status), 40, statusY);
+    // Statut simple en noir
+    doc.setTextColor(...darkColor);
+    const statusText = invoice.status === 'paid' ? 'Payée' : 'Non payée';
+    doc.text(statusText, 40, statusY);
     
     // Pied de page
     doc.setTextColor(...darkColor);

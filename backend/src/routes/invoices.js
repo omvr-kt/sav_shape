@@ -13,7 +13,7 @@ router.get('/', verifyToken, (req, res) => {
   let sql = `
     SELECT i.*, u.first_name, u.last_name, u.email, u.company
     FROM invoices i
-    JOIN users u ON i.client_id = u.id
+    LEFT JOIN users u ON i.client_id = u.id
   `;
   
   const conditions = [];
@@ -136,7 +136,7 @@ router.get('/client/:clientId', verifyToken, (req, res) => {
   const sql = `
     SELECT i.*, u.first_name, u.last_name, u.email, u.company
     FROM invoices i
-    JOIN users u ON i.client_id = u.id
+    LEFT JOIN users u ON i.client_id = u.id
     WHERE i.client_id = ?
     ORDER BY i.created_at DESC
   `;
@@ -164,9 +164,29 @@ router.get('/:id', verifyToken, (req, res) => {
   const invoiceId = parseInt(req.params.id);
 
   const sql = `
-    SELECT i.*, u.first_name, u.last_name, u.email, u.company
+    SELECT i.*, 
+           CASE 
+             WHEN i.client_first_name IS NOT NULL 
+             THEN i.client_first_name 
+             ELSE u.first_name 
+           END as first_name,
+           CASE 
+             WHEN i.client_last_name IS NOT NULL 
+             THEN i.client_last_name 
+             ELSE u.last_name 
+           END as last_name,
+           CASE 
+             WHEN i.client_email IS NOT NULL 
+             THEN i.client_email 
+             ELSE u.email 
+           END as email,
+           CASE 
+             WHEN i.client_company IS NOT NULL 
+             THEN i.client_company 
+             ELSE u.company 
+           END as company
     FROM invoices i
-    JOIN users u ON i.client_id = u.id
+    LEFT JOIN users u ON i.client_id = u.id
     WHERE i.id = ?
   `;
 
@@ -218,32 +238,55 @@ router.post('/', [
   const { client_id, amount_ht, description, tva_rate = 20.00, no_tva = false } = req.body;
 
   try {
-    // Calculer la TVA
-    const finalTvaRate = no_tva ? 0 : tva_rate;
-    const { amount_tva, amount_ttc } = calculateTVA(amount_ht, finalTvaRate);
+    // D'abord récupérer les informations actuelles du client
+    const clientSQL = 'SELECT first_name, last_name, email, company FROM users WHERE id = ?';
     
-    const invoiceNumber = generateInvoiceNumber();
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 30);
+    db.get(clientSQL, [client_id], (err, client) => {
+      if (err) {
+        console.error('Erreur récupération client:', err);
+        return res.status(500).json({
+          success: false,
+          message: 'Erreur lors de la récupération du client'
+        });
+      }
+      
+      if (!client) {
+        return res.status(404).json({
+          success: false,
+          message: 'Client non trouvé'
+        });
+      }
 
-    const sql = `
-      INSERT INTO invoices (
-        invoice_number, client_id, amount_ht, tva_rate, amount_tva, amount_ttc, 
-        description, status, due_date
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', ?)
-    `;
+      // Calculer la TVA
+      const finalTvaRate = no_tva ? 0 : tva_rate;
+      const { amount_tva, amount_ttc } = calculateTVA(amount_ht, finalTvaRate);
+      
+      const invoiceNumber = generateInvoiceNumber();
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 30);
 
-    db.run(sql, [
-      invoiceNumber, 
-      client_id, 
-      amount_ht, 
-      finalTvaRate, 
-      amount_tva, 
-      amount_ttc, 
-      description, 
-      dueDate.toISOString()
-    ], function(err) {
+      const sql = `
+        INSERT INTO invoices (
+          invoice_number, client_id, amount_ht, tva_rate, amount_tva, amount_ttc, 
+          description, status, due_date, client_first_name, client_last_name, client_email, client_company
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?)
+      `;
+
+      db.run(sql, [
+        invoiceNumber, 
+        client_id, 
+        amount_ht, 
+        finalTvaRate, 
+        amount_tva, 
+        amount_ttc, 
+        description, 
+        dueDate.toISOString(),
+        client.first_name,
+        client.last_name,
+        client.email,
+        client.company
+      ], function(err) {
       if (err) {
         console.error('Erreur création facture:', err);
         return res.status(500).json({
@@ -252,26 +295,27 @@ router.post('/', [
         });
       }
 
-      // Récupérer la facture créée avec les infos client
-      const getInvoiceSQL = `
-        SELECT i.*, u.first_name, u.last_name, u.email, u.company
-        FROM invoices i
-        JOIN users u ON i.client_id = u.id
-        WHERE i.id = ?
-      `;
-      
-      db.get(getInvoiceSQL, [this.lastID], (err, invoice) => {
-        if (err) {
-          return res.status(500).json({
-            success: false,
-            message: 'Erreur lors de la récupération de la facture'
-          });
-        }
+        // Récupérer la facture créée avec les infos client
+        const getInvoiceSQL = `
+          SELECT i.*, u.first_name, u.last_name, u.email, u.company
+          FROM invoices i
+          LEFT JOIN users u ON i.client_id = u.id
+          WHERE i.id = ?
+        `;
+        
+        db.get(getInvoiceSQL, [this.lastID], (err, invoice) => {
+          if (err) {
+            return res.status(500).json({
+              success: false,
+              message: 'Erreur lors de la récupération de la facture'
+            });
+          }
 
-        res.status(201).json({
-          success: true,
-          message: 'Facture créée avec succès',
-          data: { invoice }
+          res.status(201).json({
+            success: true,
+            message: 'Facture créée avec succès',
+            data: { invoice }
+          });
         });
       });
     });
@@ -329,6 +373,116 @@ router.put('/:id/status', [
   });
 });
 
+// PUT /api/invoices/:id - Mettre à jour une facture complète (admin uniquement)
+router.put('/:id', [
+  verifyToken,
+  requireAdmin,
+  body('amount_ht').optional().isFloat({ min: 0 }).withMessage('Montant HT invalide'),
+  body('tva_rate').optional().isFloat({ min: 0, max: 100 }).withMessage('Taux TVA invalide'),
+  body('description').optional().trim().isLength({ min: 1, max: 1000 }).withMessage('Description invalide (max 1000 caractères)'),
+  body('status').optional().isIn(['draft', 'sent', 'paid', 'overdue', 'cancelled']).withMessage('Statut invalide'),
+  handleValidationErrors
+], (req, res) => {
+
+  const invoiceId = parseInt(req.params.id);
+  const { amount_ht, tva_rate, description, status } = req.body;
+
+  try {
+    // Récupérer la facture actuelle pour garder les valeurs non modifiées
+    const getInvoiceSQL = `
+      SELECT * FROM invoices WHERE id = ?
+    `;
+    
+    db.get(getInvoiceSQL, [invoiceId], (err, currentInvoice) => {
+      if (err) {
+        console.error('Erreur récupération facture:', err);
+        return res.status(500).json({
+          success: false,
+          message: 'Erreur serveur'
+        });
+      }
+
+      if (!currentInvoice) {
+        return res.status(404).json({
+          success: false,
+          message: 'Facture non trouvée'
+        });
+      }
+
+      // Utiliser les nouvelles valeurs ou garder les anciennes
+      const newAmountHt = amount_ht !== undefined ? parseFloat(amount_ht) : parseFloat(currentInvoice.amount_ht);
+      const newTvaRate = tva_rate !== undefined ? parseFloat(tva_rate) : parseFloat(currentInvoice.tva_rate);
+      const newDescription = description !== undefined ? description : currentInvoice.description;
+      const newStatus = status !== undefined ? status : currentInvoice.status;
+
+      // Recalculer la TVA avec les nouveaux montants
+      const { amount_tva, amount_ttc } = calculateTVA(newAmountHt, newTvaRate);
+
+      // Construire la requête de mise à jour
+      let updateSql = `
+        UPDATE invoices 
+        SET amount_ht = ?, tva_rate = ?, amount_tva = ?, amount_ttc = ?, 
+            description = ?, status = ?, updated_at = datetime('now', 'localtime')
+      `;
+      let params = [newAmountHt, newTvaRate, amount_tva, amount_ttc, newDescription, newStatus];
+
+      // Si le statut devient "paid", ajouter la date de paiement
+      if (newStatus === 'paid' && currentInvoice.status !== 'paid') {
+        updateSql += ', paid_date = datetime(\'now\', \'localtime\')';
+      }
+
+      updateSql += ' WHERE id = ?';
+      params.push(invoiceId);
+
+      db.run(updateSql, params, function(err) {
+        if (err) {
+          console.error('Erreur mise à jour facture:', err);
+          return res.status(500).json({
+            success: false,
+            message: 'Erreur lors de la mise à jour'
+          });
+        }
+
+        if (this.changes === 0) {
+          return res.status(404).json({
+            success: false,
+            message: 'Facture non trouvée'
+          });
+        }
+
+        // Récupérer la facture mise à jour avec les infos client
+        const getUpdatedInvoiceSQL = `
+          SELECT i.*, u.first_name, u.last_name, u.email, u.company
+          FROM invoices i
+          LEFT JOIN users u ON i.client_id = u.id
+          WHERE i.id = ?
+        `;
+        
+        db.get(getUpdatedInvoiceSQL, [invoiceId], (err, updatedInvoice) => {
+          if (err) {
+            return res.status(500).json({
+              success: false,
+              message: 'Erreur lors de la récupération de la facture mise à jour'
+            });
+          }
+
+          res.json({
+            success: true,
+            message: 'Facture mise à jour avec succès',
+            data: { invoice: updatedInvoice }
+          });
+        });
+      });
+    });
+  } catch (error) {
+    console.error('Erreur mise à jour facture:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la mise à jour de la facture'
+    });
+  }
+});
+
 // DELETE /api/invoices/:id - Supprimer une facture (admin uniquement)
 router.delete('/:id', verifyToken, requireAdmin, (req, res) => {
 
@@ -363,9 +517,29 @@ router.get('/:id/pdf', verifyToken, (req, res) => {
   const invoiceId = parseInt(req.params.id);
 
   const sql = `
-    SELECT i.*, u.first_name, u.last_name, u.email, u.company
+    SELECT i.*, 
+           CASE 
+             WHEN i.client_first_name IS NOT NULL 
+             THEN i.client_first_name 
+             ELSE u.first_name 
+           END as first_name,
+           CASE 
+             WHEN i.client_last_name IS NOT NULL 
+             THEN i.client_last_name 
+             ELSE u.last_name 
+           END as last_name,
+           CASE 
+             WHEN i.client_email IS NOT NULL 
+             THEN i.client_email 
+             ELSE u.email 
+           END as email,
+           CASE 
+             WHEN i.client_company IS NOT NULL 
+             THEN i.client_company 
+             ELSE u.company 
+           END as company
     FROM invoices i
-    JOIN users u ON i.client_id = u.id
+    LEFT JOIN users u ON i.client_id = u.id
     WHERE i.id = ?
   `;
 

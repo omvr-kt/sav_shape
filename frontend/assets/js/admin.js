@@ -2638,6 +2638,218 @@ class AdminApp {
     // Télécharger le PDF
     doc.save(`Facture-${invoice.invoice_number}.pdf`);
   }
+
+  showViewInvoiceModal(invoice) {
+    this.createModal(`
+      <h2>📄 Détails de la facture</h2>
+      
+      <div class="invoice-info-card">
+        <div class="card-header">
+          <div class="invoice-header-info">
+            <h3 class="invoice-number">${invoice.invoice_number}</h3>
+            <span class="status-badge status-${invoice.status}">${this.getInvoiceStatusLabel(invoice.status)}</span>
+          </div>
+          <div class="invoice-dates">
+            <p><strong>📅 Créée le:</strong> ${api.formatDate(invoice.created_at)}</p>
+            ${invoice.due_date ? `<p><strong>⏰ Échéance:</strong> ${api.formatDate(invoice.due_date)}</p>` : ''}
+            ${invoice.paid_date ? `<p><strong>✅ Payée le:</strong> ${api.formatDate(invoice.paid_date)}</p>` : ''}
+          </div>
+        </div>
+        
+        <div class="card-section">
+          <h4>👤 Informations client</h4>
+          <div class="client-info-grid">
+            <div class="info-item">
+              <strong>Nom:</strong> ${invoice.first_name} ${invoice.last_name}
+            </div>
+            <div class="info-item">
+              <strong>Email:</strong> ${invoice.email}
+            </div>
+            ${invoice.company ? `<div class="info-item"><strong>Entreprise:</strong> ${invoice.company}</div>` : ''}
+          </div>
+        </div>
+        
+        <div class="card-section">
+          <h4>📝 Description</h4>
+          <div class="description-content">
+            ${invoice.description || 'Aucune description'}
+          </div>
+        </div>
+        
+        <div class="card-section">
+          <h4>💰 Détails financiers</h4>
+          <div class="financial-details">
+            <div class="amount-line">
+              <span>Montant HT:</span>
+              <span class="amount">${parseFloat(invoice.amount_ht || 0).toFixed(2)}€</span>
+            </div>
+            <div class="amount-line">
+              <span>TVA (${parseFloat(invoice.tva_rate || 0).toFixed(0)}%):</span>
+              <span class="amount">${parseFloat(invoice.amount_tva || 0).toFixed(2)}€</span>
+            </div>
+            <div class="amount-line total-line">
+              <span><strong>Total TTC:</strong></span>
+              <span class="amount-total"><strong>${parseFloat(invoice.amount_ttc || 0).toFixed(2)}€</strong></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary" onclick="adminApp.downloadInvoicePDF(${invoice.id}); adminApp.closeModal();">
+          📄 Télécharger PDF
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="adminApp.editInvoice(${invoice.id}); adminApp.closeModal();">
+          ✏️ Modifier
+        </button>
+        <button type="button" class="btn btn-secondary cancel-btn">Fermer</button>
+      </div>
+    `, 'large');
+  }
+
+  showEditInvoiceModal(invoice) {
+    this.createModal(`
+      <form id="editInvoiceForm">
+        <h2>✏️ Modifier la facture ${invoice.invoice_number}</h2>
+        
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="editAmountHt">Montant HT (€) *</label>
+            <input type="number" id="editAmountHt" step="0.01" min="0" value="${invoice.amount_ht || 0}" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="editTvaRate">Taux TVA (%)</label>
+            <input type="number" id="editTvaRate" step="0.01" min="0" max="100" value="${invoice.tva_rate || 20}">
+          </div>
+          
+          <div class="form-group checkbox-group">
+            <label>
+              <input type="checkbox" id="editNoTva" ${parseFloat(invoice.tva_rate || 0) === 0 ? 'checked' : ''}>
+              Pas de TVA
+            </label>
+          </div>
+          
+          <div class="form-group">
+            <label for="editStatus">Statut</label>
+            <select id="editStatus">
+              <option value="draft" ${invoice.status === 'draft' ? 'selected' : ''}>📝 Brouillon</option>
+              <option value="sent" ${invoice.status === 'sent' ? 'selected' : ''}>📤 Envoyée</option>
+              <option value="paid" ${invoice.status === 'paid' ? 'selected' : ''}>✅ Payée</option>
+              <option value="overdue" ${invoice.status === 'overdue' ? 'selected' : ''}>⚠️ En retard</option>
+              <option value="cancelled" ${invoice.status === 'cancelled' ? 'selected' : ''}>❌ Annulée</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="editDescription">Description *</label>
+          <textarea id="editDescription" rows="4" required>${invoice.description || ''}</textarea>
+        </div>
+        
+        <div class="invoice-preview-card">
+          <h4>💰 Aperçu des montants</h4>
+          <div class="preview-amounts">
+            <div class="amount-row">
+              <span>Montant HT:</span>
+              <strong id="previewHt">${parseFloat(invoice.amount_ht || 0).toFixed(2)}€</strong>
+            </div>
+            <div class="amount-row">
+              <span>TVA (<span id="previewTvaRate">${parseFloat(invoice.tva_rate || 20)}</span>%):</span>
+              <strong id="previewTva">${parseFloat(invoice.amount_tva || 0).toFixed(2)}€</strong>
+            </div>
+            <div class="amount-row total-row">
+              <span>Total TTC:</span>
+              <strong id="previewTtc" class="total-amount">${parseFloat(invoice.amount_ttc || 0).toFixed(2)}€</strong>
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary cancel-btn">Annuler</button>
+          <button type="submit" class="btn btn-primary">💾 Enregistrer les modifications</button>
+        </div>
+      </form>
+    `, 'large');
+
+    // Configuration des event listeners après création de la modal
+    this.setupInvoiceEditForm(invoice);
+  }
+
+  setupInvoiceEditForm(invoice) {
+    const form = document.getElementById('editInvoiceForm');
+    const amountHt = document.getElementById('editAmountHt');
+    const tvaRate = document.getElementById('editTvaRate');
+    const noTva = document.getElementById('editNoTva');
+
+    // Fonction pour recalculer les montants
+    const updatePreview = () => {
+      const ht = parseFloat(amountHt.value) || 0;
+      const rate = noTva.checked ? 0 : (parseFloat(tvaRate.value) || 20);
+      const tva = Math.round(ht * (rate / 100) * 100) / 100;
+      const ttc = Math.round((ht + tva) * 100) / 100;
+
+      document.getElementById('previewHt').textContent = ht.toFixed(2) + '€';
+      document.getElementById('previewTvaRate').textContent = rate.toFixed(0);
+      document.getElementById('previewTva').textContent = tva.toFixed(2) + '€';
+      document.getElementById('previewTtc').textContent = ttc.toFixed(2) + '€';
+    };
+
+    // Event listeners pour les changements
+    amountHt.addEventListener('input', updatePreview);
+    tvaRate.addEventListener('input', updatePreview);
+    noTva.addEventListener('change', () => {
+      tvaRate.disabled = noTva.checked;
+      if (noTva.checked) {
+        tvaRate.value = 0;
+      } else {
+        tvaRate.value = 20;
+      }
+      updatePreview();
+    });
+
+    // Initialiser l'état de la checkbox TVA
+    tvaRate.disabled = noTva.checked;
+
+    // Soumission du formulaire
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      const originalText = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Enregistrement...';
+
+      try {
+        await this.updateInvoice(invoice.id, {
+          amount_ht: parseFloat(amountHt.value),
+          tva_rate: noTva.checked ? 0 : parseFloat(tvaRate.value),
+          description: document.getElementById('editDescription').value,
+          status: document.getElementById('editStatus').value
+        });
+        this.closeModal();
+      } catch (error) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+      }
+    });
+  }
+
+  async updateInvoice(id, data) {
+    try {
+      const response = await api.updateInvoice(id, data);
+      if (response.success) {
+        this.showNotification('Facture mise à jour avec succès', 'success');
+        // Recharger la liste des factures
+        if (this.currentTab === 'invoices') {
+          this.loadInvoices();
+        }
+      }
+    } catch (error) {
+      console.error('Update invoice error:', error);
+      this.showNotification(error.message || 'Erreur lors de la mise à jour', 'error');
+      throw error;
+    }
+  }
 }
 
 // Initialize admin app when DOM is loaded

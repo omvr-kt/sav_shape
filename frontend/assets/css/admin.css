@@ -1273,3 +1273,218 @@ input[type="checkbox"] {
   from { opacity: 1; }
   to { opacity: 0.7; }
 }
+
+/* Styles pour les modals de factures */
+.invoice-info-card {
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.card-header {
+  padding: 20px;
+  border-bottom: 1px solid #e9ecef;
+  background: white;
+  border-radius: 8px 8px 0 0;
+}
+
+.invoice-header-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.invoice-number {
+  color: #007bff;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0;
+}
+
+.invoice-dates p {
+  margin: 5px 0;
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.card-section {
+  padding: 20px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.card-section:last-child {
+  border-bottom: none;
+  border-radius: 0 0 8px 8px;
+}
+
+.card-section h4 {
+  margin: 0 0 15px 0;
+  color: #495057;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.client-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 10px;
+}
+
+.info-item {
+  padding: 8px 12px;
+  background: white;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+}
+
+.description-content {
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 15px;
+  min-height: 60px;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.financial-details {
+  background: white;
+  border-radius: 6px;
+  padding: 15px;
+  border: 1px solid #dee2e6;
+}
+
+.amount-line {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+.amount-line:last-child {
+  border-bottom: none;
+}
+
+.total-line {
+  border-top: 2px solid #007bff;
+  padding-top: 12px;
+  margin-top: 8px;
+  font-size: 18px;
+}
+
+.amount {
+  color: #28a745;
+  font-weight: 600;
+}
+
+.amount-total {
+  color: #dc3545;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+/* Status badges */
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-draft {
+  background: #ffc107;
+  color: #212529;
+}
+
+.status-sent {
+  background: #17a2b8;
+  color: white;
+}
+
+.status-paid {
+  background: #28a745;
+  color: white;
+}
+
+.status-overdue {
+  background: #dc3545;
+  color: white;
+}
+
+.status-cancelled {
+  background: #6c757d;
+  color: white;
+}
+
+/* Styles pour la modal d'édition */
+.invoice-preview-card {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 20px;
+  margin: 20px 0;
+  border: 1px solid #e9ecef;
+}
+
+.invoice-preview-card h4 {
+  margin: 0 0 15px 0;
+  color: #495057;
+  font-weight: 600;
+}
+
+.preview-amounts {
+  background: white;
+  border-radius: 4px;
+  padding: 15px;
+  border: 1px solid #dee2e6;
+}
+
+.amount-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+.amount-row:last-child {
+  border-bottom: none;
+}
+
+.total-row {
+  border-top: 2px solid #007bff;
+  margin-top: 10px;
+  padding-top: 12px;
+  font-size: 16px;
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+}
+
+.checkbox-group label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0;
+  font-weight: normal;
+  cursor: pointer;
+}
+
+.checkbox-group input[type="checkbox"] {
+  margin-right: 8px;
+  width: auto;
+}
+
+.modal-actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.modal-actions .btn {
+  min-width: 120px;
+}

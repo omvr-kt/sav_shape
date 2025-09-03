@@ -294,6 +294,32 @@ const runMigrations = async () => {
         await db.run('ALTER TABLE invoices ADD COLUMN amount_ttc DECIMAL(10,2) DEFAULT 0');
         console.log('✅ Added amount_ttc column to invoices table');
       }
+
+      // Check if client billing info columns exist
+      const hasClientName = invoicesTableInfo.some(col => col.name === 'client_first_name');
+      const hasClientLastName = invoicesTableInfo.some(col => col.name === 'client_last_name');
+      const hasClientEmail = invoicesTableInfo.some(col => col.name === 'client_email');
+      const hasClientCompany = invoicesTableInfo.some(col => col.name === 'client_company');
+
+      if (!hasClientName) {
+        await db.run('ALTER TABLE invoices ADD COLUMN client_first_name TEXT');
+        console.log('✅ Added client_first_name column to invoices table');
+      }
+      
+      if (!hasClientLastName) {
+        await db.run('ALTER TABLE invoices ADD COLUMN client_last_name TEXT');
+        console.log('✅ Added client_last_name column to invoices table');
+      }
+      
+      if (!hasClientEmail) {
+        await db.run('ALTER TABLE invoices ADD COLUMN client_email TEXT');
+        console.log('✅ Added client_email column to invoices table');
+      }
+      
+      if (!hasClientCompany) {
+        await db.run('ALTER TABLE invoices ADD COLUMN client_company TEXT');
+        console.log('✅ Added client_company column to invoices table');
+      }
     }
   } catch (error) {
     console.error('❌ Migration error:', error);

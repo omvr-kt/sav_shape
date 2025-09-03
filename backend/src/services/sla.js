@@ -1,6 +1,7 @@
 const Ticket = require('../models/Ticket');
 const User = require('../models/User');
 const emailService = require('./email');
+const businessHours = require('../utils/business-hours');
 
 class SLAService {
   constructor() {
@@ -35,7 +36,13 @@ class SLAService {
     try {
       console.log('🔍 Vérification des SLAs...');
       
+      // Ne vérifier les SLA que pendant les horaires de bureau
       const now = new Date();
+      if (!businessHours.isBusinessTime(now)) {
+        console.log('⏰ Hors horaires de bureau - vérification SLA suspendue');
+        return;
+      }
+
       const warningTime = new Date(now.getTime() + this.warningThreshold);
 
       // Get tickets that need attention
@@ -62,7 +69,7 @@ class SLAService {
   async getOverdueTickets() {
     const { db } = require('../utils/database');
     
-    return await db.all(`
+    const allTickets = await db.all(`
       SELECT 
         t.*,
         u.email as client_email,
@@ -72,10 +79,16 @@ class SLAService {
       FROM tickets t
       LEFT JOIN users u ON t.client_id = u.id
       LEFT JOIN projects p ON t.project_id = p.id
-      WHERE t.sla_deadline < datetime('now', 'localtime') 
+      WHERE t.sla_deadline IS NOT NULL
         AND t.status NOT IN ('resolved', 'closed')
         AND (t.sla_notified_overdue = 0 OR t.sla_notified_overdue IS NULL)
     `);
+    
+    // Filtrer selon les horaires de bureau
+    return allTickets.filter(ticket => {
+      const deadline = new Date(ticket.sla_deadline);
+      return businessHours.isSLAOverdue(deadline);
+    });
   }
 
   async getWarningTickets(warningTime) {

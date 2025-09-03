@@ -1,4 +1,5 @@
 const { db } = require('../utils/database');
+const businessHours = require('../utils/business-hours');
 
 class Ticket {
   static async create(ticketData) {
@@ -86,7 +87,16 @@ class Ticket {
 
     query += ' ORDER BY t.created_at DESC';
     
-    return await db.all(query, params);
+    const tickets = await db.all(query, params);
+    
+    // Recalculer is_overdue selon les horaires de bureau
+    return tickets.map(ticket => {
+      if (ticket.sla_deadline && ticket.status !== 'resolved' && ticket.status !== 'closed') {
+        const deadline = new Date(ticket.sla_deadline);
+        ticket.is_overdue = businessHours.isSLAOverdue(deadline) ? 1 : 0;
+      }
+      return ticket;
+    });
   }
 
   static async update(id, updates) {
@@ -141,13 +151,13 @@ class Ticket {
       }
     }
 
-    const deadline = new Date();
-    deadline.setHours(deadline.getHours() + hours);
+    // Calculer la deadline en respectant les horaires de bureau (9h-18h, lun-ven)
+    const deadline = businessHours.calculateSLADeadline(hours);
     return deadline.toISOString();
   }
 
   static async getOverdueTickets() {
-    return await db.all(`
+    const allTickets = await db.all(`
       SELECT 
         t.*,
         u.first_name as client_first_name,
@@ -157,10 +167,16 @@ class Ticket {
       FROM tickets t
       LEFT JOIN users u ON t.client_id = u.id
       LEFT JOIN projects p ON t.project_id = p.id
-      WHERE t.sla_deadline < datetime('now', 'localtime') 
+      WHERE t.sla_deadline IS NOT NULL
         AND t.status NOT IN ('resolved', 'closed')
       ORDER BY t.sla_deadline ASC
     `);
+    
+    // Filtrer selon les horaires de bureau
+    return allTickets.filter(ticket => {
+      const deadline = new Date(ticket.sla_deadline);
+      return businessHours.isSLAOverdue(deadline);
+    });
   }
 
   static async getTicketStats() {

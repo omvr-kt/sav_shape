@@ -215,29 +215,8 @@ const createIndexes = async () => {
 };
 
 const createDefaultAdmin = async () => {
-  const bcrypt = require('bcryptjs');
-  
-  const adminExists = await db.get('SELECT id FROM users WHERE email = ? AND role = ?', 
-    ['admin@agency.local', 'admin']);
-  
-  if (!adminExists) {
-    const hashedPassword = await bcrypt.hash('admin123', 12);
-    
-    await db.run(`
-      INSERT INTO users (email, password, password_hash, role, first_name, last_name, company)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `, [
-      'admin@agency.local',
-      hashedPassword,
-      hashedPassword,
-      'admin',
-      'Super',
-      'Admin',
-      'Agence'
-    ]);
-    
-    console.log('✅ Default admin created: admin@agency.local / admin123');
-  }
+  // Admin uniquement créé par setup.js maintenant
+  // Cette fonction ne fait plus rien
 };
 
 const runMigrations = async () => {

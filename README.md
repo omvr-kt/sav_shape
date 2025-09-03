@@ -58,7 +58,7 @@ Une plateforme complète de gestion de tickets et de suivi de projet développé
 ## 📁 Structure du Projet
 
 ```
-saas_sav/
+sav_shape/
 ├── backend/
 │   ├── src/
 │   │   ├── models/          # Modèles de données (User, Ticket, etc.)
@@ -73,9 +73,12 @@ saas_sav/
 ├── frontend/
 │   ├── admin/               # Interface agence
 │   ├── client/              # Interface client
-│   ├── public/              # Page d'accueil
-│   └── assets/              # CSS/JS partagés
-└── docs/
+│   ├── assets/              # CSS/JS partagés
+│   └── connexion.html       # Page de connexion unifiée
+├── scripts/
+│   ├── create_admin.js      # Script création admin
+│   └── create_test_clients.js # Script création clients test
+└── cahier_des_charges.md    # Spécifications complètes
 ```
 
 ## 🔧 API Endpoints

@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const { formatParisDate } = require('../utils/timezone');
 
 class EmailService {
   constructor() {
@@ -195,7 +196,7 @@ class EmailService {
   }
 
   formatDate(dateString) {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
+    return formatParisDate(dateString, {
       year: 'numeric',
       month: 'long',
       day: 'numeric',

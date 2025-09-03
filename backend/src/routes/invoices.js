@@ -207,12 +207,12 @@ router.put('/:id/status', [
   const invoiceId = parseInt(req.params.id);
   const { status } = req.body;
 
-  let updateSql = 'UPDATE invoices SET status = ?, updated_at = CURRENT_TIMESTAMP';
+  let updateSql = 'UPDATE invoices SET status = ?, updated_at = datetime(\'now\', \'localtime\')';
   let params = [status];
 
   // Si le statut est "paid", ajouter la date de paiement
   if (status === 'paid') {
-    updateSql += ', paid_date = CURRENT_TIMESTAMP';
+    updateSql += ', paid_date = datetime(\'now\', \'localtime\')';
   }
 
   updateSql += ' WHERE id = ?';

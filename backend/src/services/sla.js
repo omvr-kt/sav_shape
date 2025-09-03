@@ -72,7 +72,7 @@ class SLAService {
       FROM tickets t
       LEFT JOIN users u ON t.client_id = u.id
       LEFT JOIN projects p ON t.project_id = p.id
-      WHERE t.sla_deadline < datetime('now') 
+      WHERE t.sla_deadline < datetime('now', 'localtime') 
         AND t.status NOT IN ('resolved', 'closed')
         AND (t.sla_notified_overdue = 0 OR t.sla_notified_overdue IS NULL)
     `);
@@ -92,7 +92,7 @@ class SLAService {
       LEFT JOIN users u ON t.client_id = u.id
       LEFT JOIN projects p ON t.project_id = p.id
       WHERE t.sla_deadline < ? 
-        AND t.sla_deadline > datetime('now')
+        AND t.sla_deadline > datetime('now', 'localtime')
         AND t.status NOT IN ('resolved', 'closed')
         AND (t.sla_notified_warning = 0 OR t.sla_notified_warning IS NULL)
     `, [warningTime.toISOString()]);
@@ -242,8 +242,8 @@ class SLAService {
     const stats = await db.get(`
       SELECT 
         COUNT(*) as total_tickets,
-        COUNT(CASE WHEN sla_deadline < datetime('now') AND status NOT IN ('resolved', 'closed') THEN 1 END) as overdue_count,
-        COUNT(CASE WHEN sla_deadline > datetime('now') AND sla_deadline < datetime('now', '+2 hours') AND status NOT IN ('resolved', 'closed') THEN 1 END) as warning_count,
+        COUNT(CASE WHEN sla_deadline < datetime('now', 'localtime') AND status NOT IN ('resolved', 'closed') THEN 1 END) as overdue_count,
+        COUNT(CASE WHEN sla_deadline > datetime('now', 'localtime') AND sla_deadline < datetime('now', 'localtime', '+2 hours') AND status NOT IN ('resolved', 'closed') THEN 1 END) as warning_count,
         AVG(CASE WHEN status IN ('resolved', 'closed') 
           THEN (julianday(COALESCE(closed_at, updated_at)) - julianday(created_at)) * 24 
         END) as avg_resolution_hours,

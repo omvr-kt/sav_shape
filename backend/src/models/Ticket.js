@@ -44,7 +44,7 @@ class Ticket {
         assigned.first_name as assigned_first_name,
         assigned.last_name as assigned_last_name,
         CASE 
-          WHEN t.sla_deadline < datetime('now') AND t.status NOT IN ('resolved', 'closed') 
+          WHEN t.sla_deadline < datetime('now', 'localtime') AND t.status NOT IN ('resolved', 'closed') 
           THEN 1 ELSE 0 
         END as is_overdue
       FROM tickets t
@@ -157,7 +157,7 @@ class Ticket {
       FROM tickets t
       LEFT JOIN users u ON t.client_id = u.id
       LEFT JOIN projects p ON t.project_id = p.id
-      WHERE t.sla_deadline < datetime('now') 
+      WHERE t.sla_deadline < datetime('now', 'localtime') 
         AND t.status NOT IN ('resolved', 'closed')
       ORDER BY t.sla_deadline ASC
     `);
@@ -172,7 +172,7 @@ class Ticket {
         COUNT(CASE WHEN status = 'waiting_client' THEN 1 END) as waiting_client,
         COUNT(CASE WHEN status = 'resolved' THEN 1 END) as resolved,
         COUNT(CASE WHEN status = 'closed' THEN 1 END) as closed,
-        COUNT(CASE WHEN sla_deadline < datetime('now') AND status NOT IN ('resolved', 'closed') THEN 1 END) as overdue
+        COUNT(CASE WHEN sla_deadline < datetime('now', 'localtime') AND status NOT IN ('resolved', 'closed') THEN 1 END) as overdue
       FROM tickets
     `);
 

@@ -342,15 +342,11 @@ class ProfileApp {
   }
 
   formatDate(dateString) {
-    try {
-      return new Date(dateString).toLocaleDateString('fr-FR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-    } catch {
-      return dateString;
-    }
+    return formatParisDate(dateString, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
   }
 
   async handleLogout() {

@@ -1,5 +1,6 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const { getSQLiteParisDateTime } = require('./timezone');
 
 const DB_PATH = path.join(__dirname, '../../database.sqlite');
 
@@ -81,8 +82,8 @@ const initDatabase = async () => {
         company TEXT,
         phone TEXT,
         is_active BOOLEAN DEFAULT 1,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+        updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
       )
     `);
 
@@ -93,8 +94,8 @@ const initDatabase = async () => {
         description TEXT,
         client_id INTEGER NOT NULL,
         status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'paused', 'completed', 'archived')),
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+        updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
         FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `);
@@ -106,7 +107,7 @@ const initDatabase = async () => {
         priority TEXT NOT NULL CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
         response_time_hours INTEGER NOT NULL,
         resolution_time_hours INTEGER NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at DATETIME DEFAULT (datetime('now', 'localtime')),
         FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE,
         UNIQUE(client_id, priority)
       )
@@ -123,8 +124,8 @@ const initDatabase = async () => {
         project_id INTEGER NOT NULL,
         assigned_to INTEGER,
         sla_deadline DATETIME,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+        updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
         closed_at DATETIME,
         sla_notified_warning BOOLEAN DEFAULT 0,
         sla_notified_overdue BOOLEAN DEFAULT 0,
@@ -141,7 +142,7 @@ const initDatabase = async () => {
         user_id INTEGER NOT NULL,
         content TEXT NOT NULL,
         is_internal BOOLEAN DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at DATETIME DEFAULT (datetime('now', 'localtime')),
         FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
@@ -158,7 +159,7 @@ const initDatabase = async () => {
         file_size INTEGER NOT NULL,
         mime_type TEXT NOT NULL,
         uploaded_by INTEGER NOT NULL,
-        uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        uploaded_at DATETIME DEFAULT (datetime('now', 'localtime')),
         FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
         FOREIGN KEY (comment_id) REFERENCES ticket_comments(id) ON DELETE CASCADE,
         FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE CASCADE,
@@ -176,7 +177,7 @@ const initDatabase = async () => {
         can_edit_tickets BOOLEAN DEFAULT 0,
         can_assign_tickets BOOLEAN DEFAULT 0,
         can_close_tickets BOOLEAN DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at DATETIME DEFAULT (datetime('now', 'localtime')),
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
         UNIQUE(user_id, project_id)

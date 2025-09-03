@@ -572,7 +572,7 @@ class AdminApp {
                 <div class="comment-item ${comment.is_internal ? 'comment-internal' : ''}">
                   <div class="comment-header">
                     <span class="comment-author">${comment.author_name}</span>
-                    <span class="comment-date">${api.formatDateTime(comment.created_at)}</span>
+                    <span class="comment-date" data-date="${comment.created_at}">${api.formatDateTime(comment.created_at)}</span>
                     ${comment.is_internal ? '<span class="internal-badge">Interne</span>' : ''}
                   </div>
                   <div class="comment-content">
@@ -2137,6 +2137,9 @@ class AdminApp {
     `;
 
     document.body.appendChild(modal);
+    
+    // Mettre à jour les dates avec le bon fuseau horaire après injection DOM
+    updateAllDatesInDOM();
     
     // Ajouter event listeners pour fermer le modal
     const overlay = modal.querySelector('.modal-overlay');

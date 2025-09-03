@@ -534,7 +534,7 @@ class ClientApp {
                 <div class="comment-client ${comment.is_internal ? 'comment-internal' : ''}">
                   <div class="comment-author-client">
                     <span class="author-name">${comment.author_name}</span>
-                    <span class="comment-date-client">${api.formatDateTime(comment.created_at)}</span>
+                    <span class="comment-date-client" data-date="${comment.created_at}">${api.formatDateTime(comment.created_at)}</span>
                     ${comment.is_internal ? '<span class="internal-badge-client">Interne</span>' : ''}
                   </div>
                   <div class="comment-text-client">
@@ -992,6 +992,9 @@ class ClientApp {
     `;
 
     document.body.appendChild(modal);
+    
+    // Mettre à jour les dates avec le bon fuseau horaire après injection DOM
+    updateAllDatesInDOM();
     
     // Focus trap
     setTimeout(() => {

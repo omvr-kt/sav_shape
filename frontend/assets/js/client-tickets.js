@@ -699,7 +699,7 @@ class TicketsApp {
               <span class="author-icon">${comment.author_name === this.currentUser.email ? '👤' : '🛠️'}</span>
               <span class="author-name">${comment.author_name === this.currentUser.email ? 'Vous' : 'Support'}</span>
             </div>
-            <div class="comment-date">${api.formatDateTime(comment.created_at)}</div>
+            <div class="comment-date" data-date="${comment.created_at}">${api.formatDateTime(comment.created_at)}</div>
           </div>
           <div class="comment-message">${comment.content}</div>
         </div>
@@ -711,6 +711,9 @@ class TicketsApp {
           ${commentsHtml}
         </div>
       `;
+      
+      // Mettre à jour les dates avec le bon fuseau horaire après injection DOM
+      updateAllDatesInDOM();
     } catch (error) {
       console.error('Error loading comments:', error);
       container.innerHTML = `

@@ -65,6 +65,19 @@ router.get('/:id', verifyToken, validateId, async (req, res) => {
       });
     }
 
+    // Déchiffrer le fichier confidentiel si autorisé
+    if (user.confidential_file && (req.user.role === 'admin' || req.user.id === user.id)) {
+      try {
+        const encryptionService = require('../services/encryptionService');
+        const parts = user.confidential_file.split(':');
+        if (parts.length === 2) {
+          user.confidential_file_decrypted = encryptionService.decrypt(parts[0], parts[1]);
+        }
+      } catch (decryptError) {
+        console.error('Error decrypting confidential file:', decryptError);
+      }
+    }
+
     res.json({
       success: true,
       data: { user }
@@ -151,6 +164,7 @@ router.put('/:id', verifyToken, validateId, async (req, res) => {
     if (req.user.role !== 'admin') {
       delete updates.is_active;
       delete updates.role;
+      delete updates.confidential_file;
     }
 
     const updatedUser = await User.update(userId, updates);

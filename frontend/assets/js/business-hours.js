@@ -1,11 +1,11 @@
 /**
  * Utilitaires pour la gestion des heures ouvrables
- * Heures de travail : 8h-18h du lundi au vendredi
+ * Heures de travail : 9h-18h du lundi au vendredi
  */
 
 class BusinessHours {
   constructor() {
-    this.START_HOUR = 8;  // 8h du matin
+    this.START_HOUR = 9;  // 9h du matin
     this.END_HOUR = 18;   // 18h (6h du soir)
     this.WORK_DAYS = [1, 2, 3, 4, 5]; // Lundi à vendredi (0 = dimanche, 6 = samedi)
   }
@@ -43,16 +43,16 @@ class BusinessHours {
     // Si c'est un jour ouvrable mais hors horaires
     if (this.WORK_DAYS.includes(dayOfWeek)) {
       if (hour < this.START_HOUR) {
-        // Avant 8h : aller à 8h le même jour
+        // Avant 9h : aller à 9h le même jour
         nextTime.setHours(this.START_HOUR, 0, 0, 0);
       } else {
-        // Après 18h : aller à 8h le prochain jour ouvrable
+        // Après 18h : aller à 9h le prochain jour ouvrable
         nextTime.setDate(nextTime.getDate() + 1);
         nextTime.setHours(this.START_HOUR, 0, 0, 0);
         return this.getNextBusinessTime(nextTime);
       }
     } else {
-      // Weekend : aller au prochain lundi à 8h
+      // Weekend : aller au prochain lundi à 9h
       const daysUntilMonday = (8 - dayOfWeek) % 7 || 7;
       nextTime.setDate(nextTime.getDate() + daysUntilMonday);
       nextTime.setHours(this.START_HOUR, 0, 0, 0);
@@ -83,7 +83,7 @@ class BusinessHours {
         // Après 18h : aller à 18h le même jour
         prevTime.setHours(this.END_HOUR - 1, 59, 59, 999);
       } else {
-        // Avant 8h : aller à 18h le jour ouvrable précédent
+        // Avant 9h : aller à 18h le jour ouvrable précédent
         prevTime.setDate(prevTime.getDate() - 1);
         prevTime.setHours(this.END_HOUR - 1, 59, 59, 999);
         return this.getPreviousBusinessTime(prevTime);
@@ -133,7 +133,7 @@ class BusinessHours {
         }
       }
       
-      // Passer au jour suivant à 8h
+      // Passer au jour suivant à 9h
       current.setDate(current.getDate() + 1);
       current.setHours(this.START_HOUR, 0, 0, 0);
     }
@@ -154,7 +154,7 @@ class BusinessHours {
 
     let current = this.getNextBusinessTime(new Date(startDate));
     let remainingHours = hoursToAdd;
-    const HOURS_PER_DAY = this.END_HOUR - this.START_HOUR; // 10 heures par jour
+    const HOURS_PER_DAY = this.END_HOUR - this.START_HOUR; // 9 heures par jour
 
     while (remainingHours > 0) {
       const hoursLeftInDay = Math.min(
@@ -203,8 +203,8 @@ class BusinessHours {
     // Si on est passé la deadline
     if (now >= deadline) {
       const overdueHours = this.getBusinessHoursBetween(deadline, now);
-      const days = Math.floor(overdueHours / 10); // 10h par jour ouvrable
-      const hours = Math.floor(overdueHours % 10);
+      const days = Math.floor(overdueHours / 9); // 9h par jour ouvrable
+      const hours = Math.floor(overdueHours % 9);
       
       if (days > 0) {
         return `En retard de ${days}j ${hours}h`;
@@ -215,8 +215,8 @@ class BusinessHours {
     
     // Temps restant jusqu'à la deadline
     const remainingHours = this.getBusinessHoursBetween(now, deadline);
-    const days = Math.floor(remainingHours / 10); // 10h par jour ouvrable
-    const hours = Math.floor(remainingHours % 10);
+    const days = Math.floor(remainingHours / 9); // 9h par jour ouvrable
+    const hours = Math.floor(remainingHours % 9);
     
     if (days > 0) {
       return `${days}j ${hours}h restantes`;

@@ -85,11 +85,18 @@ class TicketsApp {
 
     // Profile and logout buttons
     const profileBtn = document.getElementById('profileBtn');
+    const confidentialFileBtn = document.getElementById('confidentialFileBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     
     if (profileBtn) {
       profileBtn.addEventListener('click', () => {
         window.location.href = '/client/profile.html';
+      });
+    }
+
+    if (confidentialFileBtn) {
+      confidentialFileBtn.addEventListener('click', () => {
+        window.location.href = '/mon-fichier-confidentiel.html';
       });
     }
 

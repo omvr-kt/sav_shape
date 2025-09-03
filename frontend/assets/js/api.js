@@ -293,6 +293,51 @@ class ApiClient {
   getPriorityClass(priority) {
     return `priority-${priority}`;
   }
+
+  // === INVOICES ===
+  async getInvoices(filters = {}) {
+    const params = new URLSearchParams();
+    if (filters.status) params.append('status', filters.status);
+    if (filters.client_id) params.append('client_id', filters.client_id);
+    
+    const url = `/invoices${params.toString() ? `?${params.toString()}` : ''}`;
+    return this.request(url);
+  }
+
+  async getInvoice(id) {
+    return this.request(`/invoices/${id}`);
+  }
+
+  async createInvoice(invoiceData) {
+    return this.request('/invoices', {
+      method: 'POST',
+      body: JSON.stringify(invoiceData)
+    });
+  }
+
+  async updateInvoice(id, data) {
+    return this.request(`/invoices/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async updateInvoiceStatus(id, status) {
+    return this.request(`/invoices/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status })
+    });
+  }
+
+  async deleteInvoice(id) {
+    return this.request(`/invoices/${id}`, {
+      method: 'DELETE'
+    });
+  }
+
+  async getClientInvoices(clientId) {
+    return this.request(`/invoices/client/${clientId}`);
+  }
 }
 
 // Global instance

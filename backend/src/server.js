@@ -129,6 +129,10 @@ app.get('/client/profile', (req, res) => {
   res.sendFile(path.join(__dirname, '../../frontend/client/profile.html'));
 });
 
+app.get('/client/invoices', (req, res) => {
+  res.sendFile(path.join(__dirname, '../../frontend/client/invoices.html'));
+});
+
 app.get('/test-navigation', (req, res) => {
   res.sendFile(path.join(__dirname, '../../frontend/test-navigation.html'));
 });

@@ -236,6 +236,65 @@ const runMigrations = async () => {
       await db.run('ALTER TABLE tickets ADD COLUMN sla_notified_overdue BOOLEAN DEFAULT 0');
       console.log('✅ Added sla_notified_overdue column');
     }
+
+    // Check if confidential_file column exists in users table
+    const usersTableInfo = await db.all("PRAGMA table_info(users)");
+    const hasConfidentialCol = usersTableInfo.some(col => col.name === 'confidential_file');
+    
+    if (!hasConfidentialCol) {
+      await db.run('ALTER TABLE users ADD COLUMN confidential_file TEXT');
+      console.log('✅ Added confidential_file column to users table');
+    }
+
+    // Check if invoices table exists, create if not
+    const invoicesTableInfo = await db.all("PRAGMA table_info(invoices)").catch(() => []);
+    if (invoicesTableInfo.length === 0) {
+      await db.run(`
+        CREATE TABLE invoices (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          invoice_number TEXT UNIQUE NOT NULL,
+          client_id INTEGER NOT NULL,
+          amount_ht DECIMAL(10,2) NOT NULL,
+          tva_rate DECIMAL(5,2) DEFAULT 20.00,
+          amount_tva DECIMAL(10,2) NOT NULL,
+          amount_ttc DECIMAL(10,2) NOT NULL,
+          description TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'sent', 'paid', 'overdue', 'cancelled')),
+          due_date DATE,
+          paid_date DATETIME,
+          created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+          updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
+          FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+      console.log('✅ Created invoices table');
+    } else {
+      // Check if new columns exist in invoices table
+      const hasAmountHT = invoicesTableInfo.some(col => col.name === 'amount_ht');
+      const hasTVARate = invoicesTableInfo.some(col => col.name === 'tva_rate');
+      const hasAmountTVA = invoicesTableInfo.some(col => col.name === 'amount_tva');
+      const hasAmountTTC = invoicesTableInfo.some(col => col.name === 'amount_ttc');
+      
+      if (!hasAmountHT) {
+        await db.run('ALTER TABLE invoices ADD COLUMN amount_ht DECIMAL(10,2) DEFAULT 0');
+        console.log('✅ Added amount_ht column to invoices table');
+      }
+      
+      if (!hasTVARate) {
+        await db.run('ALTER TABLE invoices ADD COLUMN tva_rate DECIMAL(5,2) DEFAULT 20.00');
+        console.log('✅ Added tva_rate column to invoices table');
+      }
+      
+      if (!hasAmountTVA) {
+        await db.run('ALTER TABLE invoices ADD COLUMN amount_tva DECIMAL(10,2) DEFAULT 0');
+        console.log('✅ Added amount_tva column to invoices table');
+      }
+      
+      if (!hasAmountTTC) {
+        await db.run('ALTER TABLE invoices ADD COLUMN amount_ttc DECIMAL(10,2) DEFAULT 0');
+        console.log('✅ Added amount_ttc column to invoices table');
+      }
+    }
   } catch (error) {
     console.error('❌ Migration error:', error);
   }

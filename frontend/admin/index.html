@@ -35,6 +35,7 @@
                         <li><a href="#tickets" class="nav-tab" data-tab="tickets">🎫 Tickets</a></li>
                         <li><a href="#projects" class="nav-tab" data-tab="projects">📁 Projets</a></li>
                         <li><a href="#clients" class="nav-tab" data-tab="clients">👥 Clients</a></li>
+                        <li><a href="#invoices" class="nav-tab" data-tab="invoices">🧾 Facturation</a></li>
                     </ul>
                 </div>
             </nav>
@@ -131,6 +132,49 @@
                         </div>
                     </div>
 
+                    <!-- Invoices Tab -->
+                    <div id="invoices" class="tab-content">
+                        <div class="section-header">
+                            <h2>Gestion de la Facturation</h2>
+                            <div class="header-actions">
+                                <select id="invoiceStatusFilter" class="filter-select">
+                                    <option value="">Tous les statuts</option>
+                                    <option value="draft">Brouillon</option>
+                                    <option value="sent">Envoyée</option>
+                                    <option value="paid">Payée</option>
+                                    <option value="overdue">En retard</option>
+                                    <option value="cancelled">Annulée</option>
+                                </select>
+                                <button id="refreshInvoices" class="btn btn-secondary btn-sm">🔄 Actualiser</button>
+                            </div>
+                        </div>
+                        
+                        <div class="invoices-summary">
+                            <div class="stats-row">
+                                <div class="stat-item">
+                                    <span class="stat-value" id="totalInvoicesCount">0</span>
+                                    <span class="stat-label">Total factures</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-value" id="paidInvoicesAmount">0€</span>
+                                    <span class="stat-label">Montant payé</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-value" id="pendingInvoicesAmount">0€</span>
+                                    <span class="stat-label">En attente</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-value" id="overdueInvoicesCount">0</span>
+                                    <span class="stat-label">En retard</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="invoicesList" class="data-table-container">
+                            <div class="loading">Chargement des factures...</div>
+                        </div>
+                    </div>
+
                 </div>
             </main>
         </div>
@@ -139,6 +183,8 @@
     <!-- Modals will be injected here -->
     <div id="modalContainer"></div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="/assets/js/pdf-generator.js?v=1756813750"></script>
     <script src="/assets/js/api.js?v=1756813750"></script>
     <script src="/assets/js/admin.js?v=1756813750"></script>
 </body>

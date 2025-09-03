@@ -6,6 +6,57 @@ const { handleValidationErrors } = require('../middleware/validation');
 const sqlite3 = require('sqlite3').verbose();
 const db = new sqlite3.Database('saas.db');
 
+// GET /api/invoices - Récupérer toutes les factures (admin) ou les factures du client
+router.get('/', verifyToken, (req, res) => {
+  const { status, client_id } = req.query;
+  
+  let sql = `
+    SELECT i.*, u.first_name, u.last_name, u.email, u.company
+    FROM invoices i
+    JOIN users u ON i.client_id = u.id
+  `;
+  
+  const conditions = [];
+  const params = [];
+  
+  // Si c'est un client, il ne peut voir que ses factures
+  if (req.user.role === 'client') {
+    conditions.push('i.client_id = ?');
+    params.push(req.user.userId);
+  } else if (client_id) {
+    // Admin peut filtrer par client_id
+    conditions.push('i.client_id = ?');
+    params.push(client_id);
+  }
+  
+  // Filtre par statut
+  if (status) {
+    conditions.push('i.status = ?');
+    params.push(status);
+  }
+  
+  if (conditions.length > 0) {
+    sql += ' WHERE ' + conditions.join(' AND ');
+  }
+  
+  sql += ' ORDER BY i.created_at DESC';
+  
+  db.all(sql, params, (err, invoices) => {
+    if (err) {
+      console.error('Erreur récupération factures:', err);
+      return res.status(500).json({
+        success: false,
+        message: 'Erreur serveur'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: { invoices }
+    });
+  });
+});
+
 /**
  * Génère un numéro de facture unique
  */
@@ -14,7 +65,19 @@ function generateInvoiceNumber() {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const timestamp = Date.now().toString().slice(-6);
-  return `INV-${year}${month}-${timestamp}`;
+  return `SHAPE-${year}${month}-${timestamp}`;
+}
+
+/**
+ * Calcule les montants TVA
+ */
+function calculateTVA(amountHT, tvaRate = 20.00) {
+  const amountTVA = Math.round(amountHT * (tvaRate / 100) * 100) / 100;
+  const amountTTC = Math.round((amountHT + amountTVA) * 100) / 100;
+  return { 
+    amount_tva: amountTVA, 
+    amount_ttc: amountTTC 
+  };
 }
 
 /**
@@ -57,33 +120,6 @@ async function createAutomaticInvoice(clientId, quoteFile = null, specifications
   });
 }
 
-// GET /api/invoices - Récupérer toutes les factures (admin uniquement)
-router.get('/', verifyToken, requireAdmin, (req, res) => {
-
-  const sql = `
-    SELECT i.*, u.first_name, u.last_name, u.email, u.company
-    FROM invoices i
-    JOIN users u ON i.client_id = u.id
-    ORDER BY i.created_at DESC
-  `;
-
-  db.all(sql, [], (err, rows) => {
-    if (err) {
-      console.error('Erreur récupération factures:', err);
-      return res.status(500).json({
-        success: false,
-        message: 'Erreur serveur'
-      });
-    }
-
-    res.json({
-      success: true,
-      data: {
-        invoices: rows
-      }
-    });
-  });
-});
 
 // GET /api/invoices/client/:clientId - Récupérer les factures d'un client
 router.get('/client/:clientId', verifyToken, (req, res) => {
@@ -172,20 +208,72 @@ router.post('/', [
   verifyToken,
   requireAdmin,
   body('client_id').isInt({ min: 1 }).withMessage('ID client invalide'),
-  body('amount').optional().isFloat({ min: 0 }).withMessage('Montant invalide'),
-  body('description').optional().trim().isLength({ max: 1000 }).withMessage('Description trop longue'),
+  body('amount_ht').isFloat({ min: 0 }).withMessage('Montant HT invalide'),
+  body('description').trim().isLength({ min: 1, max: 1000 }).withMessage('Description requise (max 1000 caractères)'),
+  body('tva_rate').optional().isFloat({ min: 0, max: 100 }).withMessage('Taux TVA invalide'),
+  body('no_tva').optional().isBoolean().withMessage('Paramètre no_tva invalide'),
   handleValidationErrors
 ], async (req, res) => {
 
-  const { client_id, amount, description, quote_file, specifications_file } = req.body;
+  const { client_id, amount_ht, description, tva_rate = 20.00, no_tva = false } = req.body;
 
   try {
-    const invoice = await createAutomaticInvoice(client_id, quote_file, specifications_file, amount, description);
+    // Calculer la TVA
+    const finalTvaRate = no_tva ? 0 : tva_rate;
+    const { amount_tva, amount_ttc } = calculateTVA(amount_ht, finalTvaRate);
     
-    res.status(201).json({
-      success: true,
-      message: 'Facture créée avec succès',
-      data: { invoice }
+    const invoiceNumber = generateInvoiceNumber();
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 30);
+
+    const sql = `
+      INSERT INTO invoices (
+        invoice_number, client_id, amount_ht, tva_rate, amount_tva, amount_ttc, 
+        description, status, due_date
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', ?)
+    `;
+
+    db.run(sql, [
+      invoiceNumber, 
+      client_id, 
+      amount_ht, 
+      finalTvaRate, 
+      amount_tva, 
+      amount_ttc, 
+      description, 
+      dueDate.toISOString()
+    ], function(err) {
+      if (err) {
+        console.error('Erreur création facture:', err);
+        return res.status(500).json({
+          success: false,
+          message: 'Erreur lors de la création de la facture'
+        });
+      }
+
+      // Récupérer la facture créée avec les infos client
+      const getInvoiceSQL = `
+        SELECT i.*, u.first_name, u.last_name, u.email, u.company
+        FROM invoices i
+        JOIN users u ON i.client_id = u.id
+        WHERE i.id = ?
+      `;
+      
+      db.get(getInvoiceSQL, [this.lastID], (err, invoice) => {
+        if (err) {
+          return res.status(500).json({
+            success: false,
+            message: 'Erreur lors de la récupération de la facture'
+          });
+        }
+
+        res.status(201).json({
+          success: true,
+          message: 'Facture créée avec succès',
+          data: { invoice }
+        });
+      });
     });
   } catch (error) {
     console.error('Erreur création facture:', error);
@@ -265,6 +353,50 @@ router.delete('/:id', verifyToken, requireAdmin, (req, res) => {
     res.json({
       success: true,
       message: 'Facture supprimée avec succès'
+    });
+  });
+});
+
+
+// GET /api/invoices/:id/pdf - Télécharger la facture en PDF
+router.get('/:id/pdf', verifyToken, (req, res) => {
+  const invoiceId = parseInt(req.params.id);
+
+  const sql = `
+    SELECT i.*, u.first_name, u.last_name, u.email, u.company
+    FROM invoices i
+    JOIN users u ON i.client_id = u.id
+    WHERE i.id = ?
+  `;
+
+  db.get(sql, [invoiceId], (err, invoice) => {
+    if (err) {
+      console.error('Erreur récupération facture pour PDF:', err);
+      return res.status(500).json({
+        success: false,
+        message: 'Erreur serveur'
+      });
+    }
+
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        message: 'Facture non trouvée'
+      });
+    }
+
+    // Vérifier les permissions
+    if (req.user.role !== 'admin' && req.user.userId !== invoice.client_id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Accès refusé'
+      });
+    }
+
+    // Retourner les données pour génération PDF côté client
+    res.json({
+      success: true,
+      data: { invoice }
     });
   });
 });

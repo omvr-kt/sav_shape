@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mes Factures - Espace Client</title>
+    <link rel="stylesheet" href="/assets/css/main.css?v=1756818165">
+    <link rel="stylesheet" href="/assets/css/client.css?v=1756818165">
+    <script src="/assets/js/timezone-utils.js"></script>
+</head>
+<body>
+    <div id="app">
+        <div id="mainApp">
+            <!-- Header -->
+            <header class="client-header">
+                <div class="container">
+                    <div class="header-left">
+                        <h1>👤 Mon Espace Client</h1>
+                        <nav class="client-nav">
+                            <a href="/client/tickets.html" class="nav-link">🎫 Mes Tickets</a>
+                            <a href="/client/invoices.html" class="nav-link active">🧾 Mes Factures</a>
+                        </nav>
+                    </div>
+                    <div class="header-right">
+                        <div class="profile-menu">
+                            <div class="profile-avatar" id="profileAvatar">
+                                <span id="profileInitials"></span>
+                            </div>
+                            <div class="profile-dropdown" id="profileDropdown">
+                                <div class="profile-info">
+                                    <strong id="profileName"></strong>
+                                    <span id="profileEmail"></span>
+                                </div>
+                                <hr>
+                                <button id="profileBtn" class="dropdown-item">👤 Mon Profil</button>
+                                <button id="confidentialFileBtn" class="dropdown-item">🔒 Mon Fichier Confidentiel</button>
+                                <button id="logoutBtn" class="dropdown-item">🚪 Déconnexion</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="client-main">
+                <div class="container">
+                    <div class="invoices-header">
+                        <h2>🧾 Mes Factures</h2>
+                        <div class="header-actions">
+                            <select id="invoiceStatusFilter" class="filter-select">
+                                <option value="">Tous les statuts</option>
+                                <option value="draft">Brouillon</option>
+                                <option value="sent">Envoyée</option>
+                                <option value="paid">Payée</option>
+                                <option value="overdue">En retard</option>
+                            </select>
+                            <button id="refreshInvoices" class="btn btn-secondary btn-sm">🔄 Actualiser</button>
+                        </div>
+                    </div>
+
+                    <!-- Résumé des factures -->
+                    <div class="invoices-summary">
+                        <div class="summary-cards">
+                            <div class="summary-card">
+                                <div class="card-icon">📊</div>
+                                <div class="card-info">
+                                    <div class="card-value" id="totalInvoicesCount">0</div>
+                                    <div class="card-label">Total factures</div>
+                                </div>
+                            </div>
+                            <div class="summary-card">
+                                <div class="card-icon">✅</div>
+                                <div class="card-info">
+                                    <div class="card-value" id="paidAmount">0€</div>
+                                    <div class="card-label">Montant payé</div>
+                                </div>
+                            </div>
+                            <div class="summary-card">
+                                <div class="card-icon">⏳</div>
+                                <div class="card-info">
+                                    <div class="card-value" id="pendingAmount">0€</div>
+                                    <div class="card-label">En attente</div>
+                                </div>
+                            </div>
+                            <div class="summary-card overdue">
+                                <div class="card-icon">⚠️</div>
+                                <div class="card-info">
+                                    <div class="card-value" id="overdueAmount">0€</div>
+                                    <div class="card-label">En retard</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Liste des factures -->
+                    <div class="invoices-content">
+                        <div id="invoicesList" class="data-table-container">
+                            <div class="loading">Chargement des factures...</div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modals will be injected here -->
+    <div id="modalContainer"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="/assets/js/pdf-generator.js?v=1756818165"></script>
+    <script src="/assets/js/api.js?v=1756818165"></script>
+    <script src="/assets/js/client-invoices.js?v=1756818165"></script>
+</body>
+</html>

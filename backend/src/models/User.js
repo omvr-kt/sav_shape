@@ -47,14 +47,21 @@ class User {
   }
 
   static async update(id, updates) {
-    const allowedFields = ['first_name', 'last_name', 'company', 'phone', 'is_active'];
+    const allowedFields = ['first_name', 'last_name', 'company', 'is_active', 'confidential_file'];
     const fieldsToUpdate = [];
     const values = [];
 
     Object.keys(updates).forEach(key => {
       if (allowedFields.includes(key)) {
-        fieldsToUpdate.push(`${key} = ?`);
-        values.push(updates[key]);
+        if (key === 'confidential_file') {
+          const encryptionService = require('../services/encryptionService');
+          const { encrypted, iv } = encryptionService.encrypt(updates[key]);
+          fieldsToUpdate.push(`${key} = ?`);
+          values.push(`${encrypted}:${iv}`);
+        } else {
+          fieldsToUpdate.push(`${key} = ?`);
+          values.push(updates[key]);
+        }
       }
     });
 

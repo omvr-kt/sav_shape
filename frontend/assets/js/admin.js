@@ -70,6 +70,10 @@ class AdminApp {
       this.loadTickets();
     });
 
+    document.getElementById('refreshInvoices')?.addEventListener('click', () => {
+      this.loadInvoices();
+    });
+
     // Add buttons
     document.getElementById('addProjectBtn')?.addEventListener('click', () => {
       this.showAddProjectModal();
@@ -86,6 +90,10 @@ class AdminApp {
 
     document.getElementById('priorityFilter')?.addEventListener('change', () => {
       this.loadTickets();
+    });
+
+    document.getElementById('invoiceStatusFilter')?.addEventListener('change', () => {
+      this.loadInvoices();
     });
   }
 
@@ -124,6 +132,9 @@ class AdminApp {
         break;
       case 'clients':
         this.loadClients();
+        break;
+      case 'invoices':
+        this.loadInvoices();
         break;
     }
   }
@@ -410,6 +421,7 @@ class AdminApp {
               <td>${api.formatDate(client.created_at)}</td>
               <td>
                 <div class="action-buttons">
+                  <button class="btn-action btn-primary" data-client-id="${client.id}" data-action="create-invoice">🧾 Facture</button>
                   <button class="btn-action btn-edit" data-client-id="${client.id}" data-action="edit-client">✏️ Éditer</button>
                   <button class="btn-action btn-delete" data-client-id="${client.id}" data-action="delete-client">🗑️ Supprimer</button>
                 </div>
@@ -423,8 +435,16 @@ class AdminApp {
     container.innerHTML = tableHTML;
     
     // Event listeners pour les boutons d'action des clients
+    const createInvoiceButtons = document.querySelectorAll('[data-action="create-invoice"]');
     const editClientButtons = document.querySelectorAll('[data-action="edit-client"]');
     const deleteClientButtons = document.querySelectorAll('[data-action="delete-client"]');
+    
+    createInvoiceButtons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        const clientId = parseInt(e.target.dataset.clientId);
+        this.showCreateInvoiceModal(clientId);
+      });
+    });
     
     editClientButtons.forEach(button => {
       button.addEventListener('click', (e) => {
@@ -1204,6 +1224,14 @@ class AdminApp {
           </div>
           
           <div class="form-group">
+            <label class="form-label" for="editClientConfidentialFile">Fichier Confidentiel</label>
+            <textarea id="editClientConfidentialFile" name="confidential_file" 
+                     class="form-input" rows="6" 
+                     placeholder="Informations confidentielles (identifiants serveur, mots de passe, etc.)">${client.confidential_file_decrypted || ''}</textarea>
+            <small class="form-text">Ces informations seront chiffrées et stockées de manière sécurisée.</small>
+          </div>
+          
+          <div class="form-group">
             <label class="form-label" for="editClientQuote">Devis *</label>
             <input type="file" id="editClientQuote" name="quote_file" 
                    class="form-input" accept=".pdf,.doc,.docx" required>
@@ -1296,7 +1324,7 @@ class AdminApp {
       last_name: formData.get('last_name'),
       email: formData.get('email'),
       company: formData.get('company'),
-      phone: null
+      confidential_file: formData.get('confidential_file')
     };
 
     // Collecter les données SLA
@@ -1947,7 +1975,6 @@ class AdminApp {
       company: formData.get('company')?.trim() || null,
       company_address: formData.get('company_address')?.trim() || null,
       siren: formData.get('siren')?.trim() || null,
-      phone: null, // Champ phone requis par la validation backend même si optionnel
       password: formData.get('password'),
       role: 'client'
     };
@@ -2165,6 +2192,451 @@ class AdminApp {
 
   showError(message) {
     this.showNotification(message, 'error');
+  }
+
+  async loadInvoices() {
+    const container = document.getElementById('invoicesList');
+    container.innerHTML = '<div class="loading">Chargement des factures...</div>';
+
+    try {
+      const filters = {};
+      const statusFilter = document.getElementById('invoiceStatusFilter')?.value;
+      if (statusFilter) filters.status = statusFilter;
+
+      const response = await api.getInvoices(filters);
+      
+      if (response.data && response.data.invoices) {
+        this.renderInvoicesTable(response.data.invoices);
+        this.updateInvoicesStats(response.data.invoices);
+      } else {
+        container.innerHTML = '<div class="error-message">Format de réponse invalide</div>';
+      }
+    } catch (error) {
+      console.error('Invoices load error:', error);
+      container.innerHTML = `<div class="error-message">Erreur lors du chargement des factures: ${error.message}</div>`;
+    }
+  }
+
+  renderInvoicesTable(invoices) {
+    const container = document.getElementById('invoicesList');
+    
+    if (!invoices || invoices.length === 0) {
+      container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🧾</div><p>Aucune facture trouvée</p></div>';
+      return;
+    }
+
+    const tableHTML = `
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Numéro</th>
+            <th>Client</th>
+            <th>Montant HT</th>
+            <th>TVA</th>
+            <th>Montant TTC</th>
+            <th>Statut</th>
+            <th>Échéance</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${invoices.map(invoice => `
+            <tr>
+              <td><strong>${invoice.invoice_number}</strong></td>
+              <td>${invoice.company || invoice.first_name + ' ' + invoice.last_name}</td>
+              <td>${invoice.amount_ht}€</td>
+              <td>${invoice.tva_rate}% (${invoice.amount_tva}€)</td>
+              <td><strong>${invoice.amount_ttc}€</strong></td>
+              <td><span class="status-badge status-${invoice.status}">${this.getInvoiceStatusLabel(invoice.status)}</span></td>
+              <td>${invoice.due_date ? api.formatDate(invoice.due_date) : '-'}</td>
+              <td>
+                <div class="action-buttons">
+                  <button class="btn-action btn-view" data-invoice-id="${invoice.id}" data-action="view-invoice">👁️ Voir</button>
+                  <button class="btn-action btn-edit" data-invoice-id="${invoice.id}" data-action="edit-invoice">✏️ Éditer</button>
+                  <button class="btn-action btn-primary" data-invoice-id="${invoice.id}" data-action="download-invoice">📄 PDF</button>
+                </div>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+
+    container.innerHTML = tableHTML;
+    
+    // Ajouter les event listeners
+    container.querySelectorAll('[data-action="view-invoice"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const invoiceId = parseInt(e.target.dataset.invoiceId);
+        this.viewInvoice(invoiceId);
+      });
+    });
+    
+    container.querySelectorAll('[data-action="edit-invoice"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const invoiceId = parseInt(e.target.dataset.invoiceId);
+        this.editInvoice(invoiceId);
+      });
+    });
+    
+    container.querySelectorAll('[data-action="download-invoice"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const invoiceId = parseInt(e.target.dataset.invoiceId);
+        this.downloadInvoicePDF(invoiceId);
+      });
+    });
+  }
+
+  updateInvoicesStats(invoices) {
+    const totalCount = invoices.length;
+    const paidAmount = invoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + parseFloat(i.amount_ttc), 0);
+    const pendingAmount = invoices.filter(i => ['draft', 'sent'].includes(i.status)).reduce((sum, i) => sum + parseFloat(i.amount_ttc), 0);
+    const overdueCount = invoices.filter(i => i.status === 'overdue').length;
+
+    document.getElementById('totalInvoicesCount').textContent = totalCount;
+    document.getElementById('paidInvoicesAmount').textContent = `${paidAmount.toFixed(2)}€`;
+    document.getElementById('pendingInvoicesAmount').textContent = `${pendingAmount.toFixed(2)}€`;
+    document.getElementById('overdueInvoicesCount').textContent = overdueCount;
+  }
+
+  getInvoiceStatusLabel(status) {
+    const labels = {
+      'draft': '📝 Brouillon',
+      'sent': '📤 Envoyée', 
+      'paid': '✅ Payée',
+      'overdue': '⚠️ En retard',
+      'cancelled': '❌ Annulée'
+    };
+    return labels[status] || status;
+  }
+
+  async showCreateInvoiceModal(clientId) {
+    try {
+      // Charger les informations du client
+      const response = await api.getUser(clientId);
+      const client = response.data.user;
+      
+      const modal = this.createModal(`Créer une facture - ${client.company || client.first_name + ' ' + client.last_name}`, `
+        <form id="createInvoiceForm" class="form">
+          <input type="hidden" name="client_id" value="${clientId}">
+          
+          <div class="client-info-box">
+            <h4>👤 Informations Client</h4>
+            <div class="info-grid">
+              <div class="info-item">
+                <strong>Nom:</strong> ${client.first_name} ${client.last_name}
+              </div>
+              <div class="info-item">
+                <strong>Email:</strong> ${client.email}
+              </div>
+              ${client.company ? `<div class="info-item"><strong>Entreprise:</strong> ${client.company}</div>` : ''}
+              <div class="info-item">
+                <strong>Projets:</strong> ${client.project_count || 0} projets
+              </div>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="invoiceDescription">Description de la prestation *</label>
+            <textarea id="invoiceDescription" name="description" 
+                      class="form-input" rows="4" required
+                      placeholder="Décrivez la prestation facturée (développement, maintenance, consulting...)"></textarea>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="invoiceAmountHT">Montant HT (€) *</label>
+              <input type="number" id="invoiceAmountHT" name="amount_ht" 
+                     class="form-input" step="0.01" min="0" required
+                     placeholder="0.00">
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">
+                <input type="checkbox" id="invoiceNoTVA" name="no_tva"> 
+                Pas de TVA (montant HT = montant TTC)
+              </label>
+              <small>Cochez si exonération de TVA ou auto-entrepreneur</small>
+            </div>
+          </div>
+          
+          <div class="calculation-preview">
+            <div class="calc-row">
+              <span>Montant HT:</span>
+              <span id="previewAmountHT">0.00€</span>
+            </div>
+            <div class="calc-row">
+              <span>TVA (20%):</span>
+              <span id="previewTVA">0.00€</span>
+            </div>
+            <div class="calc-row total">
+              <strong>Montant TTC:</strong>
+              <strong id="previewAmountTTC">0.00€</strong>
+            </div>
+          </div>
+          
+          <div class="company-info">
+            <h4>🏢 Informations Facturation</h4>
+            <div class="info-grid">
+              <div class="info-item"><strong>SIREN:</strong> 990204588</div>
+              <div class="info-item"><strong>Adresse:</strong> 55 AVENUE MARCEAU, 75016 PARIS</div>
+              <div class="info-item"><strong>Société:</strong> Shape</div>
+              <div class="info-item"><strong>Contact:</strong> omar@shape-conseil.fr</div>
+            </div>
+          </div>
+          
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary cancel-btn" onclick="adminApp.closeModal()">Annuler</button>
+            <button type="submit" class="btn btn-primary">Créer la facture</button>
+          </div>
+        </form>
+      `);
+
+      // Calculateur en temps réel
+      const amountHTInput = document.getElementById('invoiceAmountHT');
+      const noTVACheckbox = document.getElementById('invoiceNoTVA');
+      
+      const updateCalculation = () => {
+        const amountHT = parseFloat(amountHTInput.value) || 0;
+        const noTVA = noTVACheckbox.checked;
+        
+        const tvaAmount = noTVA ? 0 : amountHT * 0.2;
+        const amountTTC = amountHT + tvaAmount;
+        
+        document.getElementById('previewAmountHT').textContent = `${amountHT.toFixed(2)}€`;
+        document.getElementById('previewTVA').textContent = `${tvaAmount.toFixed(2)}€`;
+        document.getElementById('previewAmountTTC').textContent = `${amountTTC.toFixed(2)}€`;
+      };
+      
+      amountHTInput.addEventListener('input', updateCalculation);
+      noTVACheckbox.addEventListener('change', updateCalculation);
+      
+      // Initialiser le calcul
+      updateCalculation();
+
+      document.getElementById('createInvoiceForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await this.handleCreateInvoice(e.target);
+      });
+      
+    } catch (error) {
+      this.showNotification('Erreur lors du chargement des informations client', 'error');
+    }
+  }
+
+  async handleCreateInvoice(form) {
+    const formData = new FormData(form);
+    const invoiceData = {
+      client_id: parseInt(formData.get('client_id')),
+      amount_ht: parseFloat(formData.get('amount_ht')),
+      description: formData.get('description').trim(),
+      no_tva: formData.get('no_tva') === 'on',
+      tva_rate: formData.get('no_tva') === 'on' ? 0 : 20
+    };
+
+    // Validation
+    if (invoiceData.amount_ht <= 0) {
+      this.showNotification('Le montant HT doit être supérieur à 0', 'error');
+      return;
+    }
+
+    if (!invoiceData.description || invoiceData.description.length < 5) {
+      this.showNotification('La description doit contenir au moins 5 caractères', 'error');
+      return;
+    }
+
+    try {
+      const submitBtn = form.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Création en cours...';
+
+      const response = await api.createInvoice(invoiceData);
+      
+      if (response.success) {
+        this.showNotification('Facture créée avec succès', 'success');
+        this.closeModal();
+        
+        // Recharger la liste des factures si on est sur l'onglet facturation
+        if (this.currentTab === 'invoices') {
+          this.loadInvoices();
+        }
+        
+        // Proposer de télécharger le PDF
+        if (confirm('Facture créée ! Voulez-vous télécharger le PDF maintenant ?')) {
+          this.downloadInvoicePDF(response.data.invoice.id);
+        }
+      }
+    } catch (error) {
+      this.showNotification(error.message || 'Erreur lors de la création de la facture', 'error');
+    } finally {
+      const submitBtn = form.querySelector('button[type="submit"]');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Créer la facture';
+    }
+  }
+
+  async viewInvoice(id) {
+    try {
+      const response = await api.getInvoice(id);
+      const invoice = response.data.invoice;
+      
+      this.showViewInvoiceModal(invoice);
+    } catch (error) {
+      console.error('View invoice error:', error);
+      this.showNotification('Erreur lors du chargement de la facture', 'error');
+    }
+  }
+
+  async editInvoice(id) {
+    try {
+      const response = await api.getInvoice(id);
+      const invoice = response.data.invoice;
+      
+      this.showEditInvoiceModal(invoice);
+    } catch (error) {
+      console.error('Edit invoice error:', error);
+      this.showNotification('Erreur lors du chargement de la facture', 'error');
+    }
+  }
+
+  async downloadInvoicePDF(id) {
+    try {
+      // Récupérer les données de la facture
+      const response = await api.request(`/invoices/${id}/pdf`);
+      const invoice = response.data.invoice;
+      
+      // Générer le PDF avec jsPDF
+      window.generateSafeInvoicePDF(invoice);
+      
+      this.showNotification('PDF téléchargé avec succès', 'success');
+    } catch (error) {
+      this.showNotification('Erreur lors de la génération du PDF', 'error');
+      console.error('PDF generation error:', error);
+    }
+  }
+
+  generateInvoicePDF(invoice) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    // Configuration des couleurs et polices
+    const primaryColor = [0, 123, 255];
+    const darkColor = [33, 37, 41];
+    
+    // En-tête de la facture
+    doc.setFontSize(20);
+    doc.setTextColor(...primaryColor);
+    doc.text('FACTURE', 20, 30);
+    
+    // Informations de l'entreprise (Shape)
+    doc.setFontSize(16);
+    doc.setTextColor(...darkColor);
+    doc.text('SHAPE', 140, 30);
+    
+    doc.setFontSize(10);
+    doc.text('SIREN: 990204588', 140, 40);
+    doc.text('55 Avenue Marceau', 140, 45);
+    doc.text('75016 Paris', 140, 50);
+    doc.text('omar@shape-conseil.fr', 140, 55);
+    
+    // Numéro et date de facture
+    doc.setFontSize(12);
+    doc.text(`Numéro: ${invoice.invoice_number}`, 20, 50);
+    doc.text(`Date: ${api.formatDate(invoice.created_at)}`, 20, 57);
+    if (invoice.due_date) {
+      doc.text(`Échéance: ${api.formatDate(invoice.due_date)}`, 20, 64);
+    }
+    
+    // Informations client
+    doc.setFontSize(14);
+    doc.text('Facturé à:', 20, 85);
+    
+    doc.setFontSize(10);
+    let clientY = 95;
+    doc.text(`${invoice.first_name} ${invoice.last_name}`, 20, clientY);
+    clientY += 7;
+    doc.text(invoice.email, 20, clientY);
+    if (invoice.company) {
+      clientY += 7;
+      doc.text(invoice.company, 20, clientY);
+    }
+    
+    // Ligne de séparation
+    doc.setDrawColor(...primaryColor);
+    doc.line(20, clientY + 15, 190, clientY + 15);
+    
+    // Détails de la prestation
+    const tableY = clientY + 30;
+    
+    // En-tête du tableau
+    doc.setFillColor(...primaryColor);
+    doc.rect(20, tableY, 170, 10, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(10);
+    doc.text('Description', 25, tableY + 7);
+    doc.text('Montant HT', 110, tableY + 7);
+    doc.text('TVA', 140, tableY + 7);
+    doc.text('Montant TTC', 160, tableY + 7);
+    
+    // Contenu du tableau
+    doc.setTextColor(...darkColor);
+    doc.setFillColor(245, 245, 245);
+    doc.rect(20, tableY + 10, 170, 15, 'F');
+    
+    // Description (limitée à 50 caractères)
+    const description = invoice.description.length > 50 ? 
+      invoice.description.substring(0, 50) + '...' : invoice.description;
+    
+    doc.text(description, 25, tableY + 20);
+    doc.text(`${parseFloat(invoice.amount_ht).toFixed(2)}€`, 110, tableY + 20);
+    doc.text(`${parseFloat(invoice.tva_rate).toFixed(0)}%`, 140, tableY + 20);
+    doc.text(`${parseFloat(invoice.amount_ttc).toFixed(2)}€`, 160, tableY + 20);
+    
+    // Totaux
+    const totalY = tableY + 40;
+    
+    doc.setFontSize(10);
+    doc.text('Total HT:', 130, totalY);
+    doc.text(`${parseFloat(invoice.amount_ht).toFixed(2)}€`, 165, totalY);
+    
+    doc.text(`TVA (${parseFloat(invoice.tva_rate).toFixed(0)}%):`, 130, totalY + 7);
+    doc.text(`${parseFloat(invoice.amount_tva).toFixed(2)}€`, 165, totalY + 7);
+    
+    // Total TTC en gras
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text('Total TTC:', 130, totalY + 17);
+    doc.text(`${parseFloat(invoice.amount_ttc).toFixed(2)}€`, 165, totalY + 17);
+    
+    // Statut de la facture
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(10);
+    
+    const statusY = totalY + 30;
+    doc.text('Statut:', 20, statusY);
+    
+    // Couleur selon le statut
+    switch(invoice.status) {
+      case 'paid':
+        doc.setTextColor(40, 167, 69);
+        break;
+      case 'overdue':
+        doc.setTextColor(220, 53, 69);
+        break;
+      default:
+        doc.setTextColor(255, 193, 7);
+    }
+    doc.text(this.getInvoiceStatusLabel(invoice.status), 40, statusY);
+    
+    // Pied de page
+    doc.setTextColor(...darkColor);
+    doc.setFontSize(8);
+    doc.text('Merci pour votre confiance !', 20, 270);
+    doc.text('En cas de question, contactez-nous à omar@shape-conseil.fr', 20, 275);
+    
+    // Télécharger le PDF
+    doc.save(`Facture-${invoice.invoice_number}.pdf`);
   }
 }
 

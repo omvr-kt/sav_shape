@@ -1,102 +1,82 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="theme-shape">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Shape SAV</title>
+    <!-- Theme Shape Design System -->
+    <link rel="stylesheet" href="/styles/theme-shape.css">
+    <link rel="stylesheet" href="/src/components/ui/index.css">
     <link rel="stylesheet" href="/assets/css/main.css">
     <link rel="stylesheet" href="/assets/css/sidebar.css">
     <link rel="stylesheet" href="/assets/css/components.css">
     <link rel="stylesheet" href="/assets/css/client.css">
 </head>
 <body>
-    <!-- Layout avec sidebar -->
     <div class="app-layout">
         <!-- Sidebar -->
-        <aside class="app-sidebar">
-            <!-- Logo -->
-            <div class="sidebar-logo">
-                <h1>Shape</h1>
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar__header">
+                <div class="sidebar__logo">S</div>
+                <div class="sidebar__logo-text">Shape SAV</div>
             </div>
-            
-            <!-- Navigation principale -->
-            <nav class="sidebar-nav">
-                <a href="/client/dashboard.html" class="sidebar-nav-item active" data-tooltip="Dashboard">
-                    <span class="sidebar-nav-icon">📊</span>
-                    <span class="sidebar-nav-label">Dashboard</span>
-                </a>
-                <a href="/client/tickets.html" class="sidebar-nav-item notification" data-tooltip="Mes Tickets">
-                    <span class="sidebar-nav-icon">🎫</span>
-                    <span class="sidebar-nav-label">Mes Tickets</span>
-                </a>
-                <a href="/client/invoices.html" class="sidebar-nav-item" data-tooltip="Mes Factures">
-                    <span class="sidebar-nav-icon">🧾</span>
-                    <span class="sidebar-nav-label">Mes Factures</span>
-                </a>
-                <a href="/client/projects.html" class="sidebar-nav-item" data-tooltip="Mes Projets">
-                    <span class="sidebar-nav-icon">📁</span>
-                    <span class="sidebar-nav-label">Mes Projets</span>
-                </a>
+
+            <nav class="sidebar__nav">
+                <div class="sidebar__nav-section">
+                    <div class="sidebar__nav-title">Mon Espace</div>
+                    <a href="/client/dashboard-new.html" class="sidebar__nav-item sidebar__nav-item--active">
+                        <span class="sidebar__nav-icon">📊</span>
+                        <span class="sidebar__nav-text">Dashboard</span>
+                    </a>
+                    <a href="/client/tickets.html" class="sidebar__nav-item">
+                        <span class="sidebar__nav-icon">🎫</span>
+                        <span class="sidebar__nav-text">Mes Tickets</span>
+                        <span class="sidebar__nav-badge" id="ticketCount">0</span>
+                    </a>
+                    <a href="/client/invoices.html" class="sidebar__nav-item">
+                        <span class="sidebar__nav-icon">🧾</span>
+                        <span class="sidebar__nav-text">Mes Factures</span>
+                    </a>
+                    <a href="/client/profile.html" class="sidebar__nav-item">
+                        <span class="sidebar__nav-icon">👤</span>
+                        <span class="sidebar__nav-text">Mon Profil</span>
+                    </a>
+                </div>
             </nav>
-            
-            <!-- Navigation du bas -->
-            <div class="sidebar-footer">
-                <nav class="sidebar-nav">
-                    <a href="/client/profile.html" class="sidebar-nav-item" data-tooltip="Mon Profil">
-                        <span class="sidebar-nav-icon">👤</span>
-                        <span class="sidebar-nav-label">Mon Profil</span>
-                    </a>
-                    <a href="/client/confidential.html" class="sidebar-nav-item" data-tooltip="Fichier Confidentiel">
-                        <span class="sidebar-nav-icon">🔒</span>
-                        <span class="sidebar-nav-label">Fichier Confidentiel</span>
-                    </a>
-                    <a href="/logout" class="sidebar-nav-item" data-tooltip="Déconnexion">
-                        <span class="sidebar-nav-icon">🚪</span>
-                        <span class="sidebar-nav-label">Déconnexion</span>
-                    </a>
-                </nav>
+
+            <div class="sidebar__footer">
+                <div class="sidebar__user" id="sidebarUser">
+                    <div class="sidebar__user-avatar" id="sidebarUserAvatar">--</div>
+                    <div class="sidebar__user-info">
+                        <div class="sidebar__user-name" id="sidebarUserName">Chargement...</div>
+                        <div class="sidebar__user-role">Client</div>
+                    </div>
+                </div>
             </div>
         </aside>
-        
-        <!-- Overlay pour mobile -->
-        <div class="sidebar-overlay" id="sidebarOverlay"></div>
-        
-        <!-- Contenu principal -->
-        <main class="app-main">
-            <!-- Header simplifié -->
-            <header class="client-header">
-                <div class="container">
-                    <div style="display: flex; align-items: center; gap: var(--space-3);">
-                        <!-- Bouton burger pour mobile -->
-                        <button class="sidebar-toggle" id="sidebarToggle" style="display: none;">
-                            ☰
-                        </button>
-                        
-                        <div>
-                            <h1>Dashboard</h1>
-                            <div style="font-size: 14px; color: var(--color-muted); margin-top: 4px;">
-                                Bonjour Marie Dubois, bienvenue dans votre espace client
-                            </div>
-                        </div>
+
+        <!-- Main Content -->
+        <div class="main-content" id="mainContent">
+            <header class="main-header">
+                <div class="main-header__left">
+                    <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+                    <div>
+                        <h1 class="main-title">Dashboard</h1>
+                        <p class="main-subtitle">Vue d'ensemble de votre espace client</p>
                     </div>
-                    
-                    <div class="header-right">
-                        <!-- Sélecteur de période -->
-                        <div class="project-selector">
-                            <label for="periodSelect">📅 Période :</label>
-                            <select id="periodSelect" class="project-dropdown">
-                                <option value="7d">7 derniers jours</option>
-                                <option value="30d" selected>30 derniers jours</option>
-                                <option value="3m">3 derniers mois</option>
-                                <option value="1y">Cette année</option>
-                            </select>
-                        </div>
-                    </div>
+                </div>
+                <div class="main-header__right">
+                    <select id="periodSelect" class="btn btn--ghost btn--sm">
+                        <option value="7d">7 derniers jours</option>
+                        <option value="30d" selected>30 derniers jours</option>
+                        <option value="3m">3 derniers mois</option>
+                        <option value="1y">Cette année</option>
+                    </select>
+                    <button id="logoutBtn" class="btn btn--ghost btn--sm">🚪</button>
                 </div>
             </header>
             
-            <!-- Contenu de la page -->
-            <div style="padding: var(--space-5) var(--space-6);">
+            <main class="page-content">
                 
                 <!-- KPIs principaux -->
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6);">
@@ -367,38 +347,51 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </main>
+            </main>
+        </div>
     </div>
+
+    <!-- Overlay mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
     
-    <!-- Scripts -->
+    <script src="/assets/js/api.js?v=1756818386"></script>
     <script>
-        // Toggle sidebar sur mobile
-        document.getElementById('sidebarToggle').addEventListener('click', function() {
-            document.querySelector('.app-sidebar').classList.add('open');
-            document.getElementById('sidebarOverlay').classList.add('active');
+        // Sidebar toggle functionality
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const mainContent = document.getElementById('mainContent');
+            
+            sidebar.classList.toggle('sidebar--open');
+            overlay.classList.toggle('sidebar-overlay--active');
+            mainContent.classList.toggle('main-content--shifted');
+        }
+
+        // Logout functionality
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            localStorage.removeItem('token');
+            window.location.href = '/connexion.html';
         });
-        
-        // Fermer sidebar avec overlay
-        document.getElementById('sidebarOverlay').addEventListener('click', function() {
-            document.querySelector('.app-sidebar').classList.remove('open');
-            this.classList.remove('active');
-        });
-        
-        // Responsive : afficher le bouton burger sur mobile
-        function checkMobile() {
-            const sidebarToggle = document.getElementById('sidebarToggle');
-            if (window.innerWidth <= 768) {
-                sidebarToggle.style.display = 'flex';
-            } else {
-                sidebarToggle.style.display = 'none';
-                document.querySelector('.app-sidebar').classList.remove('open');
-                document.getElementById('sidebarOverlay').classList.remove('active');
+
+        // Load user info
+        function loadUserInfo() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/connexion.html';
+                return;
+            }
+            
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                document.getElementById('sidebarUserName').textContent = payload.email || 'Utilisateur';
+                document.getElementById('sidebarUserAvatar').textContent = (payload.email || 'U').charAt(0).toUpperCase();
+            } catch (e) {
+                console.error('Token invalide', e);
+                window.location.href = '/connexion.html';
             }
         }
-        
-        window.addEventListener('resize', checkMobile);
-        checkMobile();
+
+        loadUserInfo();
         
         // Gestion des dropdowns
         document.querySelectorAll('.dropdown').forEach(dropdown => {

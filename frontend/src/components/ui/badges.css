@@ -1,0 +1,189 @@
+/* Badges - Composants UI Shape */
+/* Badges de statut SAV selon le mapping du plan */
+
+.badge { 
+  display: inline-flex; 
+  align-items: center; 
+  gap: 6px; 
+  padding: 4px 8px; 
+  border-radius: 999px; 
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Statuts SAV selon le mapping du plan */
+.badge--nouveau   { 
+  background: var(--color-info);    
+  color: white; 
+}
+
+.badge--encours   { 
+  background: var(--color-primary); 
+  color: var(--color-primary-foreground); 
+}
+
+.badge--attente   { 
+  background: var(--color-warning); 
+  color: black; 
+}
+
+.badge--resolu    { 
+  background: var(--color-success); 
+  color: white; 
+}
+
+.badge--clos      { 
+  background: var(--color-neutral-300); 
+  color: var(--color-neutral-900); 
+}
+
+/* Compatibilité: statuts legacy "status-*" utilisés dans l'historique */
+.badge.status-nouveau,
+.badge.status-open,
+.badge.status-ouvert { 
+  background: var(--color-info); 
+  color: white; 
+}
+
+.badge.status-en-cours,
+.badge.status-en_cours,
+.badge.status-in_progress { 
+  background: var(--color-primary); 
+  color: var(--color-primary-foreground); 
+}
+
+.badge.status-attente-client,
+.badge.status-attente,
+.badge.status-waiting_client { 
+  background: var(--color-warning); 
+  color: black; 
+}
+
+.badge.status-resolu,
+.badge.status-resolved { 
+  background: var(--color-success); 
+  color: white; 
+}
+
+.badge.status-clos,
+.badge.status-closed { 
+  background: var(--color-neutral-300); 
+  color: var(--color-neutral-900); 
+}
+
+/* Statuts alternatifs (pour compatibilité) */
+.badge--open { 
+  background: var(--color-info);    
+  color: white; 
+}
+
+.badge--in_progress { 
+  background: var(--color-primary); 
+  color: var(--color-primary-foreground); 
+}
+
+.badge--waiting_client { 
+  background: var(--color-warning); 
+  color: black; 
+}
+
+.badge--resolved { 
+  background: var(--color-success); 
+  color: white; 
+}
+
+.badge--closed { 
+  background: var(--color-neutral-300); 
+  color: var(--color-neutral-900); 
+}
+
+/* Variantes de badge */
+.badge--outline {
+  background: transparent;
+  border: 1px solid currentColor;
+}
+
+.badge--outline.badge--nouveau {
+  color: var(--color-info);
+  border-color: var(--color-info);
+}
+
+.badge--outline.badge--encours {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.badge--outline.badge--attente {
+  color: var(--color-warning);
+  border-color: var(--color-warning);
+}
+
+.badge--outline.badge--resolu {
+  color: var(--color-success);
+  border-color: var(--color-success);
+}
+
+.badge--outline.badge--clos {
+  color: var(--color-neutral-600);
+  border-color: var(--color-neutral-300);
+}
+
+/* Priorités */
+.badge--priority-urgent {
+  background: var(--color-error);
+  color: white;
+}
+
+.badge--priority-high {
+  background: var(--color-warning);
+  color: black;
+}
+
+.badge--priority-normal {
+  background: var(--color-neutral-200);
+  color: var(--color-neutral-700);
+}
+
+.badge--priority-low {
+  background: var(--color-neutral-100);
+  color: var(--color-neutral-600);
+}
+
+/* Tailles */
+.badge--sm {
+  padding: 2px 6px;
+  font-size: 10px;
+}
+
+.badge--lg {
+  padding: 6px 12px;
+  font-size: 14px;
+}
+
+/* Badge avec icône */
+.badge--with-icon {
+  gap: 4px;
+}
+
+.badge--with-icon .icon {
+  width: 12px;
+  height: 12px;
+}
+
+/* Badge interactif */
+.badge--interactive {
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.badge--interactive:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.badge--interactive:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}

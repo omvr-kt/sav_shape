@@ -1,84 +1,363 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="theme-shape">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mes Tickets - Espace Client</title>
-    <link rel="stylesheet" href="/assets/css/main.css?v=1756818165">
-    <link rel="stylesheet" href="/assets/css/client.css?v=1756818165">
-    <script src="/assets/js/timezone-utils.js"></script>
+    <title>Mes Tickets - Shape SAV</title>
+    <!-- Theme Shape Design System -->
+    <link rel="stylesheet" href="/styles/theme-shape.css">
+    <link rel="stylesheet" href="/src/components/ui/index.css">
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <link rel="stylesheet" href="/assets/css/sidebar.css">
+    <link rel="stylesheet" href="/assets/css/components.css">
+    <link rel="stylesheet" href="/assets/css/client.css">
+    <!-- Icônes Heroicons -->
+    <script src="https://unpkg.com/heroicons@1.0.6/outline/index.js"></script>
 </head>
 <body>
-    <div id="app">
-        <div id="mainApp">
-            <!-- Header -->
-            <header class="client-header">
-                <div class="container">
-                    <div class="header-left">
-                        <h1>👤 Mon Espace Client</h1>
-                        <nav class="client-nav">
-                            <a href="/client/tickets.html" class="nav-link active">🎫 Mes Tickets</a>
-                            <a href="/client/invoices.html" class="nav-link">🧾 Mes Factures</a>
-                        </nav>
-                        <div class="project-selector">
-                            <label for="projectSelect">📁 Projet :</label>
-                            <select id="projectSelect" class="project-dropdown">
-                                <option value="">Chargement des projets...</option>
-                            </select>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar__header">
+                <div class="sidebar__logo">S</div>
+                <div class="sidebar__logo-text">Shape SAV</div>
+            </div>
+
+            <nav class="sidebar__nav">
+                <div class="sidebar__nav-section">
+                    <div class="sidebar__nav-title">Mon Espace</div>
+                    <a href="/client/tickets.html" class="sidebar__nav-item sidebar__nav-item--active">
+                        <span class="sidebar__nav-icon">🎫</span>
+                        <span class="sidebar__nav-text">Mes Tickets</span>
+                        <span class="sidebar__nav-badge" id="ticketCount">0</span>
+                    </a>
+                    <a href="/client/invoices.html" class="sidebar__nav-item">
+                        <span class="sidebar__nav-icon">🧾</span>
+                        <span class="sidebar__nav-text">Mes Factures</span>
+                    </a>
+                    <a href="/client/profile.html" class="sidebar__nav-item">
+                        <span class="sidebar__nav-icon">👤</span>
+                        <span class="sidebar__nav-text">Mon Profil</span>
+                    </a>
+                </div>
+            </nav>
+
+            <div class="sidebar__footer">
+                <div class="sidebar__user" id="sidebarUser">
+                    <div class="sidebar__user-avatar" id="sidebarUserAvatar">--</div>
+                    <div class="sidebar__user-info">
+                        <div class="sidebar__user-name" id="sidebarUserName">Chargement...</div>
+                        <div class="sidebar__user-role">Client</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="main-content" id="mainContent">
+            <header class="main-header">
+                <div class="main-header__left">
+                    <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+                    <div>
+                        <h1 class="main-title">Mes Tickets</h1>
+                        <p class="main-subtitle">Gestion de vos demandes de support</p>
+                    </div>
+                </div>
+                <div class="main-header__right">
+                    <select id="projectSelect" class="btn btn--ghost btn--sm">
+                        <option value="">Tous les projets</option>
+                        <option value="1">Site Web E-commerce</option>
+                        <option value="2">Application Mobile</option>
+                        <option value="3">Refonte Interface</option>
+                    </select>
+                    <button id="logoutBtn" class="btn btn--ghost btn--sm">🚪</button>
+                </div>
+            </header>
+            
+            <main class="page-content">
+                <!-- Actions principales -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-5);">
+                    <div style="display: flex; gap: var(--space-3); align-items: center;">
+                        <button class="btn btn-primary" id="newTicketBtn">
+                            <span>+</span>
+                            Nouveau Ticket
+                        </button>
+                        
+                        <div class="dropdown">
+                            <button class="dropdown-toggle">
+                                <span>Filtrer par statut</span>
+                                <span>▼</span>
+                            </button>
+                            <div class="dropdown-menu">
+                                <a href="#" class="dropdown-item">Tous les statuts</a>
+                                <div class="dropdown-divider"></div>
+                                <a href="#" class="dropdown-item">
+                                    <span class="badge status-nouveau">Nouveau</span>
+                                    Nouveau
+                                </a>
+                                <a href="#" class="dropdown-item">
+                                    <span class="badge status-en-cours">En cours</span>
+                                    En cours
+                                </a>
+                                <a href="#" class="dropdown-item">
+                                    <span class="badge status-attente-client">En attente</span>
+                                    En attente client
+                                </a>
+                                <a href="#" class="dropdown-item">
+                                    <span class="badge status-resolu">Résolu</span>
+                                    Résolu
+                                </a>
+                            </div>
                         </div>
                     </div>
-                    <div class="header-right">
-                        <div class="profile-menu">
-                            <div class="profile-avatar" id="profileAvatar">
-                                <span id="profileInitials"></span>
-                            </div>
-                            <div class="profile-dropdown" id="profileDropdown">
-                                <div class="profile-info">
-                                    <strong id="profileName"></strong>
-                                    <span id="profileEmail"></span>
+                    
+                    <div style="display: flex; gap: var(--space-3); align-items: center;">
+                        <input 
+                            type="text" 
+                            placeholder="Rechercher dans mes tickets..." 
+                            class="form-input"
+                            style="min-width: 250px;"
+                        >
+                        <button class="btn btn-outline">
+                            🔍
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Statistiques rapides -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-5);">
+                    <div class="card">
+                        <div class="card-body">
+                            <div style="display: flex; align-items: center; gap: var(--space-3);">
+                                <div style="font-size: 2rem;">🎫</div>
+                                <div>
+                                    <div style="font-size: 24px; font-weight: 700; color: var(--color-primary);">12</div>
+                                    <div style="font-size: 14px; color: var(--color-muted);">Total tickets</div>
                                 </div>
-                                <hr>
-                                <button id="profileBtn" class="dropdown-item">👤 Mon Profil</button>
-                                <button id="confidentialFileBtn" class="dropdown-item">🔒 Mon Fichier Confidentiel</button>
-                                <button id="logoutBtn" class="dropdown-item">🚪 Déconnexion</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-body">
+                            <div style="display: flex; align-items: center; gap: var(--space-3);">
+                                <div style="font-size: 2rem;">⚡</div>
+                                <div>
+                                    <div style="font-size: 24px; font-weight: 700; color: var(--color-warning);">3</div>
+                                    <div style="font-size: 14px; color: var(--color-muted);">En cours</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-body">
+                            <div style="display: flex; align-items: center; gap: var(--space-3);">
+                                <div style="font-size: 2rem;">⏳</div>
+                                <div>
+                                    <div style="font-size: 24px; font-weight: 700; color: var(--color-info);">2</div>
+                                    <div style="font-size: 14px; color: var(--color-muted);">En attente</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-body">
+                            <div style="display: flex; align-items: center; gap: var(--space-3);">
+                                <div style="font-size: 2rem;">✅</div>
+                                <div>
+                                    <div style="font-size: 24px; font-weight: 700; color: var(--color-success);">7</div>
+                                    <div style="font-size: 14px; color: var(--color-muted);">Résolus</div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </header>
-
-            <!-- Main Content -->
-            <main class="client-main">
-                <div class="container">
-                    <div class="tickets-header">
-                        <h2>🎫 Mes Tickets</h2>
-                        <div class="tickets-actions">
-                            <button id="newTicketBtn" class="btn btn-primary">+ Nouveau Ticket</button>
-                            <input type="text" id="ticketSearch" placeholder="Rechercher dans vos tickets..." class="search-input">
-                            <select id="ticketStatusFilter" class="filter-select">
-                                <option value="">Tous les statuts</option>
-                                <option value="open">Ouvert</option>
-                                <option value="in_progress">En cours</option>
-                                <option value="waiting_client">En attente</option>
-                                <option value="resolved">Résolu</option>
-                                <option value="closed">Fermé</option>
-                            </select>
+                
+                <!-- Liste des tickets -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Liste de vos tickets</h3>
+                    </div>
+                    <div class="card-body" style="padding: 0;">
+                        <div class="list">
+                            <!-- Ticket 1 -->
+                            <div class="list-item">
+                                <div class="list-item-header">
+                                    <div>
+                                        <h4 class="list-item-title">Problème de connexion sur l'espace admin</h4>
+                                        <div class="list-item-meta">
+                                            <span style="font-family: monospace; background: var(--color-bg); padding: 2px 6px; border-radius: 4px; font-size: 12px;">#TCK-2024-001</span>
+                                            <span>•</span>
+                                            <span>📁 Site Web E-commerce</span>
+                                            <span>•</span>
+                                            <span>Créé le 15 jan. 2024</span>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; gap: var(--space-2); align-items: center;">
+                                        <span class="badge status-en-cours">En cours</span>
+                                        <span class="badge" style="background: var(--color-error); color: var(--color-surface);">Urgent</span>
+                                    </div>
+                                </div>
+                                <div class="list-item-content">
+                                    Impossible de se connecter à l'interface d'administration depuis hier. L'erreur affichée est "Identifiants incorrects" même avec les bons identifiants.
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--color-border);">
+                                    <div class="list-item-meta">
+                                        <span>Dernière mise à jour : il y a 2h</span>
+                                        <span>•</span>
+                                        <span class="sla-warning">⚠️ SLA dans 4h</span>
+                                    </div>
+                                    <div class="table-actions">
+                                        <button class="btn btn-outline">👁️ Voir</button>
+                                        <button class="btn btn-tertiary">💬 Répondre</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Ticket 2 -->
+                            <div class="list-item">
+                                <div class="list-item-header">
+                                    <div>
+                                        <h4 class="list-item-title">Demande de modification du design de la page d'accueil</h4>
+                                        <div class="list-item-meta">
+                                            <span style="font-family: monospace; background: var(--color-bg); padding: 2px 6px; border-radius: 4px; font-size: 12px;">#TCK-2024-002</span>
+                                            <span>•</span>
+                                            <span>📁 Refonte Interface</span>
+                                            <span>•</span>
+                                            <span>Créé le 10 jan. 2024</span>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; gap: var(--space-2); align-items: center;">
+                                        <span class="badge status-attente-client">En attente client</span>
+                                        <span class="badge" style="background: var(--color-info); color: var(--color-surface);">Normal</span>
+                                    </div>
+                                </div>
+                                <div class="list-item-content">
+                                    Nous souhaitons modifier l'apparence de la section héro de notre page d'accueil pour la rendre plus moderne et attractive.
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--color-border);">
+                                    <div class="list-item-meta">
+                                        <span>Dernière mise à jour : il y a 1 jour</span>
+                                        <span>•</span>
+                                        <span class="sla-ok">✅ SLA respecté</span>
+                                    </div>
+                                    <div class="table-actions">
+                                        <button class="btn btn-outline">👁️ Voir</button>
+                                        <button class="btn btn-tertiary">💬 Répondre</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Ticket 3 -->
+                            <div class="list-item">
+                                <div class="list-item-header">
+                                    <div>
+                                        <h4 class="list-item-title">Bug sur le processus de commande mobile</h4>
+                                        <div class="list-item-meta">
+                                            <span style="font-family: monospace; background: var(--color-bg); padding: 2px 6px; border-radius: 4px; font-size: 12px;">#TCK-2024-003</span>
+                                            <span>•</span>
+                                            <span>📁 Application Mobile</span>
+                                            <span>•</span>
+                                            <span>Créé le 8 jan. 2024</span>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; gap: var(--space-2); align-items: center;">
+                                        <span class="badge status-resolu">Résolu</span>
+                                        <span class="badge" style="background: var(--color-warning); color: var(--color-primary);">Élevé</span>
+                                    </div>
+                                </div>
+                                <div class="list-item-content">
+                                    Les utilisateurs rencontrent une erreur lors de la validation de leur commande sur l'application mobile Android.
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--color-border);">
+                                    <div class="list-item-meta">
+                                        <span>Résolu le 12 jan. 2024</span>
+                                        <span>•</span>
+                                        <span class="sla-ok">✅ Résolu en 2 jours</span>
+                                    </div>
+                                    <div class="table-actions">
+                                        <button class="btn btn-outline">👁️ Voir</button>
+                                        <button class="btn btn-tertiary">⭐ Évaluer</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-
-                    <div id="ticketsList" class="simple-tickets-list">
-                        <div class="loading">Chargement des tickets...</div>
-                    </div>
+                </div>
+                
+                <!-- Pagination -->
+                <div class="pagination">
+                    <a href="#" class="pagination-item">‹ Précédent</a>
+                    <a href="#" class="pagination-item active">1</a>
+                    <a href="#" class="pagination-item">2</a>
+                    <a href="#" class="pagination-item">3</a>
+                    <a href="#" class="pagination-item">Suivant ›</a>
                 </div>
             </main>
         </div>
     </div>
 
-    <!-- Modal for new ticket -->
-    <div id="modalContainer"></div>
+    <!-- Overlay mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    
+    <script src="/assets/js/api.js?v=1756818386"></script>
+    <script>
+        // Sidebar toggle functionality
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const mainContent = document.getElementById('mainContent');
+            
+            sidebar.classList.toggle('sidebar--open');
+            overlay.classList.toggle('sidebar-overlay--active');
+            mainContent.classList.toggle('main-content--shifted');
+        }
 
-    <script src="/assets/js/api.js?v=1756820467"></script>
-    <script src="/assets/js/business-hours.js?v=1756820467"></script>
-    <script src="/assets/js/client-tickets.js?v=1756820467"></script>
+        // Logout functionality
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            localStorage.removeItem('token');
+            window.location.href = '/connexion.html';
+        });
+
+        // Load user info
+        function loadUserInfo() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/connexion.html';
+                return;
+            }
+            
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                document.getElementById('sidebarUserName').textContent = payload.email || 'Utilisateur';
+                document.getElementById('sidebarUserAvatar').textContent = (payload.email || 'U').charAt(0).toUpperCase();
+            } catch (e) {
+                console.error('Token invalide', e);
+                window.location.href = '/connexion.html';
+            }
+        }
+
+        loadUserInfo();
+        
+        // Gestion des dropdowns
+        document.querySelectorAll('.dropdown').forEach(dropdown => {
+            const toggle = dropdown.querySelector('.dropdown-toggle');
+            const menu = dropdown.querySelector('.dropdown-menu');
+            
+            toggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                dropdown.classList.toggle('active');
+            });
+            
+            // Fermer si on clique ailleurs
+            document.addEventListener('click', (e) => {
+                if (!dropdown.contains(e.target)) {
+                    dropdown.classList.remove('active');
+                }
+            });
+        });
+    </script>
 </body>
 </html>

@@ -1,0 +1,134 @@
+/* Boutons - Composants UI Shape */
+
+.btn { 
+  display: inline-flex; 
+  align-items: center; 
+  gap: 8px;
+  padding: 10px 14px; 
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-neutral-50);
+  color: var(--color-neutral-900);
+  box-shadow: var(--shadow-sm);
+  transition: background var(--transition-base), box-shadow var(--transition-base), transform 0.02s;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: var(--font-size-body);
+  font-weight: 500;
+  text-decoration: none;
+  outline: none;
+}
+
+.btn:hover { 
+  background: var(--color-neutral-100); 
+  box-shadow: var(--shadow-md);
+}
+
+.btn:active { 
+  transform: translateY(1px); 
+}
+
+.btn:focus-visible { 
+  outline: 2px solid var(--color-ring); 
+  outline-offset: 2px; 
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Variantes de boutons */
+.btn--primary, .btn-primary {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+  border-color: transparent;
+}
+
+.btn--primary:hover, .btn-primary:hover { 
+  filter: brightness(0.96); 
+  background: var(--color-primary);
+}
+
+.btn--secondary, .btn-secondary {
+  background: var(--color-secondary);
+  color: var(--color-secondary-foreground);
+  border-color: transparent;
+}
+
+.btn--secondary:hover, .btn-secondary:hover {
+  filter: brightness(0.96);
+  background: var(--color-secondary);
+}
+
+.btn--danger, .btn-danger  { 
+  background: var(--color-error); 
+  color: white; 
+  border-color: transparent; 
+}
+
+.btn--danger:hover, .btn-danger:hover {
+  filter: brightness(0.96);
+  background: var(--color-error);
+}
+
+.btn--success, .btn-success {
+  background: var(--color-success);
+  color: white;
+  border-color: transparent;
+}
+
+.btn--success:hover, .btn-success:hover {
+  filter: brightness(0.96);
+  background: var(--color-success);
+}
+
+.btn--outline, .btn-outline {
+  background: transparent;
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.btn--outline:hover, .btn-outline:hover {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+.btn--ghost, .btn-tertiary {
+  background: transparent;
+  color: var(--color-neutral-600);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.btn--ghost:hover, .btn-tertiary:hover {
+  background: var(--color-neutral-100);
+  color: var(--color-neutral-900);
+}
+
+/* Tailles de boutons */
+.btn--sm, .btn-sm {
+  padding: 6px 10px;
+  font-size: var(--font-size-small);
+}
+
+.btn--lg, .btn-lg {
+  padding: 12px 18px;
+  font-size: 18px;
+}
+
+/* Boutons avec icônes */
+.btn--icon-only {
+  padding: 10px;
+  aspect-ratio: 1;
+  justify-content: center;
+}
+
+.btn--icon-only.btn--sm {
+  padding: 6px;
+}
+
+.btn--icon-only.btn--lg {
+  padding: 12px;
+}

@@ -44,8 +44,7 @@ class AdminApp {
   }
 
   showMainApp() {
-    document.getElementById('mainApp').style.display = 'block';
-    
+    // App is now visible by default with sidebar structure
     document.getElementById('currentUser').textContent = 
       `${this.currentUser.first_name} ${this.currentUser.last_name}`;
   }
@@ -56,8 +55,8 @@ class AdminApp {
       this.logout();
     });
 
-    // Navigation tabs
-    document.querySelectorAll('.nav-tab').forEach(tab => {
+    // Navigation tabs (sidebar items)
+    document.querySelectorAll('.sidebar__nav-item').forEach(tab => {
       tab.addEventListener('click', (e) => {
         e.preventDefault();
         const tabName = tab.dataset.tab;
@@ -110,10 +109,10 @@ class AdminApp {
 
   switchTab(tabName) {
     // Update navigation
-    document.querySelectorAll('.nav-tab').forEach(tab => {
-      tab.classList.remove('active');
+    document.querySelectorAll('.sidebar__nav-item').forEach(tab => {
+      tab.classList.remove('sidebar__nav-item--active');
     });
-    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('sidebar__nav-item--active');
 
     // Update content
     document.querySelectorAll('.tab-content').forEach(content => {

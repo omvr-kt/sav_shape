@@ -1,107 +1,145 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="theme-shape">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mes Factures - Espace Client</title>
+    <!-- Theme Shape Design System -->
+    <link rel="stylesheet" href="/styles/theme-shape.css">
+    <link rel="stylesheet" href="/src/components/ui/index.css">
     <link rel="stylesheet" href="/assets/css/main.css?v=1756818165">
     <link rel="stylesheet" href="/assets/css/client.css?v=1756818165">
     <script src="/assets/js/timezone-utils.js"></script>
 </head>
 <body>
-    <div id="app">
-        <div id="mainApp">
-            <!-- Header -->
-            <header class="client-header">
-                <div class="container">
-                    <div class="header-left">
-                        <h1>👤 Mon Espace Client</h1>
-                        <nav class="client-nav">
-                            <a href="/client/tickets.html" class="nav-link">🎫 Mes Tickets</a>
-                            <a href="/client/invoices.html" class="nav-link active">🧾 Mes Factures</a>
-                        </nav>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar__header">
+                <div class="sidebar__logo">S</div>
+                <div class="sidebar__logo-text">Shape SAV</div>
+            </div>
+
+            <nav class="sidebar__nav">
+                <div class="sidebar__nav-section">
+                    <div class="sidebar__nav-title">Mon Espace</div>
+                    <a href="/client/tickets.html" class="sidebar__nav-item">
+                        <span class="sidebar__nav-icon">🎫</span>
+                        <span class="sidebar__nav-text">Mes Tickets</span>
+                        <span class="sidebar__nav-badge" id="ticketCount">0</span>
+                    </a>
+                    <a href="/client/invoices.html" class="sidebar__nav-item sidebar__nav-item--active">
+                        <span class="sidebar__nav-icon">🧾</span>
+                        <span class="sidebar__nav-text">Mes Factures</span>
+                    </a>
+                    <a href="/client/profile.html" class="sidebar__nav-item">
+                        <span class="sidebar__nav-icon">👤</span>
+                        <span class="sidebar__nav-text">Mon Profil</span>
+                    </a>
+                </div>
+
+                <div class="sidebar__nav-section">
+                    <div class="sidebar__nav-title">Projets</div>
+                    <div id="projectLinks">
+                        <!-- Liens des projets chargés dynamiquement -->
                     </div>
-                    <div class="header-right">
-                        <div class="profile-menu">
-                            <div class="profile-avatar" id="profileAvatar">
-                                <span id="profileInitials"></span>
+                </div>
+            </nav>
+
+            <div class="sidebar__footer">
+                <div class="sidebar__user" id="sidebarUser">
+                    <div class="sidebar__user-avatar" id="sidebarUserAvatar">--</div>
+                    <div class="sidebar__user-info">
+                        <div class="sidebar__user-name" id="sidebarUserName">Chargement...</div>
+                        <div class="sidebar__user-role">Client</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="main-content" id="mainContent">
+            <header class="main-header">
+                <div class="main-header__left">
+                    <button class="sidebar-toggle" onclick="toggleSidebar()">
+                        <span style="font-size: 20px;">☰</span>
+                    </button>
+                    <div>
+                        <h1 class="main-title">Mes Factures</h1>
+                        <p class="main-subtitle">Consultez vos factures et paiements</p>
+                    </div>
+                </div>
+                <div class="main-header__right">
+                    <select id="invoiceStatusFilter" class="select">
+                        <option value="">Tous les statuts</option>
+                        <option value="draft">Brouillon</option>
+                        <option value="sent">Envoyée</option>
+                        <option value="paid">Payée</option>
+                        <option value="overdue">En retard</option>
+                    </select>
+                    <button id="refreshInvoices" class="btn btn--secondary btn--sm">🔄 Actualiser</button>
+                    <button id="logoutBtn" class="btn btn--ghost btn--sm">🚪</button>
+                </div>
+            </header>
+
+            <main class="page-content">
+                <!-- KPI Cards pour les factures -->
+                <div class="card-grid mb-4">
+                    <div class="card card--kpi">
+                        <div class="card__body">
+                            <div class="card__kpi-value" id="totalInvoicesCount">0</div>
+                            <div class="card__kpi-label">Total factures</div>
+                        </div>
+                    </div>
+                    <div class="card card--kpi">
+                        <div class="card__body">
+                            <div class="card__kpi-value" id="paidAmount">0€</div>
+                            <div class="card__kpi-label">Montant payé</div>
+                            <div class="card__kpi-trend card__kpi-trend--up">
+                                ✅ À jour
                             </div>
-                            <div class="profile-dropdown" id="profileDropdown">
-                                <div class="profile-info">
-                                    <strong id="profileName"></strong>
-                                    <span id="profileEmail"></span>
-                                </div>
-                                <hr>
-                                <button id="profileBtn" class="dropdown-item">👤 Mon Profil</button>
-                                <button id="confidentialFileBtn" class="dropdown-item">🔒 Mon Fichier Confidentiel</button>
-                                <button id="logoutBtn" class="dropdown-item">🚪 Déconnexion</button>
+                        </div>
+                    </div>
+                    <div class="card card--kpi">
+                        <div class="card__body">
+                            <div class="card__kpi-value" id="pendingAmount">0€</div>
+                            <div class="card__kpi-label">En attente</div>
+                            <div class="card__kpi-trend card__kpi-trend--neutral">
+                                ⏳ En cours
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card card--kpi card--warning">
+                        <div class="card__body">
+                            <div class="card__kpi-value" id="overdueAmount">0€</div>
+                            <div class="card__kpi-label">En retard</div>
+                            <div class="card__kpi-trend card__kpi-trend--down">
+                                ⚠️ Attention
                             </div>
                         </div>
                     </div>
                 </div>
-            </header>
 
-            <!-- Main Content -->
-            <main class="client-main">
-                <div class="container">
-                    <div class="invoices-header">
-                        <h2>🧾 Mes Factures</h2>
-                        <div class="header-actions">
-                            <select id="invoiceStatusFilter" class="filter-select">
-                                <option value="">Tous les statuts</option>
-                                <option value="draft">Brouillon</option>
-                                <option value="sent">Envoyée</option>
-                                <option value="paid">Payée</option>
-                                <option value="overdue">En retard</option>
-                            </select>
-                            <button id="refreshInvoices" class="btn btn-secondary btn-sm">🔄 Actualiser</button>
-                        </div>
+                <!-- Liste des factures -->
+                <div class="card">
+                    <div class="card__header">
+                        <h2 class="card__title">Vos factures</h2>
                     </div>
-
-                    <!-- Résumé des factures -->
-                    <div class="invoices-summary">
-                        <div class="summary-cards">
-                            <div class="summary-card">
-                                <div class="card-icon">📊</div>
-                                <div class="card-info">
-                                    <div class="card-value" id="totalInvoicesCount">0</div>
-                                    <div class="card-label">Total factures</div>
-                                </div>
-                            </div>
-                            <div class="summary-card">
-                                <div class="card-icon">✅</div>
-                                <div class="card-info">
-                                    <div class="card-value" id="paidAmount">0€</div>
-                                    <div class="card-label">Montant payé</div>
-                                </div>
-                            </div>
-                            <div class="summary-card">
-                                <div class="card-icon">⏳</div>
-                                <div class="card-info">
-                                    <div class="card-value" id="pendingAmount">0€</div>
-                                    <div class="card-label">En attente</div>
-                                </div>
-                            </div>
-                            <div class="summary-card overdue">
-                                <div class="card-icon">⚠️</div>
-                                <div class="card-info">
-                                    <div class="card-value" id="overdueAmount">0€</div>
-                                    <div class="card-label">En retard</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Liste des factures -->
-                    <div class="invoices-content">
+                    <div class="card__body--no-padding">
                         <div id="invoicesList" class="data-table-container">
-                            <div class="loading">Chargement des factures...</div>
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <p>Chargement des factures...</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </main>
         </div>
     </div>
+
+    <!-- Overlay mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
     <!-- Modals will be injected here -->
     <div id="modalContainer"></div>
@@ -110,5 +148,36 @@
     <script src="/assets/js/pdf-generator.js?v=1756818165"></script>
     <script src="/assets/js/api.js?v=1756818165"></script>
     <script src="/assets/js/client-invoices.js?v=1756818165"></script>
+    
+    <script>
+        // Sidebar functionality
+        let sidebarCollapsed = false;
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            if (window.innerWidth <= 768) {
+                sidebar.classList.toggle('sidebar--mobile-open');
+                overlay.classList.toggle('sidebar-overlay--visible');
+                document.body.style.overflow = sidebar.classList.contains('sidebar--mobile-open') ? 'hidden' : '';
+            } else {
+                sidebarCollapsed = !sidebarCollapsed;
+                sidebar.classList.toggle('sidebar--collapsed', sidebarCollapsed);
+                mainContent.classList.toggle('main-content--sidebar-collapsed', sidebarCollapsed);
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('sidebarOverlay');
+                sidebar.classList.remove('sidebar--mobile-open');
+                overlay.classList.remove('sidebar-overlay--visible');
+                document.body.style.overflow = '';
+            }
+        });
+    </script>
 </body>
 </html>

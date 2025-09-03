@@ -1,109 +1,277 @@
+/* Connexion - Style Shape Professionnel */
+/* Utilise les variables du theme-shape.css */
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+/* Fond professionnel avec dégradé subtil */
+.theme-shape body {
+    font-family: var(--font-body);
+    background: linear-gradient(135deg, var(--color-neutral-50) 0%, var(--color-neutral-100) 100%);
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
 }
 
-.login-container {
-    background: white;
-    padding: 2.5rem;
-    border-radius: 15px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+/* Effet de particules dorées subtil en arrière-plan */
+.theme-shape body::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        radial-gradient(circle at 25% 25%, var(--color-gold-200) 0%, transparent 50%),
+        radial-gradient(circle at 75% 75%, var(--color-gold-100) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, var(--color-gold-50) 0%, transparent 50%);
+    opacity: 0.3;
+    z-index: -1;
+}
+
+/* Container de connexion avec style professionnel */
+.theme-shape .login-container {
+    background: var(--color-card);
+    padding: 3rem;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
     width: 100%;
-    max-width: 400px;
+    max-width: 420px;
+    border: 1px solid var(--color-neutral-200);
+    position: relative;
+    overflow: hidden;
 }
 
-h1 {
+/* Accent doré en haut */
+.theme-shape .login-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--color-accent), var(--color-gold-300), var(--color-accent));
+}
+
+/* Logo/titre professionnel */
+.theme-shape .login-container h1,
+.theme-shape .login-container .form-title {
     text-align: center;
-    margin-bottom: 2rem;
-    color: #333;
-    font-size: 1.8rem;
+    margin-bottom: 2.5rem;
+    color: var(--color-neutral-900);
+    font-family: var(--font-heading);
+    font-size: var(--font-size-h2);
+    font-weight: 700;
+    position: relative;
 }
 
-.form-group {
+.theme-shape .login-container h1::after,
+.theme-shape .login-container .form-title::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--color-accent), var(--color-gold-300));
+    border-radius: 2px;
+}
+
+/* Groupes de formulaire */
+.theme-shape .form-group {
     margin-bottom: 1.5rem;
 }
 
-label {
+/* Labels professionnels */
+.theme-shape .form-group label {
     display: block;
     margin-bottom: 0.5rem;
-    color: #555;
-    font-weight: 500;
+    color: var(--color-neutral-700);
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: var(--font-size-small);
+    letter-spacing: 0.025em;
 }
 
-input {
+/* Champs de saisie avec style Shape */
+.theme-shape .form-group input {
     width: 100%;
-    padding: 1rem;
-    border: 2px solid #e1e1e1;
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: border-color 0.3s;
+    padding: 1rem 1.25rem;
+    border: 2px solid var(--color-neutral-300);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-body);
+    font-family: var(--font-body);
+    background: var(--color-card);
+    color: var(--color-neutral-900);
+    transition: all var(--transition-base);
 }
 
-input:focus {
+.theme-shape .form-group input:focus {
     outline: none;
-    border-color: #667eea;
-}
-
-button {
-    width: 100%;
-    padding: 1rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 1.1rem;
-    cursor: pointer;
-    transition: transform 0.2s;
-}
-
-button:hover {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
     transform: translateY(-1px);
 }
 
-button:disabled {
+.theme-shape .form-group input::placeholder {
+    color: var(--color-neutral-400);
+}
+
+/* Bouton de connexion professionnel */
+.theme-shape #loginForm button,
+.theme-shape button[type="submit"] {
+    width: 100%;
+    padding: 1.125rem 1.5rem;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    color: var(--color-primary-foreground);
+    border: 2px solid var(--color-accent);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-body);
+    font-family: var(--font-heading);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    position: relative;
+    overflow: hidden;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.theme-shape #loginForm button::before,
+.theme-shape button[type="submit"]::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.3), transparent);
+    transition: left var(--transition-base);
+}
+
+.theme-shape #loginForm button:hover,
+.theme-shape button[type="submit"]:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md), 0 0 20px rgba(212, 175, 55, 0.2);
+}
+
+.theme-shape #loginForm button:hover::before,
+.theme-shape button[type="submit"]:hover::before {
+    left: 100%;
+}
+
+.theme-shape #loginForm button:active,
+.theme-shape button[type="submit"]:active {
+    transform: translateY(0);
+}
+
+.theme-shape #loginForm button:disabled,
+.theme-shape button[type="submit"]:disabled {
     opacity: 0.7;
     transform: none;
+    cursor: not-allowed;
 }
 
-.error {
-    background: #fee2e2;
-    color: #dc2626;
-    padding: 1rem;
-    border-radius: 8px;
-    margin-top: 1rem;
+/* Messages d'erreur et de succès */
+.theme-shape .error {
+    background: linear-gradient(135deg, var(--color-error), rgba(220, 38, 38, 0.8));
+    color: white;
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-md);
+    margin-top: 1.5rem;
     display: none;
+    font-family: var(--font-body);
+    font-weight: 500;
+    box-shadow: var(--shadow-sm);
 }
 
-.success {
-    background: #dcfce7;
-    color: #16a34a;
-    padding: 1rem;
-    border-radius: 8px;
-    margin-top: 1rem;
+.theme-shape .success {
+    background: linear-gradient(135deg, var(--color-success), rgba(5, 150, 105, 0.8));
+    color: white;
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-md);
+    margin-top: 1.5rem;
     display: none;
+    font-family: var(--font-body);
+    font-weight: 500;
+    box-shadow: var(--shadow-sm);
 }
 
-.test-info {
-    background: #eff6ff;
-    color: #1d4ed8;
-    padding: 1rem;
-    border-radius: 8px;
-    margin-top: 1rem;
-    font-size: 0.9rem;
+/* Info de test avec style professionnel */
+.theme-shape .test-info {
+    background: var(--color-neutral-50);
+    color: var(--color-neutral-700);
+    border: 1px solid var(--color-neutral-200);
+    padding: 1.25rem;
+    border-radius: var(--radius-md);
+    margin-top: 1.5rem;
+    font-size: var(--font-size-small);
     text-align: center;
+    font-family: var(--font-body);
+    position: relative;
 }
 
-.test-info strong {
+.theme-shape .test-info::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--color-accent);
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+.theme-shape .test-info strong {
     display: block;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
+    color: var(--color-neutral-900);
+    font-weight: 600;
+}
+
+.theme-shape .test-info code {
+    background: var(--color-neutral-100);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+    font-size: 0.875rem;
+    color: var(--color-primary);
+    border: 1px solid var(--color-neutral-200);
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .theme-shape .login-container {
+        padding: 2rem;
+        margin: 1rem;
+        max-width: none;
+    }
+    
+    .theme-shape .login-container h1,
+    .theme-shape .login-container .form-title {
+        font-size: var(--font-size-h3);
+        margin-bottom: 2rem;
+    }
+}
+
+/* Animation d'entrée élégante */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.theme-shape .login-container {
+    animation: fadeInUp 0.6s ease-out;
 }

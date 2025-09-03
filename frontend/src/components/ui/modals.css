@@ -1,0 +1,225 @@
+/* Modales - Composants UI Shape */
+
+.modal__backdrop, .modal-backdrop { 
+  position: fixed; 
+  inset: 0; 
+  background: rgba(0,0,0,.32);
+  backdrop-filter: blur(2px);
+  z-index: 1000;
+  transition: opacity var(--transition-base);
+}
+
+.modal { 
+  position: fixed; 
+  inset: 0; 
+  display: none; 
+  place-items: center; 
+  padding: 20px;
+  z-index: 1001;
+  overflow-y: auto;
+}
+
+/* Afficher la modale quand active ou aria-hidden explicite */
+.modal.active,
+.modal[aria-hidden="false"] {
+  display: grid;
+}
+
+.modal__card, .modal-content { 
+  width: min(720px, 92vw); 
+  background: white; 
+  border-radius: var(--radius-lg); 
+  box-shadow: var(--shadow-lg); 
+  overflow: hidden;
+  transform: scale(1);
+  transition: transform var(--transition-base);
+  max-height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+}
+
+.modal__card--sm {
+  width: min(480px, 92vw);
+}
+
+.modal__card--lg {
+  width: min(960px, 92vw);
+}
+
+.modal__card--xl {
+  width: min(1200px, 95vw);
+}
+
+.modal__header, .modal-header { 
+  padding: 16px 20px; 
+  border-bottom: 1px solid var(--color-neutral-100);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.modal__title, .modal-title {
+  font-size: var(--font-size-h4);
+  font-weight: 600;
+  color: var(--color-neutral-900);
+  margin: 0;
+}
+
+.modal__close, .modal-close {
+  background: none;
+  border: none;
+  padding: 4px;
+  color: var(--color-neutral-500);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.modal__close:hover, .modal-close:hover {
+  color: var(--color-neutral-700);
+  background: var(--color-neutral-100);
+}
+
+.modal__close:focus-visible, .modal-close:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+.modal__body, .modal-body   { 
+  padding: 20px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.modal__body--no-padding {
+  padding: 0;
+}
+
+.modal__footer, .modal-footer { 
+  padding: 16px 20px; 
+  border-top: 1px solid var(--color-neutral-100); 
+  display: flex; 
+  gap: 12px; 
+  justify-content: flex-end;
+  flex-shrink: 0;
+  background: var(--color-neutral-50);
+}
+
+.modal__footer--start {
+  justify-content: flex-start;
+}
+
+.modal__footer--center {
+  justify-content: center;
+}
+
+.modal__footer--between {
+  justify-content: space-between;
+}
+
+/* Animations d'entrée et sortie */
+.modal--entering .modal__card {
+  transform: scale(0.95);
+  opacity: 0;
+}
+
+.modal--exiting .modal__card {
+  transform: scale(0.95);
+  opacity: 0;
+}
+
+.modal--entering .modal__backdrop,
+.modal--exiting .modal__backdrop {
+  opacity: 0;
+}
+
+/* Focus trap */
+.modal[aria-hidden="true"] {
+  display: none;
+}
+
+/* Variantes de modale */
+.modal--danger .modal__header {
+  border-bottom-color: var(--color-error);
+}
+
+.modal--danger .modal__title {
+  color: var(--color-error);
+}
+
+.modal--success .modal__header {
+  border-bottom-color: var(--color-success);
+}
+
+.modal--success .modal__title {
+  color: var(--color-success);
+}
+
+.modal--warning .modal__header {
+  border-bottom-color: var(--color-warning);
+}
+
+.modal--warning .modal__title {
+  color: var(--color-warning);
+}
+
+/* Modale fullscreen (mobile) */
+@media (max-width: 640px) {
+  .modal__card {
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+    margin: 0;
+  }
+  
+  .modal {
+    padding: 0;
+  }
+}
+
+/* Side panel (alternative à la modale) */
+.sidepanel {
+  position: fixed;
+  top: 0;
+  right: -100%;
+  width: min(480px, 90vw);
+  height: 100vh;
+  background: white;
+  box-shadow: var(--shadow-lg);
+  transition: right var(--transition-base);
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidepanel--open {
+  right: 0;
+}
+
+.sidepanel__header,
+.sidepanel__body,
+.sidepanel__footer {
+  padding: 20px;
+}
+
+.sidepanel__header {
+  border-bottom: 1px solid var(--color-neutral-100);
+  flex-shrink: 0;
+}
+
+.sidepanel__body {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.sidepanel__footer {
+  border-top: 1px solid var(--color-neutral-100);
+  flex-shrink: 0;
+}

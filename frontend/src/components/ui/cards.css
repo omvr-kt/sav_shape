@@ -1,0 +1,205 @@
+/* Cartes - Composants UI Shape */
+
+.card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: box-shadow var(--transition-base), transform var(--transition-fast);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.card--interactive {
+  cursor: pointer;
+}
+
+.card--interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.card--interactive:active {
+  transform: translateY(0);
+}
+
+.card__header, .card-header {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-neutral-50);
+}
+
+.card__title, .card-title {
+  font-size: var(--font-size-h4);
+  font-weight: 600;
+  color: var(--color-neutral-900);
+  margin: 0;
+}
+
+.card__subtitle, .card-subtitle {
+  font-size: var(--font-size-small);
+  color: var(--color-neutral-600);
+  margin: var(--space-1) 0 0 0;
+}
+
+.card__body, .card-body {
+  padding: var(--space-3);
+}
+
+.card__body--no-padding {
+  padding: 0;
+}
+
+.card__body--compact {
+  padding: var(--space-2);
+}
+
+.card__footer, .card-footer {
+  padding: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-neutral-50);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.card__actions, .card-actions {
+  display: flex;
+  gap: var(--space-1);
+  align-items: center;
+}
+
+/* Variantes de cartes */
+.card--outlined {
+  border-width: 2px;
+  box-shadow: none;
+}
+
+.card--elevated {
+  box-shadow: var(--shadow-md);
+}
+
+.card--elevated:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+.card--flat {
+  border: none;
+  box-shadow: none;
+}
+
+/* États des cartes */
+.card--loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.card--disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.card--error {
+  border-color: var(--color-error);
+}
+
+.card--error .card__header {
+  background: rgba(220, 38, 38, 0.1);
+  border-bottom-color: var(--color-error);
+}
+
+.card--success {
+  border-color: var(--color-success);
+}
+
+.card--success .card__header {
+  background: rgba(5, 150, 105, 0.1);
+  border-bottom-color: var(--color-success);
+}
+
+.card--warning {
+  border-color: var(--color-warning);
+}
+
+.card--warning .card__header {
+  background: rgba(217, 119, 6, 0.1);
+  border-bottom-color: var(--color-warning);
+}
+
+/* KPI Cards (pour dashboard) */
+.card--kpi {
+  text-align: center;
+}
+
+.card--kpi .card__body {
+  padding: var(--space-4);
+}
+
+.card__kpi-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1;
+  margin-bottom: var(--space-1);
+}
+
+.card__kpi-label {
+  font-size: var(--font-size-small);
+  color: var(--color-neutral-600);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.card__kpi-trend {
+  font-size: var(--font-size-small);
+  margin-top: var(--space-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.card__kpi-trend--up {
+  color: var(--color-success);
+}
+
+.card__kpi-trend--down {
+  color: var(--color-error);
+}
+
+.card__kpi-trend--neutral {
+  color: var(--color-neutral-500);
+}
+
+/* Card Grid (pour layout de dashboard) */
+.card-grid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.card-grid--compact {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-2);
+}
+
+.card-grid--large {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .card__header,
+  .card__body,
+  .card__footer {
+    padding: var(--space-2);
+  }
+}

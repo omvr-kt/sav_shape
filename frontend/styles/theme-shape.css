@@ -1,0 +1,375 @@
+/* Theme Shape - Design System CSS Variables */
+/* Point d'entrée unique pour skinner toute l'application */
+
+/* Import des polices professionnelles Shape */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,300;0,400;0,600;0,700;0,900;1,400&display=swap');
+
+:root.theme-shape {
+  /* Couleurs principales - Style Shape professionnel */
+  --color-primary:            #1a1a2e;     /* Bleu marine sophistiqué */
+  --color-primary-foreground: #ffffff;
+  --color-secondary:          #16213e;     /* Bleu profond */
+  --color-secondary-foreground:#ffffff;
+  --color-accent:             #c9a96e;     /* Or épuré et subtil */
+  --color-bg:                 #fafbfc;     /* Fond ultra-propre */
+  --color-card:               #ffffff;
+  --color-muted:              #6b7280;     /* Gris sophistiqué */
+  --color-border:             #e5e7eb;     /* Bordure subtile */
+  --color-ring:               #c9a96e;     /* Focus doré épuré */
+
+  /* États système - Palette professionnelle */
+  --color-success:            #059669;     /* Vert professionnel */
+  --color-warning:            #d97706;     /* Orange sophistiqué */
+  --color-error:              #dc2626;     /* Rouge élégant */
+  --color-info:               #2563eb;     /* Bleu information */
+
+  /* Neutres - Échelle sophistiquée */
+  --color-neutral-50:  #f9fafb;
+  --color-neutral-100: #f3f4f6;
+  --color-neutral-200: #e5e7eb;
+  --color-neutral-300: #d1d5db;
+  --color-neutral-400: #9ca3af;
+  --color-neutral-500: #6b7280;
+  --color-neutral-600: #4b5563;
+  --color-neutral-700: #374151;
+  --color-neutral-800: #1f2937;
+  --color-neutral-900: #111827;
+  
+  /* Couleurs d'accentuation dorées - Palette épurée */
+  --color-gold-50:     #fefdfb;
+  --color-gold-100:    #fdf9f0;
+  --color-gold-200:    #faf2e3;
+  --color-gold-300:    #f5ebd0;
+  --color-gold-400:    #ede0b7;
+  --color-gold-500:    #c9a96e;  /* Or principal épuré */
+  --color-gold-600:    #b8985e;
+  --color-gold-700:    #a08850;
+  --color-gold-800:    #8a7544;
+  --color-gold-900:    #756139;
+
+  /* Typographie - Polices Shape professionnelles */
+  --font-heading: "Montserrat", "SF Pro Display", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  --font-body:    "Source Sans Pro", "SF Pro Text", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+
+  /* Échelle typographique */
+  --font-size-h1: 40px;
+  --font-size-h2: 32px;
+  --font-size-h3: 24px;
+  --font-size-h4: 20px;
+  --font-size-body: 16px;
+  --font-size-small: 14px;
+
+  /* Line heights */
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.7;
+
+  /* Rayons */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  /* Ombres - Style professionnel avec touches dorées épurées */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(201,169,110,.02);
+  --shadow-md: 0 4px 15px rgba(0,0,0,.1), 0 2px 4px rgba(201,169,110,.03);
+  --shadow-lg: 0 20px 35px rgba(0,0,0,.12), 0 8px 10px rgba(201,169,110,.05);
+  --shadow-gold: 0 0 15px rgba(201,169,110,.08);
+
+  /* Espacement (base 8px) */
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-5: 40px;
+  --space-6: 48px;
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.2s ease;
+  --transition-slow: 0.3s ease;
+}
+
+/* Application globale du thème */
+.theme-shape, .theme-shape body {
+  font-family: var(--font-body);
+  background: var(--color-bg);
+  color: var(--color-neutral-900);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-normal);
+}
+
+/* Typographie de base */
+.theme-shape h1 {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h1);
+  line-height: var(--line-height-tight);
+  font-weight: 700;
+  color: var(--color-neutral-900);
+}
+
+.theme-shape h2 {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h2);
+  line-height: var(--line-height-tight);
+  font-weight: 600;
+  color: var(--color-neutral-900);
+}
+
+.theme-shape h3 {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h3);
+  line-height: var(--line-height-tight);
+  font-weight: 600;
+  color: var(--color-neutral-900);
+}
+
+.theme-shape h4 {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h4);
+  line-height: var(--line-height-tight);
+  font-weight: 600;
+  color: var(--color-neutral-900);
+}
+
+/* Mode densité compacte */
+.theme-shape.density-compact {
+  --space-1: 6px;
+  --space-2: 12px;
+  --space-3: 18px;
+  --space-4: 24px;
+}
+
+.theme-shape.density-compact .btn {
+  padding: 8px 10px;
+}
+
+.theme-shape.density-compact .table--compact tbody td {
+  padding: 6px;
+}
+
+/* Focus global amélioré avec accent doré */
+.theme-shape *:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-gold);
+}
+
+/* Styles professionnels avec détails dorés */
+
+/* Titres avec accent doré */
+.theme-shape .main-title {
+  position: relative;
+}
+
+.theme-shape .main-title::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 40px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-accent), var(--color-gold-300));
+  border-radius: 2px;
+}
+
+/* Sidebar avec accents dorés */
+.theme-shape .sidebar__logo {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: var(--color-accent);
+  border: 2px solid var(--color-accent);
+  box-shadow: var(--shadow-gold);
+}
+
+.theme-shape .sidebar__nav-item--active {
+  background: linear-gradient(90deg, var(--color-accent), transparent);
+  border-left: 4px solid var(--color-accent);
+  box-shadow: inset 0 0 10px rgba(212,175,55,.1);
+}
+
+.theme-shape .sidebar__nav-item:hover {
+  background: rgba(212,175,55,.05);
+  transform: translateX(2px);
+  transition: all var(--transition-base);
+}
+
+/* Boutons avec style professionnel */
+.theme-shape .btn--primary {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  border: 1px solid var(--color-accent);
+  box-shadow: var(--shadow-md);
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-shape .btn--primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(212,175,55,.2), transparent);
+  transition: left var(--transition-base);
+}
+
+.theme-shape .btn--primary:hover::before {
+  left: 100%;
+}
+
+.theme-shape .btn--ghost {
+  border: 1px solid var(--color-neutral-200);
+  transition: all var(--transition-base);
+}
+
+.theme-shape .btn--ghost:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  box-shadow: 0 0 10px rgba(212,175,55,.1);
+}
+
+/* Cartes avec élégance */
+.theme-shape .card {
+  border: 1px solid var(--color-neutral-200);
+  background: var(--color-card);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-base);
+}
+
+.theme-shape .card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.theme-shape .card__header {
+  border-bottom: 1px solid var(--color-neutral-100);
+  background: linear-gradient(90deg, var(--color-neutral-50), transparent);
+}
+
+/* Champs de formulaire professionnels */
+.theme-shape .form-input,
+.theme-shape .form-select,
+.theme-shape .form-textarea {
+  border: 1px solid var(--color-neutral-300);
+  background: var(--color-card);
+  font-family: var(--font-body);
+  transition: all var(--transition-base);
+}
+
+.theme-shape .form-input:focus,
+.theme-shape .form-select:focus,
+.theme-shape .form-textarea:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(212,175,55,.1);
+}
+
+/* Badges avec style Shape */
+.theme-shape .badge {
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+/* Header principal avec détails dorés */
+.theme-shape .main-header {
+  background: linear-gradient(135deg, var(--color-card), var(--color-neutral-50));
+  border-bottom: 1px solid var(--color-neutral-200);
+  box-shadow: 0 1px 3px rgba(0,0,0,.05), 0 0 10px rgba(212,175,55,.02);
+}
+
+/* Text avec couleur professionnelle */
+.theme-shape .main-subtitle {
+  color: var(--color-neutral-600);
+  font-weight: 400;
+}
+
+/* Liens avec accent doré */
+.theme-shape a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.theme-shape a:hover {
+  color: var(--color-accent);
+}
+
+/* Tables professionnelles */
+.theme-shape .table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.theme-shape .table thead th {
+  background: var(--color-neutral-50);
+  color: var(--color-neutral-700);
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: var(--font-size-small);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid var(--color-accent);
+}
+
+.theme-shape .table tbody tr:hover {
+  background: rgba(212,175,55,.02);
+}
+
+/* Loading states avec couleur dorée */
+.theme-shape .loading {
+  color: var(--color-accent);
+}
+
+/* Application forcée des polices Shape PARTOUT */
+.theme-shape,
+.theme-shape *,
+.theme-shape input,
+.theme-shape select,
+.theme-shape textarea,
+.theme-shape button {
+  font-family: var(--font-body) !important;
+}
+
+.theme-shape h1,
+.theme-shape h2,
+.theme-shape h3,
+.theme-shape h4,
+.theme-shape h5,
+.theme-shape h6,
+.theme-shape .main-title,
+.theme-shape .card-title,
+.theme-shape .sidebar__nav-title {
+  font-family: var(--font-heading) !important;
+}
+
+/* Polices pour tous les éléments de texte */
+.theme-shape p,
+.theme-shape span,
+.theme-shape div,
+.theme-shape a,
+.theme-shape li,
+.theme-shape td,
+.theme-shape th,
+.theme-shape label {
+  font-family: var(--font-body) !important;
+}
+
+/* Responsive avec élégance */
+@media (max-width: 768px) {
+  .theme-shape .main-title {
+    font-size: var(--font-size-h3);
+  }
+  
+  .theme-shape .card {
+    margin: var(--space-2);
+  }
+  
+  .theme-shape .login-container {
+    margin: var(--space-2);
+    padding: var(--space-3);
+  }
+}

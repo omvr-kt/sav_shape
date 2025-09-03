@@ -3,11 +3,10 @@ const router = express.Router();
 const { verifyToken, requireAdmin } = require('../middleware/auth');
 const { body } = require('express-validator');
 const { handleValidationErrors } = require('../middleware/validation');
-const sqlite3 = require('sqlite3').verbose();
-const db = new sqlite3.Database('saas.db');
+const { db } = require('../utils/database');
 
 // GET /api/invoices - Récupérer toutes les factures (admin) ou les factures du client
-router.get('/', verifyToken, (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
   const { status, client_id } = req.query;
   
   let sql = `
@@ -41,20 +40,19 @@ router.get('/', verifyToken, (req, res) => {
   
   sql += ' ORDER BY i.created_at DESC';
   
-  db.all(sql, params, (err, invoices) => {
-    if (err) {
-      console.error('Erreur récupération factures:', err);
-      return res.status(500).json({
-        success: false,
-        message: 'Erreur serveur'
-      });
-    }
-
+  try {
+    const invoices = await db.all(sql, params);
     res.json({
       success: true,
       data: { invoices }
     });
-  });
+  } catch (err) {
+    console.error('Erreur récupération factures:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Erreur serveur'
+    });
+  }
 });
 
 /**
@@ -90,7 +88,7 @@ function calculateTVA(amountHT, tvaRate = 20.00) {
  * @returns {Promise<Object>} - Facture créée
  */
 async function createAutomaticInvoice(clientId, quoteFile = null, specificationsFile = null, amount = null, description = 'Facture automatique générée lors de l\'inscription') {
-  return new Promise((resolve, reject) => {
+  try {
     const invoiceNumber = generateInvoiceNumber();
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + 30); // Échéance à 30 jours
@@ -100,29 +98,21 @@ async function createAutomaticInvoice(clientId, quoteFile = null, specifications
       VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)
     `;
 
-    db.run(sql, [invoiceNumber, clientId, quoteFile, specificationsFile, amount, description, dueDate.toISOString()], function(err) {
-      if (err) {
-        console.error('Erreur création facture automatique:', err);
-        reject(err);
-      } else {
-        console.log(`✅ Facture automatique créée: ${invoiceNumber} pour le client ${clientId}`);
-        
-        // Récupérer la facture créée
-        db.get('SELECT * FROM invoices WHERE id = ?', [this.lastID], (err, invoice) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(invoice);
-          }
-        });
-      }
-    });
-  });
+    const result = await db.run(sql, [invoiceNumber, clientId, quoteFile, specificationsFile, amount, description, dueDate.toISOString()]);
+    console.log(`✅ Facture automatique créée: ${invoiceNumber} pour le client ${clientId}`);
+    
+    // Récupérer la facture créée
+    const invoice = await db.get('SELECT * FROM invoices WHERE id = ?', [result.id]);
+    return invoice;
+  } catch (err) {
+    console.error('Erreur création facture automatique:', err);
+    throw err;
+  }
 }
 
 
 // GET /api/invoices/client/:clientId - Récupérer les factures d'un client
-router.get('/client/:clientId', verifyToken, (req, res) => {
+router.get('/client/:clientId', verifyToken, async (req, res) => {
   const clientId = parseInt(req.params.clientId);
 
   // Vérifier les permissions
@@ -141,26 +131,25 @@ router.get('/client/:clientId', verifyToken, (req, res) => {
     ORDER BY i.created_at DESC
   `;
 
-  db.all(sql, [clientId], (err, rows) => {
-    if (err) {
-      console.error('Erreur récupération factures client:', err);
-      return res.status(500).json({
-        success: false,
-        message: 'Erreur serveur'
-      });
-    }
-
+  try {
+    const rows = await db.all(sql, [clientId]);
     res.json({
       success: true,
       data: {
         invoices: rows
       }
     });
-  });
+  } catch (err) {
+    console.error('Erreur récupération factures client:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Erreur serveur'
+    });
+  }
 });
 
 // GET /api/invoices/:id - Récupérer une facture spécifique
-router.get('/:id', verifyToken, (req, res) => {
+router.get('/:id', verifyToken, async (req, res) => {
   const invoiceId = parseInt(req.params.id);
 
   const sql = `
@@ -190,15 +179,9 @@ router.get('/:id', verifyToken, (req, res) => {
     WHERE i.id = ?
   `;
 
-  db.get(sql, [invoiceId], (err, invoice) => {
-    if (err) {
-      console.error('Erreur récupération facture:', err);
-      return res.status(500).json({
-        success: false,
-        message: 'Erreur serveur'
-      });
-    }
-
+  try {
+    const invoice = await db.get(sql, [invoiceId]);
+    
     if (!invoice) {
       return res.status(404).json({
         success: false,
@@ -220,7 +203,13 @@ router.get('/:id', verifyToken, (req, res) => {
         invoice
       }
     });
-  });
+  } catch (err) {
+    console.error('Erreur récupération facture:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Erreur serveur'
+    });
+  }
 });
 
 // POST /api/invoices - Créer une nouvelle facture (admin uniquement)
@@ -240,84 +229,60 @@ router.post('/', [
   try {
     // D'abord récupérer les informations actuelles du client
     const clientSQL = 'SELECT first_name, last_name, email, company FROM users WHERE id = ?';
+    const client = await db.get(clientSQL, [client_id]);
     
-    db.get(clientSQL, [client_id], (err, client) => {
-      if (err) {
-        console.error('Erreur récupération client:', err);
-        return res.status(500).json({
-          success: false,
-          message: 'Erreur lors de la récupération du client'
-        });
-      }
-      
-      if (!client) {
-        return res.status(404).json({
-          success: false,
-          message: 'Client non trouvé'
-        });
-      }
-
-      // Calculer la TVA
-      const finalTvaRate = no_tva ? 0 : tva_rate;
-      const { amount_tva, amount_ttc } = calculateTVA(amount_ht, finalTvaRate);
-      
-      const invoiceNumber = generateInvoiceNumber();
-      const dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + 30);
-
-      const sql = `
-        INSERT INTO invoices (
-          invoice_number, client_id, amount_ht, tva_rate, amount_tva, amount_ttc, 
-          description, status, due_date, client_first_name, client_last_name, client_email, client_company
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?)
-      `;
-
-      db.run(sql, [
-        invoiceNumber, 
-        client_id, 
-        amount_ht, 
-        finalTvaRate, 
-        amount_tva, 
-        amount_ttc, 
-        description, 
-        dueDate.toISOString(),
-        client.first_name,
-        client.last_name,
-        client.email,
-        client.company
-      ], function(err) {
-      if (err) {
-        console.error('Erreur création facture:', err);
-        return res.status(500).json({
-          success: false,
-          message: 'Erreur lors de la création de la facture'
-        });
-      }
-
-        // Récupérer la facture créée avec les infos client
-        const getInvoiceSQL = `
-          SELECT i.*, u.first_name, u.last_name, u.email, u.company
-          FROM invoices i
-          LEFT JOIN users u ON i.client_id = u.id
-          WHERE i.id = ?
-        `;
-        
-        db.get(getInvoiceSQL, [this.lastID], (err, invoice) => {
-          if (err) {
-            return res.status(500).json({
-              success: false,
-              message: 'Erreur lors de la récupération de la facture'
-            });
-          }
-
-          res.status(201).json({
-            success: true,
-            message: 'Facture créée avec succès',
-            data: { invoice }
-          });
-        });
+    if (!client) {
+      return res.status(404).json({
+        success: false,
+        message: 'Client non trouvé'
       });
+    }
+
+    // Calculer la TVA
+    const finalTvaRate = no_tva ? 0 : tva_rate;
+    const { amount_tva, amount_ttc } = calculateTVA(amount_ht, finalTvaRate);
+    
+    const invoiceNumber = generateInvoiceNumber();
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 30);
+
+    const sql = `
+      INSERT INTO invoices (
+        invoice_number, client_id, amount_ht, tva_rate, amount_tva, amount_ttc, 
+        description, status, due_date, client_first_name, client_last_name, client_email, client_company
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?)
+    `;
+
+    const result = await db.run(sql, [
+      invoiceNumber, 
+      client_id, 
+      amount_ht, 
+      finalTvaRate, 
+      amount_tva, 
+      amount_ttc, 
+      description, 
+      dueDate.toISOString(),
+      client.first_name,
+      client.last_name,
+      client.email,
+      client.company
+    ]);
+
+    // Récupérer la facture créée avec les infos client
+    const getInvoiceSQL = `
+      SELECT i.*, u.first_name, u.last_name, u.email, u.company
+      FROM invoices i
+      LEFT JOIN users u ON i.client_id = u.id
+      WHERE i.id = ?
+    `;
+    
+    const invoice = await db.get(getInvoiceSQL, [result.id]);
+
+    res.status(201).json({
+      success: true,
+      message: 'Facture créée avec succès',
+      data: { invoice }
     });
   } catch (error) {
     console.error('Erreur création facture:', error);
@@ -334,7 +299,7 @@ router.put('/:id/status', [
   requireAdmin,
   body('status').isIn(['pending', 'paid', 'overdue', 'cancelled']).withMessage('Statut invalide'),
   handleValidationErrors
-], (req, res) => {
+], async (req, res) => {
 
   const invoiceId = parseInt(req.params.id);
   const { status } = req.body;
@@ -350,16 +315,10 @@ router.put('/:id/status', [
   updateSql += ' WHERE id = ?';
   params.push(invoiceId);
 
-  db.run(updateSql, params, function(err) {
-    if (err) {
-      console.error('Erreur mise à jour facture:', err);
-      return res.status(500).json({
-        success: false,
-        message: 'Erreur serveur'
-      });
-    }
+  try {
+    const result = await db.run(updateSql, params);
 
-    if (this.changes === 0) {
+    if (result.changes === 0) {
       return res.status(404).json({
         success: false,
         message: 'Facture non trouvée'
@@ -370,7 +329,13 @@ router.put('/:id/status', [
       success: true,
       message: 'Statut de la facture mis à jour'
     });
-  });
+  } catch (err) {
+    console.error('Erreur mise à jour facture:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Erreur serveur'
+    });
+  }
 });
 
 // PUT /api/invoices/:id - Mettre à jour une facture complète (admin uniquement)
@@ -382,7 +347,7 @@ router.put('/:id', [
   body('description').optional().trim().isLength({ min: 1, max: 1000 }).withMessage('Description invalide (max 1000 caractères)'),
   body('status').optional().isIn(['draft', 'sent', 'paid', 'overdue', 'cancelled']).withMessage('Statut invalide'),
   handleValidationErrors
-], (req, res) => {
+], async (req, res) => {
 
   const invoiceId = parseInt(req.params.id);
   const { amount_ht, tva_rate, description, status } = req.body;
@@ -393,86 +358,63 @@ router.put('/:id', [
       SELECT * FROM invoices WHERE id = ?
     `;
     
-    db.get(getInvoiceSQL, [invoiceId], (err, currentInvoice) => {
-      if (err) {
-        console.error('Erreur récupération facture:', err);
-        return res.status(500).json({
-          success: false,
-          message: 'Erreur serveur'
-        });
-      }
+    const currentInvoice = await db.get(getInvoiceSQL, [invoiceId]);
 
-      if (!currentInvoice) {
-        return res.status(404).json({
-          success: false,
-          message: 'Facture non trouvée'
-        });
-      }
-
-      // Utiliser les nouvelles valeurs ou garder les anciennes
-      const newAmountHt = amount_ht !== undefined ? parseFloat(amount_ht) : parseFloat(currentInvoice.amount_ht);
-      const newTvaRate = tva_rate !== undefined ? parseFloat(tva_rate) : parseFloat(currentInvoice.tva_rate);
-      const newDescription = description !== undefined ? description : currentInvoice.description;
-      const newStatus = status !== undefined ? status : currentInvoice.status;
-
-      // Recalculer la TVA avec les nouveaux montants
-      const { amount_tva, amount_ttc } = calculateTVA(newAmountHt, newTvaRate);
-
-      // Construire la requête de mise à jour
-      let updateSql = `
-        UPDATE invoices 
-        SET amount_ht = ?, tva_rate = ?, amount_tva = ?, amount_ttc = ?, 
-            description = ?, status = ?, updated_at = datetime('now', 'localtime')
-      `;
-      let params = [newAmountHt, newTvaRate, amount_tva, amount_ttc, newDescription, newStatus];
-
-      // Si le statut devient "paid", ajouter la date de paiement
-      if (newStatus === 'paid' && currentInvoice.status !== 'paid') {
-        updateSql += ', paid_date = datetime(\'now\', \'localtime\')';
-      }
-
-      updateSql += ' WHERE id = ?';
-      params.push(invoiceId);
-
-      db.run(updateSql, params, function(err) {
-        if (err) {
-          console.error('Erreur mise à jour facture:', err);
-          return res.status(500).json({
-            success: false,
-            message: 'Erreur lors de la mise à jour'
-          });
-        }
-
-        if (this.changes === 0) {
-          return res.status(404).json({
-            success: false,
-            message: 'Facture non trouvée'
-          });
-        }
-
-        // Récupérer la facture mise à jour avec les infos client
-        const getUpdatedInvoiceSQL = `
-          SELECT i.*, u.first_name, u.last_name, u.email, u.company
-          FROM invoices i
-          LEFT JOIN users u ON i.client_id = u.id
-          WHERE i.id = ?
-        `;
-        
-        db.get(getUpdatedInvoiceSQL, [invoiceId], (err, updatedInvoice) => {
-          if (err) {
-            return res.status(500).json({
-              success: false,
-              message: 'Erreur lors de la récupération de la facture mise à jour'
-            });
-          }
-
-          res.json({
-            success: true,
-            message: 'Facture mise à jour avec succès',
-            data: { invoice: updatedInvoice }
-          });
-        });
+    if (!currentInvoice) {
+      return res.status(404).json({
+        success: false,
+        message: 'Facture non trouvée'
       });
+    }
+
+    // Utiliser les nouvelles valeurs ou garder les anciennes
+    const newAmountHt = amount_ht !== undefined ? parseFloat(amount_ht) : parseFloat(currentInvoice.amount_ht);
+    const newTvaRate = tva_rate !== undefined ? parseFloat(tva_rate) : parseFloat(currentInvoice.tva_rate);
+    const newDescription = description !== undefined ? description : currentInvoice.description;
+    const newStatus = status !== undefined ? status : currentInvoice.status;
+
+    // Recalculer la TVA avec les nouveaux montants
+    const { amount_tva, amount_ttc } = calculateTVA(newAmountHt, newTvaRate);
+
+    // Construire la requête de mise à jour
+    let updateSql = `
+      UPDATE invoices 
+      SET amount_ht = ?, tva_rate = ?, amount_tva = ?, amount_ttc = ?, 
+          description = ?, status = ?, updated_at = datetime('now', 'localtime')
+    `;
+    let params = [newAmountHt, newTvaRate, amount_tva, amount_ttc, newDescription, newStatus];
+
+    // Si le statut devient "paid", ajouter la date de paiement
+    if (newStatus === 'paid' && currentInvoice.status !== 'paid') {
+      updateSql += ', paid_date = datetime(\'now\', \'localtime\')';
+    }
+
+    updateSql += ' WHERE id = ?';
+    params.push(invoiceId);
+
+    const result = await db.run(updateSql, params);
+
+    if (result.changes === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Facture non trouvée'
+      });
+    }
+
+    // Récupérer la facture mise à jour avec les infos client
+    const getUpdatedInvoiceSQL = `
+      SELECT i.*, u.first_name, u.last_name, u.email, u.company
+      FROM invoices i
+      LEFT JOIN users u ON i.client_id = u.id
+      WHERE i.id = ?
+    `;
+    
+    const updatedInvoice = await db.get(getUpdatedInvoiceSQL, [invoiceId]);
+
+    res.json({
+      success: true,
+      message: 'Facture mise à jour avec succès',
+      data: { invoice: updatedInvoice }
     });
   } catch (error) {
     console.error('Erreur mise à jour facture:', error);
@@ -484,20 +426,14 @@ router.put('/:id', [
 });
 
 // DELETE /api/invoices/:id - Supprimer une facture (admin uniquement)
-router.delete('/:id', verifyToken, requireAdmin, (req, res) => {
+router.delete('/:id', verifyToken, requireAdmin, async (req, res) => {
 
   const invoiceId = parseInt(req.params.id);
 
-  db.run('DELETE FROM invoices WHERE id = ?', [invoiceId], function(err) {
-    if (err) {
-      console.error('Erreur suppression facture:', err);
-      return res.status(500).json({
-        success: false,
-        message: 'Erreur serveur'
-      });
-    }
+  try {
+    const result = await db.run('DELETE FROM invoices WHERE id = ?', [invoiceId]);
 
-    if (this.changes === 0) {
+    if (result.changes === 0) {
       return res.status(404).json({
         success: false,
         message: 'Facture non trouvée'
@@ -508,12 +444,18 @@ router.delete('/:id', verifyToken, requireAdmin, (req, res) => {
       success: true,
       message: 'Facture supprimée avec succès'
     });
-  });
+  } catch (err) {
+    console.error('Erreur suppression facture:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Erreur serveur'
+    });
+  }
 });
 
 
 // GET /api/invoices/:id/pdf - Télécharger la facture en PDF
-router.get('/:id/pdf', verifyToken, (req, res) => {
+router.get('/:id/pdf', verifyToken, async (req, res) => {
   const invoiceId = parseInt(req.params.id);
 
   const sql = `
@@ -543,15 +485,9 @@ router.get('/:id/pdf', verifyToken, (req, res) => {
     WHERE i.id = ?
   `;
 
-  db.get(sql, [invoiceId], (err, invoice) => {
-    if (err) {
-      console.error('Erreur récupération facture pour PDF:', err);
-      return res.status(500).json({
-        success: false,
-        message: 'Erreur serveur'
-      });
-    }
-
+  try {
+    const invoice = await db.get(sql, [invoiceId]);
+    
     if (!invoice) {
       return res.status(404).json({
         success: false,
@@ -572,7 +508,13 @@ router.get('/:id/pdf', verifyToken, (req, res) => {
       success: true,
       data: { invoice }
     });
-  });
+  } catch (err) {
+    console.error('Erreur récupération facture pour PDF:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Erreur serveur'
+    });
+  }
 });
 
 module.exports = { router, createAutomaticInvoice };

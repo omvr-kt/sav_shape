@@ -89,7 +89,7 @@ function getTimeAgo(date) {
   if (!date) return '-';
   
   const parsedDate = typeof date === 'string' ? new Date(date) : date;
-  const now = new Date();
+  const now = getCurrentParisTime(); // Utiliser l'heure de Paris
   const diffMs = now - parsedDate;
   
   if (diffMs < 0) return 'Dans le futur';
@@ -114,7 +114,7 @@ function getTimeAgo(date) {
 function isOverdue(deadline) {
   if (!deadline) return false;
   
-  const now = new Date();
+  const now = getCurrentParisTime(); // Utiliser l'heure de Paris
   const parsedDeadline = typeof deadline === 'string' ? new Date(deadline) : deadline;
   
   return parsedDeadline < now;
@@ -128,7 +128,7 @@ function isOverdue(deadline) {
 function isApproaching(deadline) {
   if (!deadline) return false;
   
-  const now = new Date();
+  const now = getCurrentParisTime(); // Utiliser l'heure de Paris
   const parsedDeadline = typeof deadline === 'string' ? new Date(deadline) : deadline;
   const diffMs = parsedDeadline - now;
   const twoHoursMs = 2 * 60 * 60 * 1000;

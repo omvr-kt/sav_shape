@@ -713,7 +713,10 @@ class TicketsApp {
       `;
       
       // Mettre à jour les dates avec le bon fuseau horaire après injection DOM
-      updateAllDatesInDOM();
+      // Utiliser setTimeout pour s'assurer que le DOM est complètement rendu
+      setTimeout(() => {
+        updateAllDatesInDOM();
+      }, 10);
     } catch (error) {
       console.error('Error loading comments:', error);
       container.innerHTML = `

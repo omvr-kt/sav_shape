@@ -208,7 +208,7 @@ class BusinessHours {
     };
 
     const thresholdHours = thresholds[priority] || 24;
-    const now = new Date();
+    const now = this.toParisTime(new Date()); // Utiliser l'heure de Paris
     const deadline = this.addBusinessHours(startDate, thresholdHours);
     
     // Si on est passé la deadline
@@ -254,7 +254,7 @@ class BusinessHours {
     };
 
     const thresholdHours = thresholds[priority] || 24;
-    const now = new Date();
+    const now = this.toParisTime(new Date()); // Utiliser l'heure de Paris
     const deadline = this.addBusinessHours(startDate, thresholdHours);
     const elapsedHours = this.getBusinessHoursBetween(startDate, now);
     const remainingHours = this.getBusinessHoursBetween(now, deadline);

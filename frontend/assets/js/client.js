@@ -994,7 +994,10 @@ class ClientApp {
     document.body.appendChild(modal);
     
     // Mettre à jour les dates avec le bon fuseau horaire après injection DOM
-    updateAllDatesInDOM();
+    // Utiliser setTimeout pour s'assurer que le DOM est complètement rendu
+    setTimeout(() => {
+      updateAllDatesInDOM();
+    }, 10);
     
     // Focus trap
     setTimeout(() => {

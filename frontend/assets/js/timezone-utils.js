@@ -161,6 +161,22 @@ function toISOString(date) {
   return parsedDate.toISOString();
 }
 
+/**
+ * Obtient la date/heure actuelle en heure de Paris
+ * @returns {Date} Date actuelle en heure de Paris
+ */
+function getCurrentParisTime() {
+  return new Date(new Date().toLocaleString("en-US", {timeZone: "Europe/Paris"}));
+}
+
+/**
+ * Obtient le mois actuel en heure de Paris au format YYYY-MM
+ * @returns {string} Mois actuel (ex: "2024-03")
+ */
+function getCurrentParisMonth() {
+  return getCurrentParisTime().toISOString().slice(0, 7);
+}
+
 // Fonction globale pour remplacer toutes les dates dans le DOM
 function updateAllDatesInDOM() {
   // Dates complètes

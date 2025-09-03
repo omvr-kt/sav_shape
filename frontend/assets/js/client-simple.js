@@ -359,7 +359,12 @@ class ClientApp {
 
   formatDate(dateString) {
     try {
-      return new Date(dateString).toLocaleDateString('fr-FR');
+      return new Date(dateString).toLocaleDateString('fr-FR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        timeZone: 'Europe/Paris'
+      });
     } catch {
       return dateString;
     }

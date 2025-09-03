@@ -402,7 +402,8 @@ class ProjectsApp {
       return new Date(dateString).toLocaleDateString('fr-FR', {
         year: 'numeric',
         month: 'long',
-        day: 'numeric'
+        day: 'numeric',
+        timeZone: 'Europe/Paris'
       });
     } catch {
       return dateString;

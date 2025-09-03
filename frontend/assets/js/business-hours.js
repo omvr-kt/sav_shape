@@ -11,13 +11,24 @@ class BusinessHours {
   }
 
   /**
+   * Convertit une date vers l'heure de Paris
+   * @param {Date} date - Date à convertir
+   * @returns {Date} - Date convertie en heure de Paris
+   */
+  toParisTime(date) {
+    return new Date(date.toLocaleString("en-US", {timeZone: "Europe/Paris"}));
+  }
+
+  /**
    * Vérifie si une date donnée est en heures ouvrables
    * @param {Date} date - La date à vérifier
    * @returns {boolean} - True si en heures ouvrables
    */
   isBusinessTime(date) {
-    const dayOfWeek = date.getDay();
-    const hour = date.getHours();
+    // Convertir vers l'heure de Paris pour les calculs
+    const parisDate = this.toParisTime(date);
+    const dayOfWeek = parisDate.getDay();
+    const hour = parisDate.getHours();
     
     return this.WORK_DAYS.includes(dayOfWeek) && 
            hour >= this.START_HOUR && 

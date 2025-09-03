@@ -69,7 +69,8 @@ class OverviewApp {
       const activeProjects = this.projects.filter(p => p.status === 'active');
       const openTickets = this.tickets.filter(t => t.status === 'open');
       const inProgressTickets = this.tickets.filter(t => t.status === 'in_progress');
-      const currentMonth = new Date().toISOString().slice(0, 7);
+      // Obtenir le mois actuel en heure de Paris
+      const currentMonth = getCurrentParisMonth();
       const resolvedTickets = this.tickets.filter(t => 
         t.status === 'resolved' && 
         t.updated_at?.startsWith(currentMonth)
@@ -147,7 +148,12 @@ class OverviewApp {
 
   formatDate(dateString) {
     try {
-      return new Date(dateString).toLocaleDateString('fr-FR');
+      return new Date(dateString).toLocaleDateString('fr-FR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        timeZone: 'Europe/Paris'
+      });
     } catch {
       return dateString;
     }

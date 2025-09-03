@@ -498,19 +498,8 @@ class TicketsApp {
   }
 
   getTimeAgo(dateString) {
-    const now = new Date();
-    const created = new Date(dateString);
-    const diffInMinutes = Math.floor((now - created) / (1000 * 60));
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    const diffInDays = Math.floor(diffInHours / 24);
-
-    if (diffInMinutes < 60) {
-      return `${diffInMinutes}min`;
-    } else if (diffInHours < 24) {
-      return `${diffInHours}h`;
-    } else {
-      return `${diffInDays}j`;
-    }
+    // Utiliser la fonction globale de timezone-utils.js qui gère correctement Paris
+    return getTimeAgo(dateString);
   }
 
   getDelayClass(dateString, priority) {
@@ -761,7 +750,12 @@ class TicketsApp {
 
   formatDate(dateString) {
     try {
-      return new Date(dateString).toLocaleDateString('fr-FR');
+      return new Date(dateString).toLocaleDateString('fr-FR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        timeZone: 'Europe/Paris'
+      });
     } catch {
       return dateString;
     }

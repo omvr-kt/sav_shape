@@ -392,6 +392,11 @@ class TicketsApp {
     this.updateElementText('waitingClientCount', waitingClientCount);
     this.updateElementText('resolvedCount', resolvedCount);
     this.updateElementText('ticketCount', activeTicketsCount); // Badge sidebar - tickets actifs uniquement
+    
+    // Synchroniser le badge avec les autres pages
+    if (typeof window.refreshTicketBadge === 'function') {
+      window.refreshTicketBadge();
+    }
   }
 
   updateElementText(elementId, value) {
@@ -651,7 +656,9 @@ class TicketsApp {
         this.filterTickets();
         
         // Mettre à jour le badge sidebar sur toutes les pages
-        updateTicketBadge();
+        if (typeof window.refreshTicketBadge === 'function') {
+          window.refreshTicketBadge();
+        }
         
         this.closeModal();
         alert('Ticket créé avec succès !');

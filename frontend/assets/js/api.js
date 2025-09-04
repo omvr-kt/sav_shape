@@ -438,7 +438,15 @@ async function updateTicketBadge() {
           ticket.status !== 'resolved' && ticket.status !== 'closed'
         ).length;
       } else {
-        // Données de test par défaut
+        // Données de test par défaut - synchronisées avec client-tickets.js
+        const now = new Date();
+        const yesterday = new Date(now);
+        yesterday.setDate(now.getDate() - 1);
+        const twoDaysAgo = new Date(now);
+        twoDaysAgo.setDate(now.getDate() - 2);
+        const threeDaysAgo = new Date(now);
+        threeDaysAgo.setDate(now.getDate() - 3);
+        
         const defaultTestTickets = [
           {
             id: 1,
@@ -446,7 +454,7 @@ async function updateTicketBadge() {
             status: 'in_progress',
             priority: 'urgent',
             project_id: 1,
-            created_at: '2024-01-15T10:30:00Z'
+            created_at: yesterday.toISOString()
           },
           {
             id: 2,
@@ -454,7 +462,7 @@ async function updateTicketBadge() {
             status: 'waiting_client',
             priority: 'normal',
             project_id: 2,
-            created_at: '2024-01-10T14:15:00Z'
+            created_at: twoDaysAgo.toISOString()
           },
           {
             id: 3,
@@ -462,7 +470,7 @@ async function updateTicketBadge() {
             status: 'resolved',
             priority: 'high',
             project_id: 3,
-            created_at: '2024-01-08T09:45:00Z'
+            created_at: threeDaysAgo.toISOString()
           }
         ];
         // Compter seulement les tickets actifs dans les données par défaut
@@ -509,10 +517,19 @@ function initTicketBadge() {
   } else {
     updateTicketBadge();
   }
+  
+  // Mettre à jour le badge périodiquement pour maintenir la synchronisation
+  setInterval(updateTicketBadge, 30000); // Toutes les 30 secondes
+}
+
+// Fonction pour forcer la mise à jour immédiate du badge (appelée lors de changements)
+function refreshTicketBadge() {
+  updateTicketBadge();
 }
 
 // Rendre les fonctions disponibles globalement
 window.updateTicketBadge = updateTicketBadge;
+window.refreshTicketBadge = refreshTicketBadge;
 window.initTicketBadge = initTicketBadge;
 
 // Global instance

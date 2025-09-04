@@ -381,6 +381,39 @@ class ApiClient {
   async getClientInvoices(clientId) {
     return this.request(`/invoices/client/${clientId}`);
   }
+
+  // === ATTACHMENTS ===
+  async uploadAttachment(commentId, fileData) {
+    const formData = new FormData();
+    formData.append('attachment', fileData);
+    
+    const url = `/attachments/comment/${commentId}`;
+    return fetch(`${this.baseURL}${url}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: formData
+    }).then(response => response.json());
+  }
+
+  async getCommentAttachments(commentId) {
+    return this.request(`/attachments/comment/${commentId}`);
+  }
+
+  async downloadAttachment(attachmentId) {
+    const token = localStorage.getItem('token');
+    const url = `${this.baseURL}/attachments/download/${attachmentId}`;
+    
+    // Ouvrir le lien de téléchargement dans un nouvel onglet
+    window.open(`${url}?token=${token}`, '_blank');
+  }
+
+  async deleteAttachment(attachmentId) {
+    return this.request(`/attachments/${attachmentId}`, {
+      method: 'DELETE'
+    });
+  }
 }
 
 // Global instance

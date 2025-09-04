@@ -144,23 +144,24 @@ class AdminApp {
 
   async loadDashboard() {
     try {
-      const [statsResponse, overdueResponse, recentResponse] = await Promise.all([
+      const [statsResponse, clientsResponse, recentResponse] = await Promise.all([
         api.getTicketStats(),
-        api.getOverdueTickets(),
+        api.getUsers({ role: 'client' }),
         api.getTickets({ limit: 5 })
       ]);
 
       const stats = statsResponse.data.stats;
+      const clients = clientsResponse.data.users;
       
       // Update stats cards
       document.getElementById('totalTickets').textContent = stats.total;
       document.getElementById('urgentTickets').textContent = 
         (await api.getTickets({ priority: 'urgent', status: 'open' })).data.tickets.length;
-      document.getElementById('overdueTickets').textContent = stats.overdue;
+      document.getElementById('totalClients').textContent = clients.length;
       document.getElementById('resolvedTickets').textContent = stats.resolved;
 
-      // Update overdue tickets
-      this.renderOverdueTickets(overdueResponse.data.tickets);
+      // Update recent clients
+      this.renderRecentClients(clients.slice(0, 5));
 
       // Update recent tickets
       this.renderRecentTickets(recentResponse.data.tickets.slice(0, 5));
@@ -170,22 +171,23 @@ class AdminApp {
     }
   }
 
-  renderOverdueTickets(tickets) {
-    const container = document.getElementById('overdueTicketsList');
+  renderRecentClients(clients) {
+    const container = document.getElementById('recentClientsList');
     
-    if (tickets.length === 0) {
-      container.innerHTML = '<div class="empty-state">Aucun ticket en retard </div>';
+    if (clients.length === 0) {
+      container.innerHTML = '<div class="empty-state">Aucun client</div>';
       return;
     }
 
-    container.innerHTML = tickets.map(ticket => `
-      <div class="ticket-item">
-        <div class="ticket-title">${ticket.title}</div>
-        <div class="ticket-meta">
-          <span>${ticket.client_company || ticket.client_first_name + ' ' + ticket.client_last_name}</span>
-          <div class="ticket-badges">
-            <span class="status-badge ${api.getPriorityClass(ticket.priority)}">${api.formatPriority(ticket.priority)}</span>
-            <span class="status-badge ${api.getStatusClass(ticket.status)}">${api.formatStatus(ticket.status)}</span>
+    container.innerHTML = clients.map(client => `
+      <div class="client-item">
+        <div class="client-title">${client.first_name} ${client.last_name}</div>
+        <div class="client-meta">
+          <span>${client.company || client.email}</span>
+          <div class="client-badges">
+            <span class="status-badge ${client.is_active ? 'status-active' : 'status-inactive'}">
+              ${client.is_active ? 'Actif' : 'Inactif'}
+            </span>
           </div>
         </div>
       </div>
@@ -590,6 +592,22 @@ class AdminApp {
                   <textarea id="commentContent" name="content" class="form-input" 
                             rows="3" placeholder="Votre commentaire..." required></textarea>
                 </div>
+                
+                <!-- File attachment section -->
+                <div class="form-group">
+                  <button type="button" id="attachFileBtn" class="btn btn-outline btn-sm">
+                    📎 Joindre des fichiers
+                  </button>
+                  <input type="file" id="fileInput" multiple accept=".jpg,.jpeg,.png,.gif,.bmp,.webp,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip,.rar" style="display: none;">
+                  <small style="color: #666; margin-left: 10px;">Max 10MB par fichier</small>
+                </div>
+                
+                <!-- Selected files display -->
+                <div id="selectedFilesSection" class="form-group" style="display: none;">
+                  <label>Fichiers sélectionnés:</label>
+                  <div id="selectedFilesList"></div>
+                </div>
+                
                 <div class="form-group">
                   <label>
                     <input type="checkbox" id="commentInternal" name="is_internal">
@@ -598,7 +616,7 @@ class AdminApp {
                 </div>
                 <div class="form-actions">
                   <button type="button" class="btn btn-secondary cancel-btn" onclick="adminApp.closeModal()">Annuler</button>
-                  <button type="submit" class="btn btn-primary">Ajouter le commentaire</button>
+                  <button type="submit" class="btn btn-primary" id="submitCommentBtn">Ajouter le commentaire</button>
                 </div>
               </form>
             </div>
@@ -615,9 +633,47 @@ class AdminApp {
       
       // Gérer l'ajout de commentaire
       const ticketId = id; // Sauvegarder l'ID du ticket pour le closure
+      
+      // File attachment functionality
+      let selectedFiles = [];
+      window.currentSelectedFiles = selectedFiles; // Make it globally accessible for removal
+      const attachFileBtn = document.getElementById('attachFileBtn');
+      const fileInput = document.getElementById('fileInput');
+      const selectedFilesSection = document.getElementById('selectedFilesSection');
+      const selectedFilesList = document.getElementById('selectedFilesList');
+
+      attachFileBtn.addEventListener('click', () => {
+        fileInput.click();
+      });
+
+      fileInput.addEventListener('change', (e) => {
+        const files = Array.from(e.target.files);
+        
+        files.forEach(file => {
+          // Check file size (10MB max)
+          if (file.size > 10 * 1024 * 1024) {
+            alert(`Le fichier "${file.name}" est trop volumineux (max 10MB)`);
+            return;
+          }
+          
+          // Check if file is already selected
+          const existingFile = selectedFiles.find(f => f.name === file.name && f.size === file.size);
+          if (existingFile) {
+            alert(`Le fichier "${file.name}" est déjà sélectionné`);
+            return;
+          }
+          
+          selectedFiles.push(file);
+        });
+        
+        window.currentSelectedFiles = selectedFiles; // Update global reference
+        this.updateFileDisplay(selectedFiles, selectedFilesSection, selectedFilesList);
+        fileInput.value = ''; // Clear input for next selection
+      });
+      
       document.getElementById('addCommentForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        await this.addComment(ticketId, e.target);
+        await this.addComment(ticketId, e.target, selectedFiles);
       });
       
       // Event listener pour le bouton éditer (le bouton fermer est géré par createModal)
@@ -661,7 +717,7 @@ class AdminApp {
     }
   }
 
-  async addComment(ticketId, form) {
+  async addComment(ticketId, form, attachments = []) {
     const formData = new FormData(form);
     const commentData = {
       ticket_id: ticketId,
@@ -676,11 +732,33 @@ class AdminApp {
 
     try {
       const submitBtn = form.querySelector('button[type="submit"]');
+      const originalText = submitBtn.textContent;
       submitBtn.disabled = true;
       submitBtn.textContent = 'Ajout en cours...';
 
+      // Create comment first
+      const commentResponse = await api.createComment(ticketId, commentData);
+      
+      if (!commentResponse.success) {
+        throw new Error(commentResponse.message || 'Erreur lors de la création du commentaire');
+      }
 
-      await api.createComment(ticketId, commentData);
+      const commentId = commentResponse.data.comment.id;
+
+      // Upload attachments if any
+      if (attachments.length > 0) {
+        submitBtn.textContent = `Upload ${attachments.length} fichier(s)...`;
+        
+        for (let i = 0; i < attachments.length; i++) {
+          const file = attachments[i];
+          try {
+            await api.uploadAttachment(commentId, file);
+          } catch (uploadError) {
+            console.error(`Erreur upload fichier ${file.name}:`, uploadError);
+            this.showNotification(`Erreur lors de l'upload du fichier "${file.name}": ${uploadError.message}`, 'error');
+          }
+        }
+      }
       
       // Réinitialiser le formulaire
       form.reset();
@@ -939,7 +1017,7 @@ class AdminApp {
               <option value="active" ${project.status === 'active' ? 'selected' : ''}> Actif</option>
               <option value="paused" ${project.status === 'paused' ? 'selected' : ''}> En pause</option>
               <option value="completed" ${project.status === 'completed' ? 'selected' : ''}> Terminé</option>
-              <option value="archived" ${project.status === 'archived' ? 'selected' : ''}>📦 Archivé</option>
+              <option value="archived" ${project.status === 'archived' ? 'selected' : ''}>Archivé</option>
             </select>
           </div>
           
@@ -950,7 +1028,7 @@ class AdminApp {
                 <span> ${project.ticket_count || 0} tickets total</span>
                 <span>${project.active_ticket_count || 0} tickets actifs</span>
               </div>
-              <p><small>📅 Créé le ${api.formatDate(project.created_at)}</small></p>
+              <p><small>Créé le ${api.formatDate(project.created_at)}</small></p>
             </div>
           </div>
           
@@ -1072,7 +1150,7 @@ class AdminApp {
           <div class="delete-alternatives">
             <p><strong>Alternatives à la suppression :</strong></p>
             <button type="button" class="btn btn-warning btn-sm archive-project-btn" data-project-id="${id}">
-              📦 Archiver le projet à la place
+              Archiver le projet à la place
             </button>
           </div>
           
@@ -1298,7 +1376,7 @@ class AdminApp {
           
           <div class="form-info">
             <p><small> ${client.project_count || 0} projets - ${client.ticket_count || 0} tickets</small></p>
-            <p><small>📅 Inscrit le ${api.formatDate(client.created_at)}</small></p>
+            <p><small>Inscrit le ${api.formatDate(client.created_at)}</small></p>
           </div>
           
           <div class="form-actions">
@@ -2703,7 +2781,7 @@ class AdminApp {
             <span class="status-badge status-${invoice.status}">${this.getInvoiceStatusLabel(invoice.status)}</span>
           </div>
           <div class="invoice-dates">
-            <p><strong>📅 Créée le:</strong> ${api.formatDate(invoice.created_at)}</p>
+            <p><strong>Créée le:</strong> ${api.formatDate(invoice.created_at)}</p>
             ${invoice.due_date ? `<p><strong>Échéance:</strong> ${api.formatDate(invoice.due_date)}</p>` : ''}
             ${invoice.paid_date ? `<p><strong> Payée le:</strong> ${api.formatDate(invoice.paid_date)}</p>` : ''}
           </div>
@@ -2820,7 +2898,7 @@ class AdminApp {
         
         <div class="form-actions">
           <button type="button" class="btn btn-secondary cancel-btn">Annuler</button>
-          <button type="submit" class="btn btn-primary">💾 Enregistrer les modifications</button>
+          <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
         </div>
       </form>
     `, 'large');
@@ -2902,6 +2980,53 @@ class AdminApp {
       this.showNotification(error.message || 'Erreur lors de la mise à jour', 'error');
       throw error;
     }
+  }
+
+  updateFileDisplay(selectedFiles, selectedFilesSection, selectedFilesList) {
+    if (selectedFiles.length === 0) {
+      selectedFilesSection.style.display = 'none';
+      return;
+    }
+
+    selectedFilesSection.style.display = 'block';
+    selectedFilesList.innerHTML = selectedFiles.map((file, index) => `
+      <div style="display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin: 4px 0;">
+        <div style="font-size: 16px;">${this.getFileIcon(file.type)}</div>
+        <div style="flex: 1;">
+          <div style="font-weight: 500; font-size: 14px;">${file.name}</div>
+          <div style="font-size: 12px; color: #666;">${this.formatFileSize(file.size)}</div>
+        </div>
+        <button type="button" onclick="adminApp.removeFile(${index})" 
+                style="background: none; border: none; color: #dc3545; cursor: pointer; padding: 4px; font-size: 16px;">✕</button>
+      </div>
+    `).join('');
+  }
+
+  removeFile(index) {
+    // This will be set by the event listener in showTicketDetails
+    if (window.currentSelectedFiles) {
+      window.currentSelectedFiles.splice(index, 1);
+      const selectedFilesSection = document.getElementById('selectedFilesSection');
+      const selectedFilesList = document.getElementById('selectedFilesList');
+      this.updateFileDisplay(window.currentSelectedFiles, selectedFilesSection, selectedFilesList);
+    }
+  }
+
+  getFileIcon(mimeType) {
+    if (mimeType.startsWith('image/')) return '🖼️';
+    if (mimeType === 'application/pdf') return '📄';
+    if (mimeType.includes('word') || mimeType.includes('document')) return '📝';
+    if (mimeType.includes('sheet') || mimeType.includes('excel')) return '📊';
+    if (mimeType.includes('zip') || mimeType.includes('rar')) return '🗜️';
+    return '📁';
+  }
+
+  formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 }
 

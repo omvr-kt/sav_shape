@@ -58,60 +58,95 @@
         <div class="main-content" id="mainContent">
             <header class="main-header">
                 <div class="main-header__left">
-                    <button class="sidebar-toggle" onclick="toggleSidebar()">
-                        <span style="font-size: 20px;">Menu</span>
-                    </button>
                     <div>
                         <h1 class="main-title">Mes Factures</h1>
                         <p class="main-subtitle">Consultez vos factures et paiements</p>
                     </div>
                 </div>
                 <div class="main-header__right">
-                    <select id="invoiceStatusFilter" class="select">
-                        <option value="">Tous les statuts</option>
-                        <option value="draft">Brouillon</option>
-                        <option value="sent">Envoyée</option>
-                        <option value="paid">Payée</option>
-                        <option value="overdue">En retard</option>
-                    </select>
-                    <button id="refreshInvoices" class="btn btn--secondary btn--sm">Actualiser</button>
-                    <button id="logoutBtn" class="btn btn--ghost btn--sm">Logout</button>
+                    <button id="logoutBtn" class="btn btn--ghost btn--sm">Déconnexion</button>
                 </div>
             </header>
 
             <main class="page-content">
-                <!-- KPI Cards pour les factures -->
-                <div class="card-grid mb-4">
-                    <div class="card card--kpi">
-                        <div class="card__body">
-                            <div class="card__kpi-value" id="totalInvoicesCount">0</div>
-                            <div class="card__kpi-label">Total factures</div>
+                <!-- Actions principales -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-5);">
+                    <div style="display: flex; gap: var(--space-3); align-items: center;">
+                        <div class="dropdown">
+                            <button class="dropdown-toggle">
+                                <span>Filtrer par statut</span>
+                                <span>▼</span>
+                            </button>
+                            <div class="dropdown-menu">
+                                <a href="#" class="dropdown-item status-filter-item" data-status="">
+                                    Tous les statuts
+                                </a>
+                                <a href="#" class="dropdown-item status-filter-item" data-status="draft">
+                                    <span class="badge status-draft">Brouillon</span>
+                                    Brouillon
+                                </a>
+                                <a href="#" class="dropdown-item status-filter-item" data-status="sent">
+                                    <span class="badge status-sent">Envoyée</span>
+                                    Envoyée
+                                </a>
+                                <a href="#" class="dropdown-item status-filter-item" data-status="paid">
+                                    <span class="badge status-paid">Payée</span>
+                                    Payée
+                                </a>
+                                <a href="#" class="dropdown-item status-filter-item" data-status="overdue">
+                                    <span class="badge status-overdue">En retard</span>
+                                    En retard
+                                </a>
+                            </div>
                         </div>
+                        <button class="btn btn-secondary" id="refreshInvoicesBtn">
+                            Actualiser
+                        </button>
                     </div>
-                    <div class="card card--kpi">
-                        <div class="card__body">
-                            <div class="card__kpi-value" id="paidAmount">0€</div>
-                            <div class="card__kpi-label">Montant payé</div>
-                            <div class="card__kpi-trend card__kpi-trend--up">
-                                À jour
+                </div>
+
+                <!-- Statistiques rapides -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-5);">
+                    <div class="card">
+                        <div class="card-body">
+                            <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-2);">
+                                <div style="font-size: 24px; font-weight: 700; color: var(--color-primary);" id="totalInvoicesCount">0</div>
+                                <div style="font-size: 14px; color: var(--color-muted); line-height: 1.2;">
+                                    Total des<br>factures
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="card card--kpi">
-                        <div class="card__body">
-                            <div class="card__kpi-value" id="pendingAmount">0€</div>
-                            <div class="card__kpi-label">En attente</div>
-                            <div class="card__kpi-trend card__kpi-trend--neutral">
-                                En cours
+                    
+                    <div class="card">
+                        <div class="card-body">
+                            <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-2);">
+                                <div style="font-size: 24px; font-weight: 700; color: var(--color-success);" id="paidAmount">0€</div>
+                                <div style="font-size: 14px; color: var(--color-muted); line-height: 1.2;">
+                                    Montant<br>payé
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="card card--kpi card--warning">
-                        <div class="card__body">
-                            <div class="card__kpi-value" id="overdueAmount">0€</div>
-                            <div class="card__kpi-label">En retard</div>
-                            <div class="card__kpi-trend card__kpi-trend--down">
-                                Attention
+                    
+                    <div class="card">
+                        <div class="card-body">
+                            <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-2);">
+                                <div style="font-size: 24px; font-weight: 700; color: var(--color-info);" id="pendingAmount">0€</div>
+                                <div style="font-size: 14px; color: var(--color-muted); line-height: 1.2;">
+                                    En<br>attente
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-body">
+                            <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-2);">
+                                <div style="font-size: 24px; font-weight: 700; color: var(--color-error);" id="overdueAmount">0€</div>
+                                <div style="font-size: 14px; color: var(--color-muted); line-height: 1.2;">
+                                    En<br>retard
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -136,45 +171,16 @@
     </div>
 
     <!-- Overlay mobile -->
-    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
     <!-- Modals will be injected here -->
     <div id="modalContainer"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="/assets/js/pdf-generator.js?v=1756818165"></script>
-    <script src="/assets/js/api.js?v=1756818165"></script>
-    <script src="/assets/js/client-invoices.js?v=1756818165"></script>
+    <script src="/assets/js/pdf-generator.js?v=1756979841"></script>
+    <script src="/assets/js/api.js?v=1756979841"></script>
+    <script src="/assets/js/client-invoices.js?v=1756979841"></script>
     
     <script>
-        // Sidebar functionality
-        let sidebarCollapsed = false;
-
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const mainContent = document.getElementById('mainContent');
-            const overlay = document.getElementById('sidebarOverlay');
-
-            if (window.innerWidth <= 768) {
-                sidebar.classList.toggle('sidebar--mobile-open');
-                overlay.classList.toggle('sidebar-overlay--visible');
-                document.body.style.overflow = sidebar.classList.contains('sidebar--mobile-open') ? 'hidden' : '';
-            } else {
-                sidebarCollapsed = !sidebarCollapsed;
-                sidebar.classList.toggle('sidebar--collapsed', sidebarCollapsed);
-                mainContent.classList.toggle('main-content--sidebar-collapsed', sidebarCollapsed);
-            }
-        }
-
-        window.addEventListener('resize', () => {
-            if (window.innerWidth > 768) {
-                const sidebar = document.getElementById('sidebar');
-                const overlay = document.getElementById('sidebarOverlay');
-                sidebar.classList.remove('sidebar--mobile-open');
-                overlay.classList.remove('sidebar-overlay--visible');
-                document.body.style.overflow = '';
-            }
-        });
     </script>
 </body>
 </html>

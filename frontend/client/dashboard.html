@@ -3,14 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Shape SAV</title>
+    <title>Tableau de Bord - Shape SAV</title>
     <!-- Theme Shape Design System -->
     <link rel="stylesheet" href="/styles/theme-shape.css">
     <link rel="stylesheet" href="/src/components/ui/index.css">
-    <link rel="stylesheet" href="/assets/css/main.css">
-    <link rel="stylesheet" href="/assets/css/sidebar.css">
-    <link rel="stylesheet" href="/assets/css/components.css">
-    <link rel="stylesheet" href="/assets/css/client.css">
+    <link rel="stylesheet" href="/assets/css/design-system.css?v=1756978081">
+    <link rel="stylesheet" href="/assets/css/main.css?v=1756978081">
+    <link rel="stylesheet" href="/assets/css/sidebar.css?v=1756978081">
+    <link rel="stylesheet" href="/assets/css/components.css?v=1756978081">
+    <link rel="stylesheet" href="/assets/css/client.css?v=1756978081">
 </head>
 <body>
     <div class="app-layout">
@@ -55,7 +56,6 @@
         <div class="main-content" id="mainContent">
             <header class="main-header">
                 <div class="main-header__left">
-                    <button class="sidebar-toggle" onclick="toggleSidebar()">Menu</button>
                     <div>
                         <h1 class="main-title">Tableau de bord</h1>
                         <p class="main-subtitle">Vue d'ensemble de votre espace client</p>
@@ -68,7 +68,7 @@
                         <option value="3m">3 derniers mois</option>
                         <option value="1y">Cette année</option>
                     </select>
-                    <button id="logoutBtn" class="btn btn--ghost btn--sm">Logout</button>
+                    <button id="logoutBtn" class="btn btn--ghost btn--sm">Déconnexion</button>
                 </div>
             </header>
             
@@ -308,7 +308,7 @@
                             <!-- Timeline item 2 -->
                             <div style="display: flex; gap: var(--space-3);">
                                 <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--color-success); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                    <span style="color: var(--color-surface); font-size: 18px;">Done</span>
+                                    <span style="color: var(--color-surface); font-size: 18px;">Terminé</span>
                                 </div>
                                 <div style="flex: 1;">
                                     <div style="font-weight: 600; margin-bottom: 4px;">
@@ -348,20 +348,9 @@
     </div>
 
     <!-- Overlay mobile -->
-    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
     
     <script src="/assets/js/api.js?v=1756818386"></script>
     <script>
-        // Sidebar toggle functionality
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebarOverlay');
-            const mainContent = document.getElementById('mainContent');
-            
-            sidebar.classList.toggle('sidebar--open');
-            overlay.classList.toggle('sidebar-overlay--active');
-            mainContent.classList.toggle('main-content--shifted');
-        }
 
         // Logout functionality
         document.getElementById('logoutBtn').addEventListener('click', function() {

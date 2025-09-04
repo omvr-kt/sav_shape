@@ -643,9 +643,9 @@ class ClientApp {
     const labels = {
       'open': 'Ouvert',
       'in_progress': 'En cours de traitement',
-      'waiting_client': '⏳ En attente de votre retour',
+      'waiting_client': 'En attente de votre retour',
       'resolved': 'Résolu',
-      'closed': '⚫ Fermé'
+      'closed': 'Fermé'
     };
     return labels[status] || status;
   }

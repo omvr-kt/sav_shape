@@ -158,7 +158,7 @@ class ProfileApp {
           <span class="profile-info-value">${this.formatDate(user.created_at)}</span>
         </div>
         ` : ''}
-        <div class="profile-actions">
+        <div class="profile-actions" style="margin-top: var(--space-4); padding-top: var(--space-3);">
           <button class="btn btn-primary" id="editProfileBtn">Modifier mes informations</button>
         </div>
       </div>

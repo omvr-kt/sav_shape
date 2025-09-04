@@ -1,13 +1,10 @@
-/* Import Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=Inter:wght@400;500;600&display=swap');
-
 /* Design System Variables - Shape SAV */
 :root {
   /* Polices */
   --font-heading: "Fraunces", serif;
   --font-body: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
-  /* Palette de couleurs */
+  /* Palette Shape Conseil */
   --color-primary: #0E2433;
   --color-accent: #C7A16B;
   --color-text: #1F2937;
@@ -16,11 +13,9 @@
   --color-surface: #FFFFFF;
   --color-border: #E6E8EB;
 
-  /* États */
-  --color-success: #5a5a5a;
-  --color-warning: #8b7355;
-  --color-error: #666666;
-  --color-info: #7a7a7a;
+  /* États sobres */
+  --color-success: #1A7F5A;
+  --color-urgent: #8A3B2F;
 
   /* Rayons */
   --radius-sm: 6px;

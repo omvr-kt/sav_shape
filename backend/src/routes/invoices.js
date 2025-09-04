@@ -114,9 +114,15 @@ async function createAutomaticInvoice(clientId, quoteFile = null, specifications
 // GET /api/invoices/client/:clientId - Récupérer les factures d'un client
 router.get('/client/:clientId', verifyToken, async (req, res) => {
   const clientId = parseInt(req.params.clientId);
+  
+  console.log('Invoice access attempt:', {
+    requestedClientId: clientId,
+    userRole: req.user.role,
+    userId: req.user.id
+  });
 
   // Vérifier les permissions
-  if (req.user.role !== 'admin' && req.user.userId !== clientId) {
+  if (req.user.role !== 'admin' && req.user.id !== clientId) {
     return res.status(403).json({
       success: false,
       message: 'Accès refusé'

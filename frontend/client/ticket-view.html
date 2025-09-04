@@ -52,7 +52,6 @@
         <div class="main-content" id="mainContent">
             <header class="main-header">
                 <div class="main-header__left">
-                    <button class="sidebar-toggle" onclick="toggleSidebar()">Menu</button>
                     <div>
                         <h1 class="main-title">Ticket #TCK-2024-001</h1>
                         <p class="main-subtitle">Problème de connexion sur l'espace admin</p>
@@ -61,7 +60,7 @@
                 <div class="main-header__right">
                     <button class="btn btn--ghost btn--sm">← Retour</button>
                     <button class="btn btn--ghost btn--sm">Actions ▼</button>
-                    <button id="logoutBtn" class="btn btn--ghost btn--sm">Logout</button>
+                    <button id="logoutBtn" class="btn btn--ghost btn--sm">Déconnexion</button>
                 </div>
             </header>
             
@@ -268,29 +267,40 @@
                             </div>
                         </div>
                         
-                        <form style="display: flex; flex-direction: column; gap: var(--space-3);">
+                        <form id="commentForm" style="display: flex; flex-direction: column; gap: var(--space-3);">
                             <div class="form-group">
                                 <textarea 
+                                    id="commentContent"
                                     class="form-textarea" 
                                     placeholder="Décrivez votre problème ou votre question..."
                                     rows="4"
                                     style="resize: vertical;"
+                                    required
                                 ></textarea>
+                            </div>
+                            
+                            <!-- File attachments section -->
+                            <div id="attachmentSection" style="border: 1px dashed var(--color-border); border-radius: var(--radius-md); padding: var(--space-3); display: none;">
+                                <h5 style="margin: 0 0 var(--space-2) 0; color: var(--color-primary);">Pièces jointes sélectionnées</h5>
+                                <div id="selectedFiles" style="display: flex; flex-direction: column; gap: var(--space-2);"></div>
                             </div>
                             
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <div style="display: flex; gap: var(--space-2); align-items: center;">
-                                    <button type="button" class="btn btn-outline">
+                                    <button type="button" id="attachFileBtn" class="btn btn-outline">
                                          Joindre un fichier
                                     </button>
-                                    <input type="file" multiple style="display: none;">
+                                    <input type="file" id="fileInput" multiple accept=".jpg,.jpeg,.png,.gif,.bmp,.webp,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip,.rar" style="display: none;">
+                                    <span style="font-size: 12px; color: var(--color-muted);">
+                                        Max 10MB par fichier
+                                    </span>
                                 </div>
                                 
                                 <div style="display: flex; gap: var(--space-2);">
                                     <button type="button" class="btn btn-outline">
                                          Brouillon
                                     </button>
-                                    <button type="submit" class="btn btn-primary">
+                                    <button type="submit" class="btn btn-primary" id="submitBtn">
                                          Envoyer la réponse
                                     </button>
                                 </div>
@@ -303,20 +313,9 @@
     </div>
 
     <!-- Overlay mobile -->
-    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
     
     <script src="/assets/js/api.js?v=1756818386"></script>
     <script>
-        // Sidebar toggle functionality
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebarOverlay');
-            const mainContent = document.getElementById('mainContent');
-            
-            sidebar.classList.toggle('sidebar--open');
-            overlay.classList.toggle('sidebar-overlay--active');
-            mainContent.classList.toggle('main-content--shifted');
-        }
 
         // Logout functionality
         document.getElementById('logoutBtn').addEventListener('click', function() {
@@ -359,6 +358,140 @@
                     dropdown.classList.remove('active');
                 }
             });
+        });
+
+        // File attachment functionality
+        let selectedFiles = [];
+        const attachFileBtn = document.getElementById('attachFileBtn');
+        const fileInput = document.getElementById('fileInput');
+        const attachmentSection = document.getElementById('attachmentSection');
+        const selectedFilesDiv = document.getElementById('selectedFiles');
+        const commentForm = document.getElementById('commentForm');
+
+        attachFileBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            
+            files.forEach(file => {
+                // Check file size (10MB max)
+                if (file.size > 10 * 1024 * 1024) {
+                    alert(`Le fichier "${file.name}" est trop volumineux (max 10MB)`);
+                    return;
+                }
+                
+                // Check if file is already selected
+                const existingFile = selectedFiles.find(f => f.name === file.name && f.size === file.size);
+                if (existingFile) {
+                    alert(`Le fichier "${file.name}" est déjà sélectionné`);
+                    return;
+                }
+                
+                selectedFiles.push(file);
+            });
+            
+            updateFileDisplay();
+            fileInput.value = ''; // Clear input for next selection
+        });
+
+        function updateFileDisplay() {
+            if (selectedFiles.length === 0) {
+                attachmentSection.style.display = 'none';
+                return;
+            }
+
+            attachmentSection.style.display = 'block';
+            selectedFilesDiv.innerHTML = selectedFiles.map((file, index) => `
+                <div style="display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm);">
+                    <div style="font-size: 16px;">${getFileIcon(file.type)}</div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 500;">${file.name}</div>
+                        <div style="font-size: 12px; color: var(--color-muted);">${formatFileSize(file.size)}</div>
+                    </div>
+                    <button type="button" onclick="removeFile(${index})" style="background: none; border: none; color: var(--color-error); cursor: pointer; padding: 4px;">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            updateFileDisplay();
+        }
+
+        function getFileIcon(mimeType) {
+            if (mimeType.startsWith('image/')) return '🖼️';
+            if (mimeType === 'application/pdf') return '📄';
+            if (mimeType.includes('word') || mimeType.includes('document')) return '📝';
+            if (mimeType.includes('sheet') || mimeType.includes('excel')) return '📊';
+            if (mimeType.includes('zip') || mimeType.includes('rar')) return '🗜️';
+            return '📁';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Handle form submission
+        commentForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const content = document.getElementById('commentContent').value.trim();
+            if (!content) {
+                alert('Le commentaire ne peut pas être vide');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            const originalText = submitBtn.textContent;
+            
+            try {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Envoi en cours...';
+
+                // Get ticket ID from URL or another source
+                const ticketId = 1; // This should be dynamically set based on the actual ticket
+
+                // First, create the comment
+                const commentResponse = await api.createComment(ticketId, { content });
+                
+                if (!commentResponse.success) {
+                    throw new Error(commentResponse.message || 'Erreur lors de la création du commentaire');
+                }
+
+                const commentId = commentResponse.data.comment.id;
+
+                // Upload attachments if any
+                if (selectedFiles.length > 0) {
+                    submitBtn.textContent = `Upload ${selectedFiles.length} fichier(s)...`;
+                    
+                    for (let i = 0; i < selectedFiles.length; i++) {
+                        const file = selectedFiles[i];
+                        try {
+                            await api.uploadAttachment(commentId, file);
+                        } catch (uploadError) {
+                            console.error(`Erreur upload fichier ${file.name}:`, uploadError);
+                            alert(`Erreur lors de l'upload du fichier "${file.name}": ${uploadError.message}`);
+                        }
+                    }
+                }
+
+                // Success - refresh page or update UI
+                alert('Commentaire ajouté avec succès!');
+                location.reload();
+                
+            } catch (error) {
+                console.error('Error submitting comment:', error);
+                alert(`Erreur: ${error.message}`);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
         });
     </script>
 </body>

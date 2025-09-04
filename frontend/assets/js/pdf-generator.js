@@ -28,19 +28,20 @@ window.generateSafeInvoicePDF = function(invoice) {
   
   console.log('Safe invoice data:', safeInvoice);
   
-  // Configuration des couleurs et polices
-  const primaryColor = [0, 123, 255];
-  const darkColor = [33, 37, 41];
+  // Configuration des couleurs Shape Conseil
+  const primaryColor = [14, 36, 51];    // #0E2433 - Bleu marine 
+  const accentColor = [199, 161, 107];  // #C7A16B - Beige doré
+  const darkColor = [31, 41, 55];       // #1F2937 - Texte principal
   
   // En-tête de la facture
   doc.setFontSize(20);
   doc.setTextColor(...primaryColor);
   doc.text('FACTURE', 20, 30);
   
-  // Informations de l'entreprise (Shape)
+  // Informations de l'entreprise (Shape Conseil)
   doc.setFontSize(16);
-  doc.setTextColor(...darkColor);
-  doc.text('SHAPE', 140, 30);
+  doc.setTextColor(...primaryColor);
+  doc.text('SHAPE CONSEIL', 140, 30);
   
   doc.setFontSize(10);
   doc.text('SIREN: 990204588', 140, 40);
@@ -71,7 +72,7 @@ window.generateSafeInvoicePDF = function(invoice) {
   }
   
   // Ligne de séparation
-  doc.setDrawColor(...primaryColor);
+  doc.setDrawColor(...accentColor);
   doc.line(20, clientY + 15, 190, clientY + 15);
   
   // Détails de la prestation
@@ -90,7 +91,7 @@ window.generateSafeInvoicePDF = function(invoice) {
   
   // Contenu du tableau
   doc.setTextColor(...darkColor);
-  doc.setFillColor(245, 245, 245);
+  doc.setFillColor(247, 247, 245);  // #F7F7F5 - Fond Shape
   doc.rect(20, tableY + 10, 170, 15, 'F');
   
   // Description (limitée à 50 caractères)
@@ -125,16 +126,16 @@ window.generateSafeInvoicePDF = function(invoice) {
   const statusY = totalY + 30;
   doc.text('Statut:', 20, statusY);
   
-  // Couleur selon le statut
+  // Couleur selon le statut (couleurs Shape sobres)
   switch(safeInvoice.status) {
     case 'paid':
-      doc.setTextColor(40, 167, 69);
+      doc.setTextColor(26, 127, 90);   // #1A7F5A - Succès sobre
       break;
     case 'overdue':
-      doc.setTextColor(220, 53, 69);
+      doc.setTextColor(138, 59, 47);   // #8A3B2F - Urgent sobre
       break;
     default:
-      doc.setTextColor(255, 193, 7);
+      doc.setTextColor(199, 161, 107); // #C7A16B - Accent
   }
   doc.text(getInvoiceStatusLabel(safeInvoice.status), 40, statusY);
   

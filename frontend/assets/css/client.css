@@ -167,6 +167,75 @@
   background-color: var(--gray-100);
 }
 
+/* Dropdown pour filtres */
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: white;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.dropdown-toggle:hover {
+  border-color: var(--gray-400);
+  background: var(--gray-50);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 200px;
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 1000;
+  display: none;
+  padding: 0.25rem 0;
+  margin-top: 0.25rem;
+}
+
+.dropdown.active .dropdown-menu {
+  display: block;
+}
+
+.dropdown-menu .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  color: var(--gray-700);
+  text-decoration: none;
+  font-size: 0.875rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.dropdown-menu .dropdown-item:hover {
+  background-color: var(--gray-100);
+  color: var(--gray-900);
+}
+
+.dropdown-divider {
+  height: 1px;
+  background-color: var(--gray-200);
+  margin: 0.25rem 0;
+}
+
 /* Breadcrumb */
 .breadcrumb {
   margin-top: 0.5rem;
@@ -338,19 +407,31 @@
 }
 
 .overview-stats .stat-card {
-  background: var(--white);
-  padding: 1.5rem;
-  border-radius: 0.75rem;
-  box-shadow: var(--shadow);
+  background: var(--color-surface);
+  padding: 20px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
   display: flex;
   align-items: center;
   gap: 1rem;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: background 200ms ease;
+  position: relative;
 }
 
 .overview-stats .stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
+  background: var(--color-bg);
+}
+
+/* Accent discret pour carte active/prioritaire */
+.overview-stats .stat-card.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-accent);
+  border-radius: 10px 10px 0 0;
 }
 
 .stat-icon {
@@ -365,12 +446,12 @@
 .stat-number {
   font-size: 1.75rem;
   font-weight: 700;
-  color: var(--gray-900);
+  color: var(--color-primary);
   margin-bottom: 0.25rem;
 }
 
 .stat-label {
-  color: var(--gray-600);
+  color: var(--color-muted);
   font-size: 0.875rem;
   font-weight: 500;
 }
@@ -1152,7 +1233,7 @@
 }
 
 .internal-badge-client {
-  background: #8b7355;
+  background: var(--color-accent);
   color: white;
   padding: 0.125rem 0.25rem;
   border-radius: 0.125rem;
@@ -1226,7 +1307,7 @@
 }
 
 .ticket-id {
-  font-family: monospace;
+  font-family: var(--font-body);
   background: var(--gray-100);
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
@@ -1236,66 +1317,82 @@
 
 /* Status and priority badges for client view */
 .status-badge, .priority-badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 1rem;
-  font-size: 0.75rem;
-  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  border: 1px solid;
+  display: inline-flex;
+  align-items: center;
+  text-transform: uppercase;
 }
 
-/* Status colors - client friendly */
+/* OUVERT - Style outline sobre */
 .status-open { 
-  background: #f8f8f8; 
-  color: #666666; 
-  border: 1px solid #d1d1d1;
+  background: #FFFFFF; 
+  color: #0E2433; 
+  border-color: #0E2433;
 }
 
+/* EN COURS - Style plein prioritaire */
 .status-in_progress { 
-  background: #f5f5f5; 
-  color: #8b7355; 
-  border: 1px solid #c9a96e;
+  background: #0E2433; 
+  color: #FFFFFF; 
+  border-color: #0E2433;
 }
 
+/* EN ATTENTE CLIENT - Style plein neutre */
 .status-waiting_client { 
-  background: #f7f7f7; 
-  color: #7a7a7a; 
-  border: 1px solid #b8b8b8;
+  background: #C7A16B; 
+  color: #0E2433; 
+  border-color: #C7A16B;
 }
 
+/* RÉSOLU - Style plein succès discret */
 .status-resolved { 
-  background: #f9f9f9; 
-  color: #5a5a5a; 
-  border: 1px solid #a8a8a8;
+  background: #1A7F5A; 
+  color: #FFFFFF; 
+  border-color: #1A7F5A;
 }
 
+/* CLOS - Style outline neutre */
 .status-closed { 
-  background: #f3f4f6; 
-  color: #374151; 
-  border: 1px solid #d1d5db;
+  background: #FFFFFF; 
+  color: #1F2937; 
+  border-color: #E6E8EB;
 }
 
-/* Priority colors - client friendly */
+/* URGENT - Style plein alerte sobre */
+.status-urgent { 
+  background: #8A3B2F; 
+  color: #FFFFFF; 
+  border-color: #8A3B2F;
+}
+
+/* Priority colors - couleurs douces et sobres */
 .priority-low { 
-  background: #f9f9f9; 
-  color: #5a5a5a; 
-  border: 1px solid #a8a8a8;
+  background: var(--priority-low-bg); 
+  color: var(--priority-low); 
+  border: none;
 }
 
 .priority-normal { 
-  background: #f0f4f8; 
-  color: #1a1a2e; 
-  border: 1px solid #4a5568;
+  background: var(--priority-normal-bg); 
+  color: var(--priority-normal); 
+  border: none;
 }
 
 .priority-high { 
-  background: #f6f4f1; 
-  color: #8b7355; 
-  border: 1px solid #c9a96e;
+  background: var(--priority-high-bg); 
+  color: var(--priority-high); 
+  border: none;
 }
 
 .priority-urgent { 
-  background: #f5f5f5; 
-  color: #666666; 
-  border: 1px solid #999999;
+  background: var(--priority-urgent-bg); 
+  color: var(--priority-urgent); 
+  border: none;
 }
 
 /* === NOUVELLES FONCTIONNALITÉS === */
@@ -1348,24 +1445,38 @@
 }
 
 .dashboard-card {
-  background: var(--white);
-  border-radius: 0.75rem;
-  box-shadow: var(--shadow);
+  background: var(--color-surface);
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
   overflow: hidden;
+  position: relative;
+}
+
+/* Accent discret pour carte active */
+.dashboard-card.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-accent);
+  border-radius: 10px 10px 0 0;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem 1.5rem 1rem 1.5rem;
-  border-bottom: 1px solid var(--gray-200);
+  padding: 20px 20px 16px 20px;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .card-header h3 {
   margin: 0;
   font-size: 1.125rem;
-  color: var(--gray-900);
+  color: var(--color-primary);
+  font-weight: 600;
 }
 
 .card-link {
@@ -2527,4 +2638,458 @@
 .btn-cancel:hover {
   background: var(--gray-200);
   color: var(--gray-700);
+}
+
+/* === Boutons d'actions des factures - Style sobre et clean === */
+.btn-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.375rem 0.875rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25;
+  border-radius: 0.375rem;
+  border: 1px solid transparent;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  min-width: 70px;
+  height: 34px;
+  gap: 0.375rem;
+}
+
+.btn-action:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+/* Bouton Voir - Gris sobre */
+.btn-view {
+  background-color: #f8fafc;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+
+.btn-view:hover {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.btn-view:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Bouton PDF - Bleu marine Shape Conseil */
+.btn-download {
+  background-color: #0e2433;
+  border-color: #0e2433;
+  color: #ffffff;
+}
+
+.btn-download:hover {
+  background-color: #1a3547;
+  border-color: #1a3547;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(14, 36, 51, 0.2);
+}
+
+.btn-download:active {
+  transform: translateY(0);
+  background-color: #0a1b26;
+  box-shadow: 0 1px 2px rgba(14, 36, 51, 0.2);
+}
+
+/* Conteneur des boutons d'actions */
+.invoice-actions,
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* Espacement des lignes du tableau des factures */
+.data-table td,
+.data-table th {
+  padding: 0.875rem 1rem !important;
+}
+
+.data-table tbody tr {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+/* Style responsive pour mobile */
+@media (max-width: 640px) {
+  .btn-action {
+    padding: 0.25rem 0.625rem;
+    font-size: 0.8rem;
+    min-width: 60px;
+    height: 30px;
+  }
+  
+  .invoice-actions,
+  .action-buttons {
+    gap: 0.375rem;
+  }
+  
+  .data-table td,
+  .data-table th {
+    padding: 0.625rem 0.75rem !important;
+  }
+}
+
+/* === Styles pour la fiche "Voir" des factures === */
+.invoice-view {
+  padding: 1.5rem;
+  background: #ffffff;
+  border-radius: 0.5rem;
+}
+
+.invoice-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.company-info h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.5rem;
+  color: #0e2433;
+  font-weight: 700;
+}
+
+.company-details p {
+  margin: 0.5rem 0;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.invoice-info h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.75rem;
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.invoice-info p {
+  margin: 0.5rem 0;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.client-info {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: #f8fafc;
+  border-radius: 0.5rem;
+  border-left: 4px solid #0e2433;
+}
+
+.client-info h4 {
+  margin: 0 0 1rem 0;
+  color: #0e2433;
+  font-weight: 600;
+}
+
+.client-details p {
+  margin: 0.5rem 0;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.invoice-details {
+  margin: 2rem 0;
+}
+
+.invoice-details h4 {
+  margin: 0 0 1.5rem 0;
+  color: #0e2433;
+  font-weight: 600;
+  font-size: 1.125rem;
+}
+
+.invoice-items {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.invoice-items th {
+  background: #0e2433;
+  color: white;
+  padding: 1rem 1.25rem;
+  text-align: left;
+  font-weight: 600;
+}
+
+.invoice-items td {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e2e8f0;
+  color: #475569;
+}
+
+.invoice-items tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.invoice-items tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+/* Total section */
+.invoice-total {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: #f1f5f9;
+  border-radius: 0.5rem;
+  text-align: right;
+}
+
+.total-line {
+  display: flex;
+  justify-content: space-between;
+  margin: 0.75rem 0;
+  padding: 0.5rem 0;
+}
+
+.total-line.final {
+  border-top: 2px solid #0e2433;
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: #0e2433;
+}
+
+/* === NOUVEAU TICKET MODAL === */
+.new-ticket-modal-content {
+  max-width: 550px;
+  width: 95%;
+}
+
+.new-ticket-header {
+  background: linear-gradient(135deg, #0e2433 0%, #1a3547 100%);
+  color: white;
+  border-radius: 0.5rem 0.5rem 0 0;
+  border-bottom: none;
+}
+
+.new-ticket-header .modal-title h2 {
+  color: white;
+  font-size: 1.375rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.new-ticket-header .modal-subtitle {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.875rem;
+  margin: 0.25rem 0 0 0;
+  font-weight: 400;
+}
+
+.new-ticket-header .modal-close {
+  color: white;
+  font-size: 1.5rem;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+.new-ticket-header .modal-close:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.new-ticket-body {
+  padding: 2rem;
+  background: #fafbfc;
+}
+
+.new-ticket-form {
+  max-width: none;
+}
+
+.new-ticket-form .form-group {
+  margin-bottom: 1.5rem;
+}
+
+.new-ticket-form .form-label {
+  display: block;
+  font-weight: 600;
+  color: #0e2433;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  letter-spacing: 0.025em;
+}
+
+.new-ticket-form .form-input,
+.new-ticket-form .form-select,
+.new-ticket-form .form-textarea {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  background: white;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.new-ticket-form .form-input:focus,
+.new-ticket-form .form-select:focus,
+.new-ticket-form .form-textarea:focus {
+  outline: none;
+  border-color: #0e2433;
+  box-shadow: 0 0 0 3px rgba(14, 36, 51, 0.1);
+}
+
+.new-ticket-form .form-textarea {
+  height: 120px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.new-ticket-form .form-input::placeholder,
+.new-ticket-form .form-textarea::placeholder {
+  color: #94a3b8;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.new-ticket-form .btn {
+  padding: 0.875rem 1.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.new-ticket-form .btn-cancel {
+  background: #f8fafc;
+  color: #64748b;
+  border: 2px solid #e2e8f0;
+}
+
+.new-ticket-form .btn-cancel:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+.new-ticket-form .btn-primary {
+  background: linear-gradient(135deg, #0e2433 0%, #1a3547 100%);
+  color: white;
+  border: 2px solid #0e2433;
+}
+
+.new-ticket-form .btn-primary:hover {
+  background: linear-gradient(135deg, #1a3547 0%, #2d4a5f 100%);
+  border-color: #1a3547;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(14, 36, 51, 0.2);
+}
+
+/* Responsive pour nouveau ticket modal */
+@media (max-width: 768px) {
+  .new-ticket-modal-content {
+    width: 95%;
+    margin: 1rem;
+  }
+  
+  .new-ticket-body {
+    padding: 1.5rem;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .new-ticket-form .btn {
+    width: 100%;
+  }
+}
+
+/* Responsive pour la fiche facture */
+@media (max-width: 768px) {
+  .invoice-view {
+    padding: 1rem;
+  }
+  
+  .invoice-header {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .client-info {
+    padding: 1rem;
+  }
+  
+  .invoice-items th,
+  .invoice-items td {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+  
+  .invoice-total {
+    padding: 1rem;
+  }
+}
+
+/* Invoice KPI Cards - Force same line display */
+.card-grid {
+  display: grid;
+  gap: var(--space-3, 1rem);
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* Responsive - Keep cards on same line but allow smaller size */
+@media (max-width: 1200px) {
+  .card-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-2, 0.75rem);
+  }
+}
+
+@media (max-width: 768px) {
+  .card-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-1, 0.5rem);
+  }
+  
+  .card--kpi {
+    padding: var(--space-2, 0.75rem);
+  }
+  
+  .card__kpi-value {
+    font-size: 1.25rem;
+  }
+  
+  .card__kpi-label {
+    font-size: 0.75rem;
+  }
+  
+  .card__kpi-trend {
+    font-size: 0.75rem;
+  }
 }

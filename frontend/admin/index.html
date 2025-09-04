@@ -7,9 +7,10 @@
     <!-- Theme Shape Design System -->
     <link rel="stylesheet" href="/styles/theme-shape.css">
     <link rel="stylesheet" href="/src/components/ui/index.css">
-    <link rel="stylesheet" href="/assets/css/main.css">
-    <link rel="stylesheet" href="/assets/css/sidebar.css">
-    <link rel="stylesheet" href="/assets/css/admin.css">
+    <link rel="stylesheet" href="/assets/css/design-system.css?v=1756979480">
+    <link rel="stylesheet" href="/assets/css/main.css?v=1756979480">
+    <link rel="stylesheet" href="/assets/css/sidebar.css?v=1756979480">
+    <link rel="stylesheet" href="/assets/css/admin.css?v=1756979480">
     <script src="/assets/js/timezone-utils.js"></script>
 </head>
 <body>
@@ -70,15 +71,15 @@
                         <div class="stats-grid">
                             <div class="stat-card">
                                 <div class="stat-number" id="totalTickets">-</div>
-                                <div class="stat-label">Total Tickets</div>
+                                <div class="stat-label">Total des Tickets</div>
                             </div>
                             <div class="stat-card urgent">
                                 <div class="stat-number" id="urgentTickets">-</div>
                                 <div class="stat-label">Tickets Urgents</div>
                             </div>
                             <div class="stat-card warning">
-                                <div class="stat-number" id="overdueTickets">-</div>
-                                <div class="stat-label">En Retard</div>
+                                <div class="stat-number" id="totalClients">-</div>
+                                <div class="stat-label">Clients</div>
                             </div>
                             <div class="stat-card success">
                                 <div class="stat-number" id="resolvedTickets">-</div>
@@ -88,8 +89,8 @@
 
                         <div class="dashboard-sections">
                             <div class="section">
-                                <h3>Tickets en retard</h3>
-                                <div id="overdueTicketsList" class="ticket-list">
+                                <h3>Derniers clients</h3>
+                                <div id="recentClientsList" class="client-list">
                                     <div class="loading">Chargement...</div>
                                 </div>
                             </div>
@@ -175,7 +176,7 @@
                             <div class="stats-row">
                                 <div class="stat-item">
                                     <span class="stat-value" id="totalInvoicesCount">0</span>
-                                    <span class="stat-label">Total factures</span>
+                                    <span class="stat-label">Total des factures</span>
                                 </div>
                                 <div class="stat-item">
                                     <span class="stat-value" id="paidInvoicesAmount">0€</span>

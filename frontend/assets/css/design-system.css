@@ -8,25 +8,33 @@
   --font-heading: "Fraunces", serif;
   --font-body: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
-  /* === PALETTE DE COULEURS (HEX) === */
+  /* === PALETTE SHAPE CONSEIL (UNIQUE) === */
   /* Couleurs principales */
-  --color-primary: #0E2433;        /* Bleu marine (titres, actions) */
-  --color-accent: #C7A16B;         /* Beige doré (liens secondaires, indicateurs) */
+  --color-primary: #0E2433;        /* Bleu marine (primaire/titres/actions) */
+  --color-accent: #C7A16B;         /* Beige doré (accent) */
   
   /* Couleurs de texte */
   --color-text: #1F2937;           /* Texte principal */
   --color-muted: #667085;          /* Texte secondaire */
   
   /* Couleurs de fond */
-  --color-bg: #F7F7F5;             /* Fond page (très clair, légèrement chaud) */
+  --color-bg: #F7F7F5;             /* Fond page */
   --color-surface: #FFFFFF;        /* Surface (cartes, panneaux, sidebar) */
-  --color-border: #E6E8EB;         /* Bordures / séparateurs */
+  --color-border: #E6E8EB;         /* Bordures */
 
-  /* === ÉTATS === */
-  --color-success: #5a5a5a;        /* Succès - sobre */
-  --color-warning: #8b7355;        /* Alerte - sobre */
-  --color-error: #666666;          /* Erreur - sobre */
-  --color-info: #7a7a7a;           /* Info - sobre */
+  /* === ÉTATS SOBRES === */
+  --color-success: #1A7F5A;        /* Succès sobre (Résolu) */
+  --color-urgent: #8A3B2F;         /* Urgent sobre (rouge désaturé) */
+  
+  /* === PRIORITÉS SOBRES === */
+  --priority-urgent: #FFFFFF;      /* Texte blanc */
+  --priority-urgent-bg: #B85450;   /* Rouge doux */
+  --priority-high: #FFFFFF;        /* Texte blanc */
+  --priority-high-bg: #E67E22;     /* Orange doux */
+  --priority-normal: #FFFFFF;      /* Texte blanc */
+  --priority-normal-bg: #7F8C8D;   /* Gris doux */
+  --priority-low: #FFFFFF;         /* Texte blanc */
+  --priority-low-bg: #52A085;      /* Vert doux */
 
   /* === RAYONS === */
   --radius-sm: 6px;
@@ -119,6 +127,43 @@ small {
   padding: 0 var(--space-3);
 }
 
+/* Zone principale de contenu */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-body {
+  flex: 1;
+  padding: var(--space-3) 0; /* Espacement modéré */
+}
+
+/* En-tête principale */
+.main-header {
+  padding: var(--space-3) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+/* En-têtes de sections */
+.section-header {
+  margin-bottom: var(--space-3); /* Espacement réduit */
+  padding-bottom: var(--space-1);
+}
+
+/* Contenu des onglets */
+.tab-content {
+  padding-top: var(--space-2); /* Espacement réduit */
+}
+
+/* Filtres - Espacement entre éléments */
+.filters {
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+}
+
 /* === CLASSES UTILITAIRES === */
 .text-muted {
   color: var(--color-muted);
@@ -162,6 +207,27 @@ small {
 
 .transition {
   transition: all 200ms ease;
+}
+
+/* === ICÔNES === */
+.icon {
+  width: 20px;
+  height: 20px;
+  color: var(--color-muted);
+  stroke: currentColor;
+  stroke-width: 1.5px;
+  fill: none;
+  transition: color 200ms ease;
+}
+
+.icon.icon-lg {
+  width: 24px;
+  height: 24px;
+}
+
+.icon.active,
+.icon:hover {
+  color: var(--color-primary);
 }
 
 /* === RESPONSIVE BREAKPOINTS === */

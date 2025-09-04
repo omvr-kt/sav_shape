@@ -12,6 +12,7 @@ class ClientInvoicesApp {
   }
 
   async checkAuth() {
+    console.log('=== checkAuth called ===');
     const token = localStorage.getItem('token');
     
     if (!token) {
@@ -20,7 +21,9 @@ class ClientInvoicesApp {
     }
 
     try {
+      console.log('Getting user profile...');
       const response = await api.getProfile();
+      console.log('Profile response:', response);
       this.currentUser = response.data.user;
       
       if (this.currentUser.role !== 'client') {
@@ -38,13 +41,25 @@ class ClientInvoicesApp {
   }
 
   showMainApp() {
-    document.getElementById('mainApp').style.display = 'block';
+    // App est déjà visible, pas besoin de le montrer
     
-    // Mettre à jour les infos du profil
-    const initials = `${this.currentUser.first_name.charAt(0)}${this.currentUser.last_name.charAt(0)}`.toUpperCase();
-    document.getElementById('profileInitials').textContent = initials;
-    document.getElementById('profileName').textContent = `${this.currentUser.first_name} ${this.currentUser.last_name}`;
-    document.getElementById('profileEmail').textContent = this.currentUser.email;
+    // Mettre à jour les infos du profil si les éléments existent
+    const profileInitials = document.getElementById('profileInitials');
+    const profileName = document.getElementById('profileName');
+    const profileEmail = document.getElementById('profileEmail');
+    
+    if (profileInitials) {
+      const initials = `${this.currentUser.first_name.charAt(0)}${this.currentUser.last_name.charAt(0)}`.toUpperCase();
+      profileInitials.textContent = initials;
+    }
+    
+    if (profileName) {
+      profileName.textContent = `${this.currentUser.first_name} ${this.currentUser.last_name}`;
+    }
+    
+    if (profileEmail) {
+      profileEmail.textContent = this.currentUser.email;
+    }
   }
 
   setupEventListeners() {
@@ -52,53 +67,86 @@ class ClientInvoicesApp {
     const profileAvatar = document.getElementById('profileAvatar');
     const profileDropdown = document.getElementById('profileDropdown');
     
-    profileAvatar.addEventListener('click', (e) => {
-      e.stopPropagation();
-      profileDropdown.classList.toggle('show');
-    });
+    if (profileAvatar && profileDropdown) {
+      profileAvatar.addEventListener('click', (e) => {
+        e.stopPropagation();
+        profileDropdown.classList.toggle('show');
+      });
 
-    document.addEventListener('click', () => {
-      profileDropdown.classList.remove('show');
-    });
+      document.addEventListener('click', () => {
+        profileDropdown.classList.remove('show');
+      });
+    }
 
     // Logout
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
-      await api.logout();
-      window.location.href = '/';
-    });
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', async () => {
+        await api.logout();
+        window.location.href = '/';
+      });
+    }
 
     // Profile
-    document.getElementById('profileBtn').addEventListener('click', () => {
-      window.location.href = '/client/profile.html';
-    });
+    const profileBtn = document.getElementById('profileBtn');
+    if (profileBtn) {
+      profileBtn.addEventListener('click', () => {
+        window.location.href = '/client/profile.html';
+      });
+    }
 
     // Confidential file
-    document.getElementById('confidentialFileBtn').addEventListener('click', () => {
-      this.showConfidentialFileModal();
-    });
+    const confidentialFileBtn = document.getElementById('confidentialFileBtn');
+    if (confidentialFileBtn) {
+      confidentialFileBtn.addEventListener('click', () => {
+        this.showConfidentialFileModal();
+      });
+    }
 
     // Refresh button
-    document.getElementById('refreshInvoices').addEventListener('click', () => {
-      this.loadInvoices();
-    });
+    const refreshInvoicesBtn = document.getElementById('refreshInvoices');
+    if (refreshInvoicesBtn) {
+      refreshInvoicesBtn.addEventListener('click', () => {
+        this.loadInvoices();
+      });
+    }
 
     // Filter
-    document.getElementById('invoiceStatusFilter').addEventListener('change', () => {
-      this.loadInvoices();
-    });
+    const invoiceStatusFilter = document.getElementById('invoiceStatusFilter');
+    if (invoiceStatusFilter) {
+      invoiceStatusFilter.addEventListener('change', () => {
+        this.loadInvoices();
+      });
+    }
   }
 
   async loadInvoices() {
+    console.log('=== loadInvoices called ===');
     const container = document.getElementById('invoicesList');
+    if (!container) {
+      console.error('invoicesList container not found');
+      return;
+    }
+    
     container.innerHTML = '<div class="loading">Chargement de vos factures...</div>';
 
     try {
+      console.log('Current user:', this.currentUser);
+      
       const filters = {};
       const statusFilter = document.getElementById('invoiceStatusFilter')?.value;
       if (statusFilter) filters.status = statusFilter;
       
+      if (!this.currentUser || !this.currentUser.id) {
+        container.innerHTML = '<div class="error-message">Utilisateur non connecté</div>';
+        return;
+      }
+      
       // Charger les factures du client connecté
+      console.log('Récupération factures pour client ID:', this.currentUser.id);
+      console.log('Current user object:', this.currentUser);
       const response = await api.getClientInvoices(this.currentUser.id);
+      console.log('Réponse API factures:', response);
       
       if (response.data && response.data.invoices) {
         this.invoices = response.data.invoices;
@@ -109,8 +157,10 @@ class ClientInvoicesApp {
       }
     } catch (error) {
       console.error('Invoices load error:', error);
+      console.error('Error details:', error.message, error.stack);
       container.innerHTML = `<div class="error-message">Erreur lors du chargement des factures: ${error.message}</div>`;
     }
+    console.log('=== loadInvoices finished ===');
   }
 
   renderInvoicesTable() {

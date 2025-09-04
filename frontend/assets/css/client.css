@@ -3056,6 +3056,53 @@
   }
 }
 
+/* === STYLES DES STATUTS DE FACTURES === */
+.invoice-status {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Statut Brouillon - Gris */
+.status-draft {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+}
+
+/* Statut Envoyée - Bleu */
+.status-sent {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #93c5fd;
+}
+
+/* Statut Payée - Vert */
+.status-paid {
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+}
+
+/* Statut En retard - Rouge */
+.status-overdue {
+  background-color: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+}
+
+/* Statut Annulée - Rouge sombre */
+.status-cancelled {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #f87171;
+}
+
 /* Invoice KPI Cards - Force same line display */
 .card-grid {
   display: grid;

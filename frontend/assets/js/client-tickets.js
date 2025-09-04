@@ -414,41 +414,68 @@ class TicketsApp {
       return;
     }
 
-    const tableHTML = `
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Titre</th>
-            <th>Projet</th>
-            <th>Priorité</th>
-            <th>Statut</th>
-            <th>SLA</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${this.filteredTickets.map(ticket => `
-            <tr>
-              <td>${ticket.title}</td>
-              <td>${this.getProjectName(ticket.project_id)}</td>
-              <td><span class="status-badge ${this.getPriorityClass(ticket.priority)}">${this.getPriorityLabel(ticket.priority)}</span></td>
-              <td><span class="status-badge ${this.getStatusClass(ticket.status)}">${this.getStatusLabel(ticket.status)}</span></td>
-              <td>${this.formatSLACountdown(ticket)}</td>
-              <td>
-                <div class="action-buttons">
-                  <button class="btn-action btn-view view-ticket-btn" data-ticket-id="${ticket.id}"> Voir</button>
-                  ${ticket.status === 'open' || ticket.status === 'waiting_client' ? 
-                    `<button class="btn-action btn-edit add-comment-btn" data-ticket-id="${ticket.id}"> Répondre</button>` : ''
-                  }
-                </div>
-              </td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
-
-    container.innerHTML = tableHTML;
+    container.innerHTML = this.filteredTickets.map(ticket => {
+      const statusText = {
+        'open': 'Ouvert',
+        'in_progress': 'En cours',
+        'waiting_client': 'En attente',
+        'resolved': 'Résolu',
+        'closed': 'Fermé'
+      }[ticket.status] || ticket.status;
+      
+      const priorityText = {
+        'low': 'Faible',
+        'normal': 'Normal',
+        'high': 'Élevé', 
+        'urgent': 'Urgent'
+      }[ticket.priority] || ticket.priority;
+      
+      const statusColor = {
+        'open': '#2563eb',
+        'in_progress': '#f59e0b', 
+        'waiting_client': '#06b6d4',
+        'resolved': '#10b981',
+        'closed': '#6b7280'
+      }[ticket.status] || '#6b7280';
+      
+      const formatDate = (dateStr) => {
+        try {
+          const date = new Date(dateStr);
+          return date.toLocaleDateString('fr-FR', {
+            day: '2-digit',
+            month: '2-digit', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        } catch (e) {
+          return dateStr;
+        }
+      };
+      
+      return `
+        <div class="list-item" style="border-bottom: 1px solid #e5e7eb; padding: 20px; transition: background-color 0.2s;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <span style="font-family: monospace; background: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #6b7280;">#${ticket.id}</span>
+                <span style="width: 8px; height: 8px; background: ${statusColor}; border-radius: 50%; display: inline-block;" title="${statusText}"></span>
+                <span style="font-size: 12px; color: #9ca3af;">${priorityText}</span>
+              </div>
+              <h4 style="font-size: 16px; font-weight: 600; color: #1f2937; margin: 0 0 8px 0; line-height: 1.4;">${ticket.title}</h4>
+              <p style="color: #4b5563; font-size: 14px; line-height: 1.4; margin: 0 0 8px 0;">${ticket.description}</p>
+              <div style="font-size: 12px; color: #9ca3af;">
+                ${this.getProjectName(ticket.project_id)} • ${formatDate(ticket.created_at)}
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; margin-left: 16px;">
+              <button class="btn btn-outline btn-sm view-ticket-btn" data-ticket-id="${ticket.id}" style="padding: 6px 12px; font-size: 13px; background: #f9fafb; border: 1px solid #d1d5db; color: #374151; border-radius: 6px;">Voir</button>
+              <button class="btn btn-primary btn-sm add-comment-btn" data-ticket-id="${ticket.id}" style="padding: 6px 12px; font-size: 13px; background: #0e2433; border: 1px solid #0e2433; color: white; border-radius: 6px;">Répondre</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
     
     // Start countdown updates
     this.startCountdownUpdates();
@@ -842,7 +869,7 @@ class TicketsApp {
               Ticket créé le ${new Date(ticket.created_at).toLocaleDateString('fr-FR')}
             </div>
             <div>
-              <button class="show-comment-form-btn" data-ticket-id="${ticket.id}" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 8px; font-size: 14px;">
+              <button class="show-comment-form-btn" data-ticket-id="${ticket.id}" style="padding: 8px 16px; background: #0e2433; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 8px; font-size: 14px;">
                 Répondre
               </button>
               <button class="modal-close" style="padding: 10px 20px; background: #ffffff; color: #374151; border: 2px solid #d1d5db; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.15s; min-width: 80px;">
@@ -875,16 +902,11 @@ class TicketsApp {
           color: #111827 !important;
         }
         
-        /* Boutons primaires */
-        button[style*="background: #3b82f6"]:hover {
-          background: #2563eb !important;
+        /* Boutons primaires Shape */
+        button[style*="background: #0e2433"]:hover {
+          background: #1a3547 !important;
           transform: translateY(-1px);
-          box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3) !important;
-        }
-        
-        /* Bouton répondre */
-        button[style*="background: #007bff"]:hover {
-          background: #0056b3 !important;
+          box-shadow: 0 4px 8px rgba(14, 36, 51, 0.3) !important;
         }
       `;
       document.head.appendChild(styles);
@@ -974,7 +996,7 @@ class TicketsApp {
               <button type="button" class="modal-close" style="padding: 10px 20px; background: #ffffff; color: #374151; border: 2px solid #d1d5db; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.15s; min-width: 100px;">
                 Annuler
               </button>
-              <button type="submit" style="padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.15s; min-width: 140px; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);">
+              <button type="submit" style="padding: 10px 20px; background: #0e2433; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.15s; min-width: 140px; box-shadow: 0 2px 4px rgba(14, 36, 51, 0.2);">
                 Publier le commentaire
               </button>
             </div>
@@ -1355,7 +1377,15 @@ class TicketsApp {
   }
 
   loadTestData() {
-    // Charger des données de test pour les tickets statiques
+    // Charger des données de test pour les tickets avec des dates récentes
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    const twoDaysAgo = new Date(now);
+    twoDaysAgo.setDate(now.getDate() - 2);
+    const threeDaysAgo = new Date(now);
+    threeDaysAgo.setDate(now.getDate() - 3);
+    
     this.tickets = [
       {
         id: 1,
@@ -1364,7 +1394,7 @@ class TicketsApp {
         status: 'in_progress',
         priority: 'urgent',
         project_id: 1,
-        created_at: '2024-01-15T10:30:00Z'
+        created_at: yesterday.toISOString()
       },
       {
         id: 2,
@@ -1373,7 +1403,7 @@ class TicketsApp {
         status: 'waiting_client',
         priority: 'normal',
         project_id: 2,
-        created_at: '2024-01-10T14:15:00Z'
+        created_at: twoDaysAgo.toISOString()
       },
       {
         id: 3,
@@ -1382,7 +1412,7 @@ class TicketsApp {
         status: 'resolved',
         priority: 'high',
         project_id: 3,
-        created_at: '2024-01-08T09:45:00Z'
+        created_at: threeDaysAgo.toISOString()
       }
     ];
 

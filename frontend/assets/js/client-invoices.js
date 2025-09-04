@@ -113,13 +113,86 @@ class ClientInvoicesApp {
       });
     }
 
-    // Filter
-    const invoiceStatusFilter = document.getElementById('invoiceStatusFilter');
-    if (invoiceStatusFilter) {
-      invoiceStatusFilter.addEventListener('change', () => {
-        this.loadInvoices();
-      });
+    // Filter dropdown - utiliser la même logique que les tickets
+    this.currentStatusFilter = '';
+    this.setupDropdownEventListeners();
+  }
+
+  setupDropdownEventListeners() {
+    // Event delegation pour les dropdowns
+    document.addEventListener('click', (e) => {
+      const target = e.target;
+      
+      // Dropdown toggle
+      if (target.classList.contains('dropdown-toggle') || target.closest('.dropdown-toggle')) {
+        e.preventDefault();
+        const dropdown = target.closest('.dropdown');
+        if (dropdown) {
+          this.toggleDropdown(dropdown);
+        }
+        return;
+      }
+      
+      // Status filter items
+      if (target.classList.contains('status-filter-item')) {
+        e.preventDefault();
+        const status = target.dataset.status;
+        this.setStatusFilter(status);
+        return;
+      }
+      
+      // Handle elements inside status filter items
+      const statusFilterParent = target.closest('.status-filter-item');
+      if (statusFilterParent) {
+        e.preventDefault();
+        const status = statusFilterParent.dataset.status;
+        this.setStatusFilter(status);
+        return;
+      }
+      
+      // Close dropdowns when clicking outside
+      if (!target.closest('.dropdown')) {
+        document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('active'));
+      }
+    });
+  }
+
+  toggleDropdown(dropdown) {
+    // Close all other dropdowns first
+    document.querySelectorAll('.dropdown').forEach(d => {
+      if (d !== dropdown) {
+        d.classList.remove('active');
+      }
+    });
+    
+    // Toggle current dropdown
+    dropdown.classList.toggle('active');
+  }
+
+  setStatusFilter(status) {
+    this.currentStatusFilter = status;
+    
+    // Close dropdown
+    document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('active'));
+    
+    // Update dropdown button text
+    const dropdownToggle = document.querySelector('.dropdown-toggle span');
+    if (dropdownToggle) {
+      if (status === '') {
+        dropdownToggle.textContent = 'Filtrer par statut';
+      } else {
+        const statusText = {
+          'draft': 'Brouillon',
+          'sent': 'Envoyée', 
+          'paid': 'Payée',
+          'overdue': 'En retard'
+        }[status] || status;
+        dropdownToggle.textContent = `Statut: ${statusText}`;
+      }
     }
+    
+    // Re-render with filter
+    this.renderInvoicesTable();
   }
 
   async loadInvoices() {
@@ -174,10 +247,9 @@ class ClientInvoicesApp {
     }
 
     // Filtrer selon le statut sélectionné
-    const statusFilter = document.getElementById('invoiceStatusFilter')?.value;
     let filteredInvoices = this.invoices;
-    if (statusFilter) {
-      filteredInvoices = this.invoices.filter(invoice => invoice.status === statusFilter);
+    if (this.currentStatusFilter) {
+      filteredInvoices = this.invoices.filter(invoice => invoice.status === this.currentStatusFilter);
     }
 
     const tableHTML = `

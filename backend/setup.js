@@ -14,37 +14,37 @@ const rl = readline.createInterface({
 const question = (query) => new Promise(resolve => rl.question(query, resolve));
 
 async function setup() {
-  console.log('🔧 Configuration initiale du projet sav Platform\n');
+  console.log('Configuration initiale du projet sav Platform\n');
 
   const envPath = path.join(__dirname, '.env');
   const envExamplePath = path.join(__dirname, '.env.example');
   
   // Vérifier si .env existe déjà
   if (fs.existsSync(envPath)) {
-    const overwrite = await question('❓ Le fichier .env existe déjà. Le remplacer ? (y/N): ');
+    const overwrite = await question('Le fichier .env existe déjà. Le remplacer ? (y/N): ');
     if (overwrite.toLowerCase() !== 'y') {
-      console.log('❌ Configuration annulée.');
+      console.log('Configuration annulée.');
       rl.close();
       return;
     }
   }
 
-  console.log('📝 Génération du fichier .env...\n');
+  console.log('Génération du fichier .env...\n');
 
   // Générer JWT secret sécurisé
   const jwtSecret = crypto.randomBytes(64).toString('hex');
   
   // Demander les informations critiques
-  const adminPassword = await question('🔐 Mot de passe admin (minimum 8 caractères): ');
+  const adminPassword = await question('Mot de passe admin (minimum 8 caractères): ');
   if (adminPassword.length < 8) {
-    console.log('❌ Mot de passe trop court!');
+    console.log('Mot de passe trop court!');
     rl.close();
     return;
   }
 
-  const smtpHost = await question('📧 SMTP Host (ex: smtp.gmail.com): ') || 'smtp.gmail.com';
-  const smtpUser = await question('📧 SMTP User (votre email): ');
-  const smtpPass = await question('📧 SMTP Password (mot de passe app): ');
+  const smtpHost = await question('SMTP Host (ex: smtp.gmail.com): ') || 'smtp.gmail.com';
+  const smtpUser = await question('SMTP User (votre email): ');
+  const smtpPass = await question('SMTP Password (mot de passe app): ');
 
   // Créer le fichier .env
   const envContent = `# Configuration automatique - NE PAS MODIFIER MANUELLEMENT
@@ -72,18 +72,18 @@ ALLOWED_FILE_TYPES=image/jpeg,image/png,image/gif,application/pdf,video/mp4,vide
   fs.writeFileSync(envPath, envContent);
   fs.chmodSync(envPath, 0o600); // Permissions restrictives
   
-  console.log('✅ Fichier .env créé avec succès\n');
+  console.log('Fichier .env créé avec succès\n');
 
   // Initialiser la base de données
-  console.log('🗄️ Initialisation de la base de données...');
+  console.log('Initialisation de la base de données...');
   
   try {
     const { initDatabase } = require('./src/utils/database');
     await initDatabase();
-    console.log('✅ Base de données initialisée\n');
+    console.log('Base de données initialisée\n');
     
     // Créer l'admin avec le bon mot de passe
-    console.log('👤 Création du compte administrateur...');
+    console.log('Création du compte administrateur...');
     const dbPath = path.join(__dirname, 'database.sqlite');
     const db = new sqlite3.Database(dbPath);
     
@@ -106,21 +106,21 @@ ALLOWED_FILE_TYPES=image/jpeg,image/png,image/gif,application/pdf,video/mp4,vide
         });
       });
       
-      console.log('✅ Admin créé: admin@agency.local');
+      console.log('Admin créé: admin@agency.local');
     } else {
-      console.log('✅ Admin déjà existant');
+      console.log('Admin déjà existant');
     }
     
   } catch (error) {
-    console.error('❌ Erreur lors de l\'initialisation de la DB:', error.message);
+    console.error('Erreur lors de l\'initialisation de la DB:', error.message);
     rl.close();
     return;
   }
 
   // Créer un client de test
-  const createTestClient = await question('👥 Créer un client de test ? (Y/n): ');
+  const createTestClient = await question('Créer un client de test ? (Y/n): ');
   if (createTestClient.toLowerCase() !== 'n') {
-    console.log('👤 Création du client de test...');
+    console.log('Création du client de test...');
     
     try {
       const dbPath = path.join(__dirname, 'database.sqlite');
@@ -144,15 +144,15 @@ ALLOWED_FILE_TYPES=image/jpeg,image/png,image/gif,application/pdf,video/mp4,vide
         });
       });
       
-      console.log(`✅ Client créé:`);
-      console.log(`   📧 Email: ${clientEmail}`);
-      console.log(`   🔑 Mot de passe: ${clientPassword}`);
-      console.log(`   🆔 ID: ${clientId}`);
+      console.log(`Client créé:`);
+      console.log(`   Email: ${clientEmail}`);
+      console.log(`   Mot de passe: ${clientPassword}`);
+      console.log(`   ID: ${clientId}`);
       
       db.close();
       
     } catch (error) {
-      console.error('❌ Erreur création clients:', error.message);
+      console.error('Erreur création clients:', error.message);
     }
   }
 
@@ -162,9 +162,9 @@ ALLOWED_FILE_TYPES=image/jpeg,image/png,image/gif,application/pdf,video/mp4,vide
     version: '1.0.0'
   }));
 
-  console.log('\n🎉 Configuration terminée!');
-  console.log('🚀 Vous pouvez maintenant lancer: npm start');
-  console.log(`👤 Admin: admin@agency.local / ${adminPassword}`);
+  console.log('\nConfiguration terminée!');
+  console.log('Vous pouvez maintenant lancer: npm start');
+  console.log(`Admin: admin@agency.local / ${adminPassword}`);
   
   rl.close();
 }

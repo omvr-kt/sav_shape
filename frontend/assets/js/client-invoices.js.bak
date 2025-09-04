@@ -119,7 +119,7 @@ class ClientInvoicesApp {
     if (!this.invoices || this.invoices.length === 0) {
       container.innerHTML = `
         <div class="empty-state">
-          <div class="empty-state-icon">No Invoices</div>
+          <div class="empty-state-icon">🧾</div>
           <h3>Aucune facture</h3>
           <p>Vos factures apparaîtront ici lorsqu'elles seront créées.</p>
         </div>`;
@@ -166,8 +166,8 @@ class ClientInvoicesApp {
                 <td>${invoice.due_date ? api.formatDate(invoice.due_date) : '-'}</td>
                 <td>
                   <div class="action-buttons">
-                    <button class="btn-action btn-view" data-invoice-id="${invoice.id}">Voir</button>
-                    <button class="btn-action btn-download" data-invoice-id="${invoice.id}">PDF</button>
+                    <button class="btn-action btn-view" data-invoice-id="${invoice.id}">👁️ Voir</button>
+                    <button class="btn-action btn-download" data-invoice-id="${invoice.id}">📄 PDF</button>
                   </div>
                 </td>
               </tr>
@@ -209,11 +209,11 @@ class ClientInvoicesApp {
 
   getStatusLabel(status) {
     const labels = {
-      'draft': 'Brouillon',
-      'sent': 'Envoyée',
-      'paid': 'Payée',
-      'overdue': 'En retard',
-      'cancelled': 'Annulée'
+      'draft': '📝 Brouillon',
+      'sent': '📤 Envoyée',
+      'paid': '✅ Payée',
+      'overdue': '⚠️ En retard',
+      'cancelled': '❌ Annulée'
     };
     return labels[status] || status;
   }
@@ -228,7 +228,7 @@ class ClientInvoicesApp {
           <!-- En-tête de la facture -->
           <div class="invoice-header">
             <div class="company-info">
-              <h3>Shape</h3>
+              <h3>🏢 Shape</h3>
               <div class="company-details">
                 <p><strong>SIREN:</strong> 990204588</p>
                 <p><strong>Adresse:</strong> 55 Avenue Marceau, 75016 Paris</p>
@@ -247,7 +247,7 @@ class ClientInvoicesApp {
 
           <!-- Informations client -->
           <div class="client-info">
-            <h4>Facturé à</h4>
+            <h4>👤 Facturé à</h4>
             <div class="client-details">
               <p><strong>${this.currentUser.first_name} ${this.currentUser.last_name}</strong></p>
               <p>${this.currentUser.email}</p>
@@ -257,7 +257,7 @@ class ClientInvoicesApp {
 
           <!-- Détails de la facture -->
           <div class="invoice-details">
-            <h4>Prestations</h4>
+            <h4>📋 Prestations</h4>
             <table class="invoice-items">
               <thead>
                 <tr>
@@ -296,7 +296,7 @@ class ClientInvoicesApp {
 
           <div class="modal-actions">
             <button type="button" class="btn btn-secondary close-modal">Fermer</button>
-            <button type="button" class="btn btn-primary download-pdf" data-invoice-id="${invoiceId}">Télécharger PDF</button>
+            <button type="button" class="btn btn-primary download-pdf" data-invoice-id="${invoiceId}">📄 Télécharger PDF</button>
           </div>
         </div>
       `, 'large');

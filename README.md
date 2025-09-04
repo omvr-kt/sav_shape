@@ -2,17 +2,17 @@
 
 Une plateforme complète de gestion de tickets et de suivi de projet développée avec Node.js, SQLite et JavaScript vanilla.
 
-## ✨ Fonctionnalités
+## Fonctionnalités
 
-- **🏢 Interface Agence** : Gestion complète des clients, projets et tickets
-- **👤 Interface Client** : Suivi des projets et création de tickets
-- **🎫 Système de Tickets** : Création, suivi et gestion avec upload de fichiers
-- **📧 Notifications Automatiques** : Emails transactionnels pour tous les événements
-- **⏱️ Gestion SLA** : Surveillance et alertes automatiques des délais
-- **🔐 Authentification JWT** : Sécurité avec gestion des rôles
-- **📎 Upload de Fichiers** : Support des images, PDF, vidéos et documents
+- **Interface Agence** : Gestion complète des clients, projets et tickets
+- **Interface Client** : Suivi des projets et création de tickets
+- **Système de Tickets** : Création, suivi et gestion avec upload de fichiers
+- **Notifications Automatiques** : Emails transactionnels pour tous les événements
+- **Gestion SLA** : Surveillance et alertes automatiques des délais
+- **Authentification JWT** : Sécurité avec gestion des rôles
+- **Upload de Fichiers** : Support des images, PDF, vidéos et documents
 
-## 🚀 Installation et Démarrage
+## Installation et Démarrage
 
 ### Prérequis
 - Node.js (version 14 ou supérieure)
@@ -49,13 +49,13 @@ Une plateforme complète de gestion de tickets et de suivi de projet développé
    - Espace Client : http://localhost:3000/client
    - Espace Agence : http://localhost:3000/admin
 
-## 👤 Comptes par Défaut
+## Comptes par Défaut
 
 ### Administrateur
 - **Email** : admin@agency.local
 - **Mot de passe** : admin123
 
-## 📁 Structure du Projet
+## Structure du Projet
 
 ```
 sav_shape/
@@ -81,7 +81,7 @@ sav_shape/
 └── cahier_des_charges.md    # Spécifications complètes
 ```
 
-## 🔧 API Endpoints
+## API Endpoints
 
 ### Authentification
 - `POST /api/auth/login` - Connexion
@@ -121,7 +121,7 @@ sav_shape/
 - `POST /api/sla` - Créer une règle SLA
 - `PUT /api/sla/:id` - Modifier une règle SLA
 
-## 🎯 Guide d'Utilisation
+## Guide d'Utilisation
 
 ### Pour l'Agence
 
@@ -166,7 +166,7 @@ sav_shape/
    - Recevoir des mises à jour automatiques
    - Voir l'historique complet
 
-## 📧 Configuration Email
+## Configuration Email
 
 ### Gmail
 ```env
@@ -181,7 +181,7 @@ SMTP_PASS=mot_de_passe_application
 - **SendGrid** : smtp.sendgrid.net:587
 - **Mailgun** : smtp.mailgun.org:587
 
-## 🕐 Système SLA
+## Système SLA
 
 Le système surveille automatiquement les délais de traitement :
 
@@ -197,7 +197,7 @@ Le système surveille automatiquement les délais de traitement :
 - **Normale** : 24h de réponse / 72h de résolution
 - **Faible** : 72h de réponse / 168h de résolution
 
-## 🔒 Sécurité
+## Sécurité
 
 - **Authentification JWT** avec expiration
 - **Validation des entrées** sur tous les endpoints
@@ -206,7 +206,7 @@ Le système surveille automatiquement les délais de traitement :
 - **Upload sécurisé** avec validation des types de fichiers
 - **Chiffrement des mots de passe** avec bcrypt
 
-## 🎨 Personnalisation
+## Personnalisation
 
 ### Styles
 - Modifiez `/frontend/assets/css/main.css` pour les styles généraux
@@ -217,7 +217,7 @@ Le système surveille automatiquement les délais de traitement :
 - Modifiez `/backend/src/services/email.js`
 - Templates HTML responsive inclus
 
-## 🐛 Dépannage
+## Dépannage
 
 ### Base de Données
 ```bash
@@ -238,13 +238,13 @@ npm start | tail -f
 chmod 755 backend/uploads
 ```
 
-## 📈 Monitoring
+## Monitoring
 
 - **Health Check** : GET /api/health
 - **Logs SLA** : Affichés dans la console
 - **Statistiques** : Disponibles via l'interface admin
 
-## 🚢 Déploiement
+## Déploiement
 
 Pour un déploiement en production :
 
@@ -268,7 +268,7 @@ Pour un déploiement en production :
    pm2 start src/server.js --name sav-platform
    ```
 
-## 📞 Support
+## Support
 
 Pour toute question ou problème :
 - Consultez les logs de l'application

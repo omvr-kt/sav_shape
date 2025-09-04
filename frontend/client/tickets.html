@@ -27,16 +27,13 @@
                 <div class="sidebar__nav-section">
                     <div class="sidebar__nav-title">Mon Espace</div>
                     <a href="/client/tickets.html" class="sidebar__nav-item sidebar__nav-item--active">
-                        <span class="sidebar__nav-icon">🎫</span>
                         <span class="sidebar__nav-text">Mes Tickets</span>
                         <span class="sidebar__nav-badge" id="ticketCount">0</span>
                     </a>
                     <a href="/client/invoices.html" class="sidebar__nav-item">
-                        <span class="sidebar__nav-icon">🧾</span>
                         <span class="sidebar__nav-text">Mes Factures</span>
                     </a>
                     <a href="/client/profile.html" class="sidebar__nav-item">
-                        <span class="sidebar__nav-icon">👤</span>
                         <span class="sidebar__nav-text">Mon Profil</span>
                     </a>
                 </div>
@@ -57,7 +54,7 @@
         <div class="main-content" id="mainContent">
             <header class="main-header">
                 <div class="main-header__left">
-                    <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+                    <button class="sidebar-toggle" onclick="toggleSidebar()">Menu</button>
                     <div>
                         <h1 class="main-title">Mes Tickets</h1>
                         <p class="main-subtitle">Gestion de vos demandes de support</p>
@@ -70,7 +67,7 @@
                         <option value="2">Application Mobile</option>
                         <option value="3">Refonte Interface</option>
                     </select>
-                    <button id="logoutBtn" class="btn btn--ghost btn--sm">🚪</button>
+                    <button id="logoutBtn" class="btn btn--ghost btn--sm">Logout</button>
                 </div>
             </header>
             
@@ -119,7 +116,7 @@
                             style="min-width: 250px;"
                         >
                         <button class="btn btn-outline">
-                            🔍
+                            Search
                         </button>
                     </div>
                 </div>
@@ -129,7 +126,7 @@
                     <div class="card">
                         <div class="card-body">
                             <div style="display: flex; align-items: center; gap: var(--space-3);">
-                                <div style="font-size: 2rem;">🎫</div>
+                                <div style="font-size: 2rem;">Tickets</div>
                                 <div>
                                     <div style="font-size: 24px; font-weight: 700; color: var(--color-primary);">12</div>
                                     <div style="font-size: 14px; color: var(--color-muted);">Total tickets</div>
@@ -141,7 +138,7 @@
                     <div class="card">
                         <div class="card-body">
                             <div style="display: flex; align-items: center; gap: var(--space-3);">
-                                <div style="font-size: 2rem;">⚡</div>
+                                <div style="font-size: 2rem;">Active</div>
                                 <div>
                                     <div style="font-size: 24px; font-weight: 700; color: var(--color-warning);">3</div>
                                     <div style="font-size: 14px; color: var(--color-muted);">En cours</div>
@@ -153,7 +150,7 @@
                     <div class="card">
                         <div class="card-body">
                             <div style="display: flex; align-items: center; gap: var(--space-3);">
-                                <div style="font-size: 2rem;">⏳</div>
+                                <div style="font-size: 2rem;">Waiting</div>
                                 <div>
                                     <div style="font-size: 24px; font-weight: 700; color: var(--color-info);">2</div>
                                     <div style="font-size: 14px; color: var(--color-muted);">En attente</div>
@@ -165,7 +162,7 @@
                     <div class="card">
                         <div class="card-body">
                             <div style="display: flex; align-items: center; gap: var(--space-3);">
-                                <div style="font-size: 2rem;">✅</div>
+                                <div style="font-size: 2rem;">Done</div>
                                 <div>
                                     <div style="font-size: 24px; font-weight: 700; color: var(--color-success);">7</div>
                                     <div style="font-size: 14px; color: var(--color-muted);">Résolus</div>
@@ -190,7 +187,7 @@
                                         <div class="list-item-meta">
                                             <span style="font-family: monospace; background: var(--color-bg); padding: 2px 6px; border-radius: 4px; font-size: 12px;">#TCK-2024-001</span>
                                             <span>•</span>
-                                            <span>📁 Site Web E-commerce</span>
+                                            <span>Project: Site Web E-commerce</span>
                                             <span>•</span>
                                             <span>Créé le 15 jan. 2024</span>
                                         </div>
@@ -207,11 +204,11 @@
                                     <div class="list-item-meta">
                                         <span>Dernière mise à jour : il y a 2h</span>
                                         <span>•</span>
-                                        <span class="sla-warning">⚠️ SLA dans 4h</span>
+                                        <span class="sla-warning"> SLA dans 4h</span>
                                     </div>
                                     <div class="table-actions">
-                                        <button class="btn btn-outline">👁️ Voir</button>
-                                        <button class="btn btn-tertiary">💬 Répondre</button>
+                                        <button class="btn btn-outline"> Voir</button>
+                                        <button class="btn btn-tertiary"> Répondre</button>
                                     </div>
                                 </div>
                             </div>
@@ -224,7 +221,7 @@
                                         <div class="list-item-meta">
                                             <span style="font-family: monospace; background: var(--color-bg); padding: 2px 6px; border-radius: 4px; font-size: 12px;">#TCK-2024-002</span>
                                             <span>•</span>
-                                            <span>📁 Refonte Interface</span>
+                                            <span>Project: Refonte Interface</span>
                                             <span>•</span>
                                             <span>Créé le 10 jan. 2024</span>
                                         </div>
@@ -241,11 +238,11 @@
                                     <div class="list-item-meta">
                                         <span>Dernière mise à jour : il y a 1 jour</span>
                                         <span>•</span>
-                                        <span class="sla-ok">✅ SLA respecté</span>
+                                        <span class="sla-ok"> SLA respecté</span>
                                     </div>
                                     <div class="table-actions">
-                                        <button class="btn btn-outline">👁️ Voir</button>
-                                        <button class="btn btn-tertiary">💬 Répondre</button>
+                                        <button class="btn btn-outline"> Voir</button>
+                                        <button class="btn btn-tertiary"> Répondre</button>
                                     </div>
                                 </div>
                             </div>
@@ -258,7 +255,7 @@
                                         <div class="list-item-meta">
                                             <span style="font-family: monospace; background: var(--color-bg); padding: 2px 6px; border-radius: 4px; font-size: 12px;">#TCK-2024-003</span>
                                             <span>•</span>
-                                            <span>📁 Application Mobile</span>
+                                            <span>Project: Application Mobile</span>
                                             <span>•</span>
                                             <span>Créé le 8 jan. 2024</span>
                                         </div>
@@ -275,11 +272,11 @@
                                     <div class="list-item-meta">
                                         <span>Résolu le 12 jan. 2024</span>
                                         <span>•</span>
-                                        <span class="sla-ok">✅ Résolu en 2 jours</span>
+                                        <span class="sla-ok"> Résolu en 2 jours</span>
                                     </div>
                                     <div class="table-actions">
-                                        <button class="btn btn-outline">👁️ Voir</button>
-                                        <button class="btn btn-tertiary">⭐ Évaluer</button>
+                                        <button class="btn btn-outline"> Voir</button>
+                                        <button class="btn btn-tertiary"> Évaluer</button>
                                     </div>
                                 </div>
                             </div>

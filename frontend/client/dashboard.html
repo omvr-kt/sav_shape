@@ -25,20 +25,16 @@
                 <div class="sidebar__nav-section">
                     <div class="sidebar__nav-title">Mon Espace</div>
                     <a href="/client/dashboard-new.html" class="sidebar__nav-item sidebar__nav-item--active">
-                        <span class="sidebar__nav-icon">📊</span>
-                        <span class="sidebar__nav-text">Dashboard</span>
+                        <span class="sidebar__nav-text">Tableau de bord</span>
                     </a>
                     <a href="/client/tickets.html" class="sidebar__nav-item">
-                        <span class="sidebar__nav-icon">🎫</span>
                         <span class="sidebar__nav-text">Mes Tickets</span>
                         <span class="sidebar__nav-badge" id="ticketCount">0</span>
                     </a>
                     <a href="/client/invoices.html" class="sidebar__nav-item">
-                        <span class="sidebar__nav-icon">🧾</span>
                         <span class="sidebar__nav-text">Mes Factures</span>
                     </a>
                     <a href="/client/profile.html" class="sidebar__nav-item">
-                        <span class="sidebar__nav-icon">👤</span>
                         <span class="sidebar__nav-text">Mon Profil</span>
                     </a>
                 </div>
@@ -59,9 +55,9 @@
         <div class="main-content" id="mainContent">
             <header class="main-header">
                 <div class="main-header__left">
-                    <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+                    <button class="sidebar-toggle" onclick="toggleSidebar()">Menu</button>
                     <div>
-                        <h1 class="main-title">Dashboard</h1>
+                        <h1 class="main-title">Tableau de bord</h1>
                         <p class="main-subtitle">Vue d'ensemble de votre espace client</p>
                     </div>
                 </div>
@@ -72,7 +68,7 @@
                         <option value="3m">3 derniers mois</option>
                         <option value="1y">Cette année</option>
                     </select>
-                    <button id="logoutBtn" class="btn btn--ghost btn--sm">🚪</button>
+                    <button id="logoutBtn" class="btn btn--ghost btn--sm">Logout</button>
                 </div>
             </header>
             
@@ -84,11 +80,11 @@
                     <div class="card">
                         <div class="card-body">
                             <div style="display: flex; align-items: center; gap: var(--space-3);">
-                                <div style="font-size: 3rem;">🎫</div>
+                                <div style="font-size: 3rem;">Tickets</div>
                                 <div style="flex: 1;">
                                     <div style="font-size: 32px; font-weight: 900; color: var(--color-primary); font-family: var(--font-heading);">12</div>
                                     <div style="font-size: 16px; color: var(--color-text); font-weight: 500; margin: 4px 0;">Tickets actifs</div>
-                                    <div style="font-size: 14px; color: var(--color-success);">↗️ +2 cette semaine</div>
+                                    <div style="font-size: 14px; color: var(--color-success);">+2 cette semaine</div>
                                 </div>
                             </div>
                             <div class="progress" style="margin-top: var(--space-4);">
@@ -104,7 +100,7 @@
                     <div class="card">
                         <div class="card-body">
                             <div style="display: flex; align-items: center; gap: var(--space-3);">
-                                <div style="font-size: 3rem;">📁</div>
+                                <div style="font-size: 3rem;">Projects</div>
                                 <div style="flex: 1;">
                                     <div style="font-size: 32px; font-weight: 900; color: var(--color-primary); font-family: var(--font-heading);">3</div>
                                     <div style="font-size: 16px; color: var(--color-text); font-weight: 500; margin: 4px 0;">Projets en cours</div>
@@ -124,11 +120,11 @@
                     <div class="card">
                         <div class="card-body">
                             <div style="display: flex; align-items: center; gap: var(--space-3);">
-                                <div style="font-size: 3rem;">🧾</div>
+                                <div style="font-size: 3rem;">Invoices</div>
                                 <div style="flex: 1;">
                                     <div style="font-size: 32px; font-weight: 900; color: var(--color-primary); font-family: var(--font-heading);">2</div>
                                     <div style="font-size: 16px; color: var(--color-text); font-weight: 500; margin: 4px 0;">Factures en attente</div>
-                                    <div style="font-size: 14px; color: var(--color-warning);">⚠️ Action requise</div>
+                                    <div style="font-size: 14px; color: var(--color-warning);">Action requise</div>
                                 </div>
                             </div>
                             <div class="progress" style="margin-top: var(--space-4);">
@@ -144,11 +140,11 @@
                     <div class="card">
                         <div class="card-body">
                             <div style="display: flex; align-items: center; gap: var(--space-3);">
-                                <div style="font-size: 3rem;">⭐</div>
+                                <div style="font-size: 3rem;">Rating</div>
                                 <div style="flex: 1;">
                                     <div style="font-size: 32px; font-weight: 900; color: var(--color-primary); font-family: var(--font-heading);">4.8</div>
                                     <div style="font-size: 16px; color: var(--color-text); font-weight: 500; margin: 4px 0;">Satisfaction moyenne</div>
-                                    <div style="font-size: 14px; color: var(--color-success);">✨ Excellent</div>
+                                    <div style="font-size: 14px; color: var(--color-success);">Excellent</div>
                                 </div>
                             </div>
                             <div style="display: flex; gap: 2px; margin-top: var(--space-4);">
@@ -234,7 +230,7 @@
                         </div>
                         <div class="card-body" style="display: flex; flex-direction: column; gap: var(--space-3);">
                             <a href="/client/tickets/new" style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); background: var(--color-bg); border-radius: var(--radius-md); text-decoration: none; color: var(--color-text); transition: all 200ms;">
-                                <span style="font-size: 1.5rem;">🎫</span>
+                                <span style="font-size: 1.5rem;">Ticket</span>
                                 <div>
                                     <div style="font-weight: 600;">Nouveau ticket</div>
                                     <div style="font-size: 14px; color: var(--color-muted);">Signaler un problème</div>
@@ -242,7 +238,7 @@
                             </a>
                             
                             <a href="/client/invoices" style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); background: var(--color-bg); border-radius: var(--radius-md); text-decoration: none; color: var(--color-text); transition: all 200ms;">
-                                <span style="font-size: 1.5rem;">🧾</span>
+                                <span style="font-size: 1.5rem;">Invoices</span>
                                 <div>
                                     <div style="font-weight: 600;">Voir factures</div>
                                     <div style="font-size: 14px; color: var(--color-muted);">Gérer vos paiements</div>
@@ -250,7 +246,7 @@
                             </a>
                             
                             <a href="/client/projects" style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); background: var(--color-bg); border-radius: var(--radius-md); text-decoration: none; color: var(--color-text); transition: all 200ms;">
-                                <span style="font-size: 1.5rem;">📁</span>
+                                <span style="font-size: 1.5rem;">Projects</span>
                                 <div>
                                     <div style="font-weight: 600;">Mes projets</div>
                                     <div style="font-size: 14px; color: var(--color-muted);">Suivre l'avancement</div>
@@ -258,7 +254,7 @@
                             </a>
                             
                             <a href="/client/confidential" style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); background: var(--color-bg); border-radius: var(--radius-md); text-decoration: none; color: var(--color-text); transition: all 200ms;">
-                                <span style="font-size: 1.5rem;">🔒</span>
+                                <span style="font-size: 1.5rem;">Secure</span>
                                 <div>
                                     <div style="font-weight: 600;">Fichier confidentiel</div>
                                     <div style="font-size: 14px; color: var(--color-muted);">Documents privés</div>
@@ -294,7 +290,7 @@
                             <!-- Timeline item 1 -->
                             <div style="display: flex; gap: var(--space-3);">
                                 <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--color-primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                    <span style="color: var(--color-surface); font-size: 18px;">🎫</span>
+                                    <span style="color: var(--color-surface); font-size: 18px;">Ticket</span>
                                 </div>
                                 <div style="flex: 1;">
                                     <div style="font-weight: 600; margin-bottom: 4px;">
@@ -312,7 +308,7 @@
                             <!-- Timeline item 2 -->
                             <div style="display: flex; gap: var(--space-3);">
                                 <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--color-success); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                    <span style="color: var(--color-surface); font-size: 18px;">✅</span>
+                                    <span style="color: var(--color-surface); font-size: 18px;">Done</span>
                                 </div>
                                 <div style="flex: 1;">
                                     <div style="font-weight: 600; margin-bottom: 4px;">
@@ -330,7 +326,7 @@
                             <!-- Timeline item 3 -->
                             <div style="display: flex; gap: var(--space-3);">
                                 <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--color-accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                    <span style="color: var(--color-primary); font-size: 18px;">📁</span>
+                                    <span style="color: var(--color-primary); font-size: 18px;">Project</span>
                                 </div>
                                 <div style="flex: 1;">
                                     <div style="font-weight: 600; margin-bottom: 4px;">

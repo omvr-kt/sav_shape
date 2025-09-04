@@ -25,7 +25,7 @@ class EmailService {
   async sendMail(mailOptions) {
     try {
       if (process.env.NODE_ENV === 'development') {
-        console.log('📧 Email envoyé (mode dev):', {
+        console.log('Email envoyé (mode dev):', {
           to: mailOptions.to,
           subject: mailOptions.subject
         });
@@ -33,10 +33,10 @@ class EmailService {
       }
 
       const result = await this.transporter.sendMail(mailOptions);
-      console.log('✅ Email envoyé:', result.messageId);
+      console.log('Email envoyé:', result.messageId);
       return result;
     } catch (error) {
-      console.error('❌ Erreur envoi email:', error);
+      console.error('Erreur envoi email:', error);
       throw error;
     }
   }
@@ -68,9 +68,9 @@ class EmailService {
       case 'assigned':
         return `${baseSubject} - Ticket assigné`;
       case 'sla_warning':
-        return `⚠️ ${baseSubject} - SLA bientôt dépassé`;
+        return `${baseSubject} - SLA bientôt dépassé`;
       case 'sla_exceeded':
-        return `🚨 ${baseSubject} - SLA dépassé`;
+        return `${baseSubject} - SLA dépassé`;
       default:
         return baseSubject;
     }
@@ -105,14 +105,14 @@ class EmailService {
         <body>
           <div class="container">
             <div class="header">
-              <h1>🏢 Plateforme de Support</h1>
+              <h1>Plateforme de Support</h1>
             </div>
             <div class="content">
               <h2>Bonjour ${user.first_name},</h2>
               ${this.getNotificationContent(ticket, type, extraData)}
               
               <div class="ticket-info">
-                <h3>📋 Informations du ticket</h3>
+                <h3>Informations du ticket</h3>
                 <p><strong>Ticket #${ticket.id}:</strong> ${ticket.title}</p>
                 <p><strong>Projet:</strong> ${ticket.project_name}</p>
                 <p><strong>Description:</strong> ${ticket.description}</p>
@@ -164,10 +164,10 @@ class EmailService {
         return `<p>Votre ticket a été assigné à <strong>${assignee.first_name} ${assignee.last_name}</strong> qui va s'en occuper.</p>`;
       
       case 'sla_warning':
-        return `<p>⚠️ <strong>Attention :</strong> Le délai de traitement de votre ticket expire bientôt (${this.formatDate(ticket.sla_deadline)}).</p>`;
+        return `<p><strong>Attention :</strong> Le délai de traitement de votre ticket expire bientôt (${this.formatDate(ticket.sla_deadline)}).</p>`;
       
       case 'sla_exceeded':
-        return `<p>🚨 <strong>SLA dépassé :</strong> Le délai de traitement de votre ticket a été dépassé. Nous nous excusons pour ce retard et travaillons activement à sa résolution.</p>`;
+        return `<p><strong>SLA dépassé :</strong> Le délai de traitement de votre ticket a été dépassé. Nous nous excusons pour ce retard et travaillons activement à sa résolution.</p>`;
       
       default:
         return `<p>Votre ticket a été mis à jour.</p>`;
@@ -225,25 +225,25 @@ class EmailService {
         <body>
           <div class="container">
             <div class="header">
-              <h1>🎉 Bienvenue !</h1>
+              <h1>Bienvenue !</h1>
             </div>
             <div class="content">
               <h2>Bonjour ${user.first_name},</h2>
               <p>Votre compte client a été créé avec succès sur notre plateforme de support.</p>
               
               <div class="credentials">
-                <h3>🔑 Vos identifiants de connexion</h3>
+                <h3>Vos identifiants de connexion</h3>
                 <p><strong>Email :</strong> ${user.email}</p>
                 <p><strong>Mot de passe temporaire :</strong> ${password}</p>
-                <p><em>⚠️ Pensez à changer votre mot de passe lors de votre première connexion.</em></p>
+                <p><em>Pensez à changer votre mot de passe lors de votre première connexion.</em></p>
               </div>
               
               <p>Avec cette plateforme, vous pourrez :</p>
               <ul>
-                <li>📋 Créer et suivre vos tickets de support</li>
-                <li>📁 Consulter l'état de vos projets</li>
-                <li>💬 Échanger avec notre équipe technique</li>
-                <li>📎 Joindre des fichiers à vos demandes</li>
+                <li>Créer et suivre vos tickets de support</li>
+                <li>Consulter l'état de vos projets</li>
+                <li>Échanger avec notre équipe technique</li>
+                <li>Joindre des fichiers à vos demandes</li>
               </ul>
               
               <a href="http://localhost:3000/client" class="btn">Accéder à mon espace client</a>

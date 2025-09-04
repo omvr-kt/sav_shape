@@ -118,7 +118,7 @@ router.post('/', verifyToken, requireAdmin, validateUserCreation, async (req, re
           `Facture automatique générée pour le client ${userData.first_name} ${userData.last_name}`
         );
         
-        console.log(`💰 Facture automatique créée: ${invoice.invoice_number} pour ${userData.email}`);
+        console.log(`Facture automatique créée: ${invoice.invoice_number} pour ${userData.email}`);
       } catch (invoiceError) {
         console.error('Erreur création facture automatique:', invoiceError);
         // Ne pas échouer la création de l'utilisateur si la facture échoue

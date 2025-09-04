@@ -6,8 +6,8 @@ const setupFlagPath = path.join(__dirname, '../.setup-complete');
 const envPath = path.join(__dirname, '../.env');
 
 if (!fs.existsSync(setupFlagPath) || !fs.existsSync(envPath)) {
-  console.error('❌ ERREUR: Configuration initiale requise');
-  console.error('🔧 Lancez: node setup.js');
+  console.error('ERREUR: Configuration initiale requise');
+  console.error('Lancez: node setup.js');
   process.exit(1);
 }
 
@@ -18,8 +18,8 @@ const criticalVars = ['JWT_SECRET', 'ADMIN_DEFAULT_PASSWORD'];
 const missing = criticalVars.filter(v => !process.env[v] || process.env[v].includes('your_') || process.env[v].includes('change_this'));
 
 if (missing.length > 0) {
-  console.error('❌ ERREUR: Variables critiques manquantes ou non configurées:', missing);
-  console.error('🔧 Relancez: node setup.js');
+  console.error('ERREUR: Variables critiques manquantes ou non configurées:', missing);
+  console.error('Relancez: node setup.js');
   process.exit(1);
 }
 
@@ -151,31 +151,31 @@ app.use((err, req, res, next) => {
 const startServer = async () => {
   try {
     await initDatabase();
-    console.log('✅ Database initialized successfully');
+    console.log('Database initialized successfully');
     
     // Start SLA monitoring service
     slaService.start();
     
     app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
-      console.log(`📁 Uploads directory: ${path.join(__dirname, '../uploads')}`);
-      console.log(`🕐 SLA monitoring service started`);
+      console.log(`Server running on http://localhost:${PORT}`);
+      console.log(`Uploads directory: ${path.join(__dirname, '../uploads')}`);
+      console.log(`SLA monitoring service started`);
     });
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    console.error('Failed to start server:', error);
     process.exit(1);
   }
 };
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('📴 SIGTERM received, shutting down gracefully...');
+  console.log('SIGTERM received, shutting down gracefully...');
   slaService.stop();
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
-  console.log('📴 SIGINT received, shutting down gracefully...');
+  console.log('SIGINT received, shutting down gracefully...');
   slaService.stop();
   process.exit(0);
 });

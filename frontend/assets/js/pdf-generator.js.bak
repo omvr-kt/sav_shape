@@ -171,11 +171,11 @@ function formatDateSafe(dateString) {
 // Fonction utilitaire pour les labels de statut
 function getInvoiceStatusLabel(status) {
   const labels = {
-    'draft': 'Brouillon',
-    'sent': 'Envoyée',
-    'paid': 'Payée',
-    'overdue': 'En retard',
-    'cancelled': 'Annulée'
+    'draft': '📝 Brouillon',
+    'sent': '📤 Envoyée',
+    'paid': '✅ Payée',
+    'overdue': '⚠️ En retard',
+    'cancelled': '❌ Annulée'
   };
   return labels[status] || status;
 }

@@ -99,7 +99,7 @@ async function createAutomaticInvoice(clientId, quoteFile = null, specifications
     `;
 
     const result = await db.run(sql, [invoiceNumber, clientId, quoteFile, specificationsFile, amount, description, dueDate.toISOString()]);
-    console.log(`✅ Facture automatique créée: ${invoiceNumber} pour le client ${clientId}`);
+    console.log(`Facture automatique créée: ${invoiceNumber} pour le client ${clientId}`);
     
     // Récupérer la facture créée
     const invoice = await db.get('SELECT * FROM invoices WHERE id = ?', [result.id]);

@@ -304,13 +304,13 @@ class TicketsApp {
           <div class="ticket-countdown">
             <div class="countdown-label">${this.getDelayDescription(ticket.priority)}</div>
             <div class="countdown-timer ${this.getDelayClass(ticket.created_at, ticket.priority)}" data-ticket-id="${ticket.id}">
-               ${this.getCountdown(ticket.created_at, ticket.priority)}
+              ⏱️ ${this.getCountdown(ticket.created_at, ticket.priority)}
             </div>
           </div>
         </div>
         <div class="ticket-details">
-          <span class="ticket-project"> Projet: ${this.getProjectName(ticket.project_id)}</span>
-          <span class="ticket-date"> ${api.formatDateTime(ticket.created_at)}</span>
+          <span class="ticket-project">📁 Projet: ${this.getProjectName(ticket.project_id)}</span>
+          <span class="ticket-date">📅 ${api.formatDateTime(ticket.created_at)}</span>
         </div>
         <div class="ticket-actions">
           <button class="btn btn-sm btn-outline view-ticket-btn" data-ticket-id="${ticket.id}">Voir détails</button>
@@ -344,7 +344,7 @@ class TicketsApp {
         const newCountdown = this.getCountdown(ticket.created_at, ticket.priority);
         const newClass = this.getDelayClass(ticket.created_at, ticket.priority);
         
-        countdownElement.innerHTML = ` ${newCountdown}`;
+        countdownElement.innerHTML = `⏱️ ${newCountdown}`;
         countdownElement.className = `countdown-timer ${newClass}`;
       }
     });
@@ -389,10 +389,10 @@ class TicketsApp {
             <div class="form-group">
               <label class="form-label" for="ticketPriority">Priorité *</label>
               <select id="ticketPriority" name="priority" class="form-select" required>
-                <option value="normal"> Normale - Dans les temps</option>
-                <option value="high"> Haute - Urgent</option>
-                <option value="urgent"> Urgente - Critique</option>
-                <option value="low"> Basse - Quand possible</option>
+                <option value="normal">🔵 Normale - Dans les temps</option>
+                <option value="high">🟡 Haute - Urgent</option>
+                <option value="urgent">🔴 Urgente - Critique</option>
+                <option value="low">⚪ Basse - Quand possible</option>
               </select>
             </div>
             
@@ -468,13 +468,13 @@ class TicketsApp {
 
   getStatusIcon(status) {
     const icons = {
-      'open': 'Open',
-      'in_progress': '',
-      'waiting_client': '',
-      'resolved': 'Resolved',
-      'closed': 'Closed'
+      'open': '🟢',
+      'in_progress': '🟡',
+      'waiting_client': '🔵',
+      'resolved': '✅',
+      'closed': '⚫'
     };
-    return icons[status] || 'Unknown';
+    return icons[status] || '❓';
   }
 
   getPriorityLabel(priority) {
@@ -489,12 +489,12 @@ class TicketsApp {
 
   getPriorityIcon(priority) {
     const icons = {
-      'low': '',
-      'normal': '',
-      'high': '',
-      'urgent': ''
+      'low': '⚪',
+      'normal': '🔵',
+      'high': '🟡',
+      'urgent': '🔴'
     };
-    return icons[priority] || 'Unknown';
+    return icons[priority] || '❓';
   }
 
   getTimeAgo(dateString) {
@@ -539,7 +539,7 @@ class TicketsApp {
         <div class="modal-content modal-extra-large">
           <div class="modal-header">
             <div class="modal-title">
-              <h2> Ticket #${ticket.id}</h2>
+              <h2>🎫 Ticket #${ticket.id}</h2>
               <p class="modal-subtitle">${ticket.title}</p>
             </div>
             <button class="modal-close">&times;</button>
@@ -548,7 +548,7 @@ class TicketsApp {
           <div class="modal-body">
             <div class="ticket-detail-grid">
               <div class="detail-section">
-                <h3 class="section-title"> Informations</h3>
+                <h3 class="section-title">📋 Informations</h3>
                 <div class="detail-cards">
                   <div class="detail-card">
                     <span class="detail-label">Statut</span>
@@ -575,14 +575,14 @@ class TicketsApp {
                   <div class="detail-card countdown-detail">
                     <span class="detail-label">${this.getDelayDescription(ticket.priority)}</span>
                     <span class="countdown-timer ${this.getDelayClass(ticket.created_at, ticket.priority)}" data-ticket-id="${ticket.id}">
-                       ${this.getCountdown(ticket.created_at, ticket.priority)}
+                      ⏱️ ${this.getCountdown(ticket.created_at, ticket.priority)}
                     </span>
                   </div>
                 </div>
               </div>
 
               <div class="description-section">
-                <h3 class="section-title"> Description initiale</h3>
+                <h3 class="section-title">📝 Description initiale</h3>
                 <div class="description-card">
                   <p class="description-text">${ticket.description}</p>
                 </div>
@@ -600,7 +600,7 @@ class TicketsApp {
             `<div class="modal-footer">
               <div class="footer-actions">
                 <button class="btn btn-primary btn-large show-comment-form-btn" data-ticket-id="${ticket.id}" type="button">
-                   Ajouter un commentaire
+                  💬 Ajouter un commentaire
                 </button>
               </div>
             </div>` : ''
@@ -621,7 +621,7 @@ class TicketsApp {
         <div class="modal-content" style="max-width: 90vw; width: 800px;">
           <div class="modal-header">
             <div class="modal-title">
-              <h2> Ajouter un commentaire</h2>
+              <h2>💬 Ajouter un commentaire</h2>
               <p class="modal-subtitle">Ticket #${ticketId} - ${ticket ? ticket.title : 'Ticket'}</p>
             </div>
             <button class="modal-close" type="button">&times;</button>
@@ -640,7 +640,7 @@ class TicketsApp {
                               style="width: 100%; min-width: 700px; height: 300px; padding: 20px; font-size: 14px; line-height: 1.6; border: 2px solid #e1e5e9; border-radius: 8px; resize: vertical; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;" 
                               rows="15" placeholder="Décrivez votre problème, ajoutez des détails ou posez une question...&#10;&#10;Notre équipe vous répondra dans les plus brefs délais." required></textarea>
                     <div class="textarea-help" style="margin-top: 10px;">
-                      <span class="help-text" style="color: #6c757d; font-size: 13px;"> Plus vous donnez de détails, plus nous pourrons vous aider efficacement</span>
+                      <span class="help-text" style="color: #6c757d; font-size: 13px;">💡 Plus vous donnez de détails, plus nous pourrons vous aider efficacement</span>
                     </div>
                   </div>
                 </div>
@@ -649,7 +649,7 @@ class TicketsApp {
               <div class="form-footer" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e1e5e9;">
                 <div class="form-actions" style="display: flex; gap: 15px; justify-content: flex-end;">
                   <button type="submit" class="btn btn-primary btn-large" style="padding: 12px 24px; font-size: 14px;">
-                     Publier le commentaire
+                    📤 Publier le commentaire
                   </button>
                 </div>
               </div>
@@ -682,9 +682,9 @@ class TicketsApp {
       
       if (comments.length === 0) {
         container.innerHTML = `
-          <h3 class="section-title"> Commentaires</h3>
+          <h3 class="section-title">💬 Commentaires</h3>
           <div class="empty-comments">
-            <div class="empty-icon"></div>
+            <div class="empty-icon">💬</div>
             <p class="empty-text">Aucun commentaire pour le moment</p>
             <p class="empty-subtext">Les échanges avec notre équipe apparaîtront ici</p>
           </div>
@@ -696,7 +696,7 @@ class TicketsApp {
         <div class="comment-bubble">
           <div class="comment-meta">
             <div class="comment-author">
-              <span class="author-icon">${comment.author_name === this.currentUser.email ? 'You' : 'Support'}</span>
+              <span class="author-icon">${comment.author_name === this.currentUser.email ? '👤' : '🛠️'}</span>
               <span class="author-name">${comment.author_name === this.currentUser.email ? 'Vous' : 'Support'}</span>
             </div>
             <div class="comment-date" data-date="${comment.created_at}">${api.formatDateTime(comment.created_at)}</div>
@@ -706,7 +706,7 @@ class TicketsApp {
       `).join('');
 
       container.innerHTML = `
-        <h3 class="section-title"> Commentaires (${comments.length})</h3>
+        <h3 class="section-title">💬 Commentaires (${comments.length})</h3>
         <div class="comments-list">
           ${commentsHtml}
         </div>

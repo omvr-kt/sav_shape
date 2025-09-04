@@ -188,10 +188,10 @@ const initDatabase = async () => {
     await runMigrations();
     await createDefaultAdmin();
     
-    console.log('✅ Database tables created successfully');
+    console.log('Database tables created successfully');
     
   } catch (error) {
-    console.error('❌ Database initialization error:', error);
+    console.error('Database initialization error:', error);
     throw error;
   }
 };
@@ -229,12 +229,12 @@ const runMigrations = async () => {
     
     if (!hasWarningCol) {
       await db.run('ALTER TABLE tickets ADD COLUMN sla_notified_warning BOOLEAN DEFAULT 0');
-      console.log('✅ Added sla_notified_warning column');
+      console.log('Added sla_notified_warning column');
     }
     
     if (!hasOverdueCol) {
       await db.run('ALTER TABLE tickets ADD COLUMN sla_notified_overdue BOOLEAN DEFAULT 0');
-      console.log('✅ Added sla_notified_overdue column');
+      console.log('Added sla_notified_overdue column');
     }
 
     // Check if confidential_file column exists in users table
@@ -243,7 +243,7 @@ const runMigrations = async () => {
     
     if (!hasConfidentialCol) {
       await db.run('ALTER TABLE users ADD COLUMN confidential_file TEXT');
-      console.log('✅ Added confidential_file column to users table');
+      console.log('Added confidential_file column to users table');
     }
 
     // Check if invoices table exists, create if not
@@ -267,7 +267,7 @@ const runMigrations = async () => {
           FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE
         )
       `);
-      console.log('✅ Created invoices table');
+      console.log('Created invoices table');
     } else {
       // Check if new columns exist in invoices table
       const hasAmountHT = invoicesTableInfo.some(col => col.name === 'amount_ht');
@@ -277,22 +277,22 @@ const runMigrations = async () => {
       
       if (!hasAmountHT) {
         await db.run('ALTER TABLE invoices ADD COLUMN amount_ht DECIMAL(10,2) DEFAULT 0');
-        console.log('✅ Added amount_ht column to invoices table');
+        console.log('Added amount_ht column to invoices table');
       }
       
       if (!hasTVARate) {
         await db.run('ALTER TABLE invoices ADD COLUMN tva_rate DECIMAL(5,2) DEFAULT 20.00');
-        console.log('✅ Added tva_rate column to invoices table');
+        console.log('Added tva_rate column to invoices table');
       }
       
       if (!hasAmountTVA) {
         await db.run('ALTER TABLE invoices ADD COLUMN amount_tva DECIMAL(10,2) DEFAULT 0');
-        console.log('✅ Added amount_tva column to invoices table');
+        console.log('Added amount_tva column to invoices table');
       }
       
       if (!hasAmountTTC) {
         await db.run('ALTER TABLE invoices ADD COLUMN amount_ttc DECIMAL(10,2) DEFAULT 0');
-        console.log('✅ Added amount_ttc column to invoices table');
+        console.log('Added amount_ttc column to invoices table');
       }
 
       // Check if client billing info columns exist
@@ -303,26 +303,26 @@ const runMigrations = async () => {
 
       if (!hasClientName) {
         await db.run('ALTER TABLE invoices ADD COLUMN client_first_name TEXT');
-        console.log('✅ Added client_first_name column to invoices table');
+        console.log('Added client_first_name column to invoices table');
       }
       
       if (!hasClientLastName) {
         await db.run('ALTER TABLE invoices ADD COLUMN client_last_name TEXT');
-        console.log('✅ Added client_last_name column to invoices table');
+        console.log('Added client_last_name column to invoices table');
       }
       
       if (!hasClientEmail) {
         await db.run('ALTER TABLE invoices ADD COLUMN client_email TEXT');
-        console.log('✅ Added client_email column to invoices table');
+        console.log('Added client_email column to invoices table');
       }
       
       if (!hasClientCompany) {
         await db.run('ALTER TABLE invoices ADD COLUMN client_company TEXT');
-        console.log('✅ Added client_company column to invoices table');
+        console.log('Added client_company column to invoices table');
       }
     }
   } catch (error) {
-    console.error('❌ Migration error:', error);
+    console.error('Migration error:', error);
   }
 };
 

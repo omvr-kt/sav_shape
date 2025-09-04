@@ -373,7 +373,7 @@ class ClientApp {
           <div class="profile-file-edit">
             <input type="file" id="quoteFile" accept=".pdf,.doc,.docx" style="margin-right: 10px;">
             <button type="button" class="btn btn-sm btn-primary" onclick="clientApp.uploadQuote()">Télécharger le devis</button>
-            ${user.quote_file ? `<div class="current-file">Fichier actuel: <a href="${user.quote_file}" target="_blank">${user.quote_file.split('/').pop()}</a></div>` : '<div class="file-required">Devis obligatoire - veuillez télécharger votre devis</div>'}
+            ${user.quote_file ? `<div class="current-file">Fichier actuel: <a href="${user.quote_file}" target="_blank">${user.quote_file.split('/').pop()}</a></div>` : '<div class="file-required">⚠️ Devis obligatoire - veuillez télécharger votre devis</div>'}
           </div>
         </div>
         <div class="profile-info-item">
@@ -381,7 +381,7 @@ class ClientApp {
           <div class="profile-file-edit">
             <input type="file" id="specificationsFile" accept=".pdf,.doc,.docx" style="margin-right: 10px;">
             <button type="button" class="btn btn-sm btn-primary" onclick="clientApp.uploadSpecifications()">Télécharger le cahier des charges</button>
-            ${user.specifications_file ? `<div class="current-file">Fichier actuel: <a href="${user.specifications_file}" target="_blank">${user.specifications_file.split('/').pop()}</a></div>` : '<div class="file-required">Cahier des charges obligatoire - veuillez télécharger votre cahier des charges</div>'}
+            ${user.specifications_file ? `<div class="current-file">Fichier actuel: <a href="${user.specifications_file}" target="_blank">${user.specifications_file.split('/').pop()}</a></div>` : '<div class="file-required">⚠️ Cahier des charges obligatoire - veuillez télécharger votre cahier des charges</div>'}
           </div>
         </div>
         <div class="profile-info-item">
@@ -483,7 +483,7 @@ class ClientApp {
           
           <!-- Description du ticket -->
           <div class="ticket-section">
-            <h4 class="section-title">Description</h4>
+            <h4 class="section-title">📝 Description</h4>
             <div class="ticket-description-client">
               ${ticket.description.replace(/\n/g, '<br>')}
             </div>
@@ -492,7 +492,7 @@ class ClientApp {
           <!-- SLA Info -->
           ${ticket.sla_hours ? `
             <div class="ticket-section">
-              <h4 class="section-title">SLA et Délais</h4>
+              <h4 class="section-title">⏱️ SLA et Délais</h4>
               <div class="sla-info-client">
                 <div class="sla-item-client">
                   <span class="sla-label">Temps de réponse garanti:</span>
@@ -501,7 +501,7 @@ class ClientApp {
                 <div class="sla-item-client ${ticket.is_overdue ? 'overdue' : ''}">
                   <span class="sla-label">Échéance de résolution:</span>
                   <span class="sla-value">${api.formatDateTime(ticket.sla_deadline)}</span>
-                  ${ticket.is_overdue ? '<span class="overdue-indicator">DÉPASSÉ</span>' : ''}
+                  ${ticket.is_overdue ? '<span class="overdue-indicator">⚠️ DÉPASSÉ</span>' : ''}
                 </div>
               </div>
             </div>
@@ -510,7 +510,7 @@ class ClientApp {
           <!-- Pièces jointes -->
           ${ticket.attachments && ticket.attachments.length > 0 ? `
             <div class="ticket-section">
-              <h4 class="section-title">Pièces jointes</h4>
+              <h4 class="section-title">📎 Pièces jointes</h4>
               <div class="attachments-client">
                 ${ticket.attachments.map(att => `
                   <div class="attachment-client">
@@ -527,7 +527,7 @@ class ClientApp {
           
           <!-- Échanges et commentaires -->
           <div class="ticket-section">
-            <h4 class="section-title">Échanges (${comments.length})</h4>
+            <h4 class="section-title">💬 Échanges (${comments.length})</h4>
             
             <div class="comments-client" id="commentsClientList">
               ${comments.length > 0 ? comments.map(comment => `
@@ -551,7 +551,7 @@ class ClientApp {
             
             <!-- Ajouter un message -->
             <div class="add-message-section">
-              <h5 class="add-message-title">Ajouter un message</h5>
+              <h5 class="add-message-title">💬 Ajouter un message</h5>
               <form id="addClientCommentForm">
                 <div class="form-group">
                   <textarea id="clientCommentContent" name="content" class="form-input" 
@@ -559,7 +559,7 @@ class ClientApp {
                 </div>
                 
                 <div class="message-tips">
-                  <p><strong>Conseils pour un meilleur support :</strong></p>
+                  <p><strong>💡 Conseils pour un meilleur support :</strong></p>
                   <ul>
                     <li>Soyez précis dans votre description</li>
                     <li>Mentionnez les étapes que vous avez déjà tentées</li>
@@ -576,7 +576,7 @@ class ClientApp {
                 
                 <div class="form-actions">
                   <button type="submit" class="btn btn-primary">
-                    Envoyer le message
+                    📤 Envoyer le message
                   </button>
                 </div>
               </form>
@@ -618,7 +618,7 @@ class ClientApp {
     try {
       const submitBtn = form.querySelector('button[type="submit"]');
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Envoi en cours...';
+      submitBtn.textContent = '📤 Envoi en cours...';
 
       await api.createComment(commentData);
       
@@ -635,16 +635,16 @@ class ClientApp {
     } finally {
       const submitBtn = form.querySelector('button[type="submit"]');
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Envoyer le message';
+      submitBtn.textContent = '📤 Envoyer le message';
     }
   }
 
   getStatusLabel(status) {
     const labels = {
-      'open': 'Ouvert',
-      'in_progress': 'En cours de traitement',
+      'open': '🔴 Ouvert',
+      'in_progress': '🟡 En cours de traitement',
       'waiting_client': '⏳ En attente de votre retour',
-      'resolved': 'Résolu',
+      'resolved': '✅ Résolu',
       'closed': '⚫ Fermé'
     };
     return labels[status] || status;
@@ -652,10 +652,10 @@ class ClientApp {
 
   getPriorityLabel(priority) {
     const labels = {
-      'low': 'Faible',
-      'normal': 'Normale',
-      'high': 'Élevée',
-      'urgent': 'Urgente'
+      'low': '🟢 Faible',
+      'normal': '🔵 Normale',
+      'high': '🟠 Élevée',
+      'urgent': '🔴 Urgente'
     };
     return labels[priority] || priority;
   }
@@ -689,7 +689,7 @@ class ClientApp {
       const modal = this.createModal('Nouveau Ticket de Support', `
         <form id="newTicketForm" class="form" enctype="multipart/form-data">
           <div class="form-step" id="step1">
-            <h4 class="step-title">Étape 1: Informations générales</h4>
+            <h4 class="step-title">🎯 Étape 1: Informations générales</h4>
             
             <div class="form-group">
               <label class="form-label" for="ticketProject">Projet concerné *</label>
@@ -715,27 +715,27 @@ class ClientApp {
               <label class="form-label" for="ticketType">Type de demande *</label>
               <select id="ticketType" name="type" class="form-input" required>
                 <option value="">-- Choisir le type --</option>
-                <option value="bug">Signalement de bug</option>
-                <option value="feature">Demande de fonctionnalité</option>
-                <option value="support">Demande d'aide</option>
-                <option value="maintenance">Maintenance/Correction</option>
-                <option value="other">Autre</option>
+                <option value="bug">🐛 Signalement de bug</option>
+                <option value="feature">✨ Demande de fonctionnalité</option>
+                <option value="support">❓ Demande d'aide</option>
+                <option value="maintenance">🔧 Maintenance/Correction</option>
+                <option value="other">📝 Autre</option>
               </select>
             </div>
             
             <div class="form-group">
               <label class="form-label" for="ticketPriority">Priorité *</label>
               <select id="ticketPriority" name="priority" class="form-input" required>
-                <option value="low">Faible - Pas urgent</option>
-                <option value="normal" selected>Normale - Dans les temps</option>
-                <option value="high">Élevée - Assez urgent</option>
-                <option value="urgent">Urgente - Très urgent</option>
+                <option value="low">🟢 Faible - Pas urgent</option>
+                <option value="normal" selected>🔵 Normale - Dans les temps</option>
+                <option value="high">🟠 Élevée - Assez urgent</option>
+                <option value="urgent">🔴 Urgente - Très urgent</option>
               </select>
             </div>
           </div>
           
           <div class="form-step hidden" id="step2">
-            <h4 class="step-title">Étape 2: Description détaillée</h4>
+            <h4 class="step-title">📝 Étape 2: Description détaillée</h4>
             
             <div class="form-group">
               <label class="form-label" for="ticketDescription">Description complète *</label>
@@ -760,7 +760,7 @@ class ClientApp {
           </div>
           
           <div class="form-step hidden" id="step3">
-            <h4 class="step-title">Étape 3: Pièces jointes (optionnel)</h4>
+            <h4 class="step-title">📎 Étape 3: Pièces jointes (optionnel)</h4>
             
             <div class="form-group">
               <label class="form-label" for="ticketAttachments">Fichiers joints</label>
@@ -772,11 +772,11 @@ class ClientApp {
             <div id="filePreview" class="file-preview"></div>
             
             <div class="form-info">
-              <p><strong>Conseils pour de meilleurs fichiers :</strong></p>
+              <p><strong>💡 Conseils pour de meilleurs fichiers :</strong></p>
               <ul>
-                <li>Captures d'écran pour les problèmes visuels</li>
-                <li>PDF Logs ou messages d'erreur en fichier texte</li>
-                <li>Documents avec les spécifications pour les nouvelles fonctionnalités</li>
+                <li>📸 Captures d'écran pour les problèmes visuels</li>
+                <li>📄 Logs ou messages d'erreur en fichier texte</li>
+                <li>📊 Documents avec les spécifications pour les nouvelles fonctionnalités</li>
               </ul>
             </div>
           </div>
@@ -789,7 +789,7 @@ class ClientApp {
               Suivant →
             </button>
             <button type="submit" id="submitBtn" class="btn btn-success hidden">
-              Créer le Ticket
+              🚀 Créer le Ticket
             </button>
           </div>
         </form>
@@ -916,11 +916,11 @@ class ClientApp {
   }
 
   getFileIcon(mimeType) {
-    if (mimeType.startsWith('image/')) return 'Image';
-    if (mimeType.includes('pdf')) return 'PDF';
-    if (mimeType.includes('word') || mimeType.includes('document')) return 'Doc';
-    if (mimeType.includes('text')) return 'Text';
-    return 'File';
+    if (mimeType.startsWith('image/')) return '🖼️';
+    if (mimeType.includes('pdf')) return '📄';
+    if (mimeType.includes('word') || mimeType.includes('document')) return '📝';
+    if (mimeType.includes('text')) return '📃';
+    return '📎';
   }
 
   formatFileSize(bytes) {
@@ -941,7 +941,7 @@ class ClientApp {
     try {
       const submitBtn = document.getElementById('submitBtn');
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Création en cours...';
+      submitBtn.textContent = '🔄 Création en cours...';
 
       const response = await api.createTicket(formData);
       
@@ -962,7 +962,7 @@ class ClientApp {
     } finally {
       const submitBtn = document.getElementById('submitBtn');
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Créer le Ticket';
+      submitBtn.textContent = '🚀 Créer le Ticket';
     }
   }
 
@@ -1238,7 +1238,7 @@ class ClientApp {
     if (projects.length === 0) {
       container.innerHTML = `
         <div class="empty-state">
-          <div class="empty-state-icon">Projets</div>
+          <div class="empty-state-icon">📁</div>
           <p>Aucun projet trouvé</p>
         </div>
       `;
@@ -1357,7 +1357,7 @@ class ClientApp {
     if (tickets.length === 0) {
       container.innerHTML = `
         <div class="empty-state">
-          <div class="empty-state-icon">Tickets</div>
+          <div class="empty-state-icon">🎫</div>
           <p>Aucun ticket trouvé</p>
           <button class="btn btn-primary" onclick="clientApp.showNewTicketModal()">Créer un nouveau ticket</button>
         </div>
@@ -1370,7 +1370,7 @@ class ClientApp {
         <div class="ticket-header">
           <div class="ticket-title-section">
             <div class="ticket-title">${ticket.title}</div>
-            <div class="ticket-project">Projets ${ticket.project_name}</div>
+            <div class="ticket-project">📁 ${ticket.project_name}</div>
           </div>
           <div class="ticket-badges">
             <span class="status-badge ${api.getPriorityClass(ticket.priority)}">${api.formatPriority(ticket.priority)}</span>
@@ -1390,7 +1390,7 @@ class ClientApp {
           </div>
           <div class="ticket-actions">
             <button class="btn-action btn-view" onclick="event.stopPropagation(); clientApp.viewTicket(${ticket.id})">
-              Voir
+              👁️ Voir
             </button>
           </div>
         </div>

@@ -174,7 +174,7 @@ class AdminApp {
     const container = document.getElementById('overdueTicketsList');
     
     if (tickets.length === 0) {
-      container.innerHTML = '<div class="empty-state">Aucun ticket en retard </div>';
+      container.innerHTML = '<div class="empty-state">Aucun ticket en retard 🎉</div>';
       return;
     }
 
@@ -244,7 +244,7 @@ class AdminApp {
     const container = document.getElementById('ticketsList');
     
     if (!tickets || tickets.length === 0) {
-      container.innerHTML = '<div class="empty-state"><div class="empty-state-icon"></div><p>Aucun ticket trouvé</p></div>';
+      container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎫</div><p>Aucun ticket trouvé</p></div>';
       return;
     }
 
@@ -272,8 +272,8 @@ class AdminApp {
               <td>${this.formatSLACountdown(ticket)}</td>
               <td>
                 <div class="action-buttons">
-                  <button class="btn-action btn-view" data-ticket-id="${ticket.id}" data-action="view"> Voir</button>
-                  <button class="btn-action btn-edit" data-ticket-id="${ticket.id}" data-action="edit"> Éditer</button>
+                  <button class="btn-action btn-view" data-ticket-id="${ticket.id}" data-action="view">👁️ Voir</button>
+                  <button class="btn-action btn-edit" data-ticket-id="${ticket.id}" data-action="edit">✏️ Éditer</button>
                 </div>
               </td>
             </tr>
@@ -322,7 +322,7 @@ class AdminApp {
     const container = document.getElementById('projectsList');
     
     if (projects.length === 0) {
-      container.innerHTML = '<div class="empty-state"><div class="empty-state-icon"></div><p>Aucun projet trouvé</p></div>';
+      container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📁</div><p>Aucun projet trouvé</p></div>';
       return;
     }
 
@@ -348,8 +348,8 @@ class AdminApp {
               <td>${api.formatDate(project.created_at)}</td>
               <td>
                 <div class="action-buttons">
-                  <button class="btn-action btn-edit" data-project-id="${project.id}" data-action="edit-project"> Éditer</button>
-                  <button class="btn-action btn-delete" data-project-id="${project.id}" data-action="delete-project"> Supprimer</button>
+                  <button class="btn-action btn-edit" data-project-id="${project.id}" data-action="edit-project">✏️ Éditer</button>
+                  <button class="btn-action btn-delete" data-project-id="${project.id}" data-action="delete-project">🗑️ Supprimer</button>
                 </div>
               </td>
             </tr>
@@ -396,7 +396,7 @@ class AdminApp {
     const container = document.getElementById('clientsList');
     
     if (clients.length === 0) {
-      container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">Clients</div><p>Aucun client trouvé</p></div>';
+      container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">👥</div><p>Aucun client trouvé</p></div>';
       return;
     }
 
@@ -424,9 +424,9 @@ class AdminApp {
               <td>${api.formatDate(client.created_at)}</td>
               <td>
                 <div class="action-buttons">
-                  <button class="btn-action btn-primary" data-client-id="${client.id}" data-action="create-invoice"> Facture</button>
-                  <button class="btn-action btn-edit" data-client-id="${client.id}" data-action="edit-client"> Éditer</button>
-                  <button class="btn-action btn-delete" data-client-id="${client.id}" data-action="delete-client"> Supprimer</button>
+                  <button class="btn-action btn-primary" data-client-id="${client.id}" data-action="create-invoice">🧾 Facture</button>
+                  <button class="btn-action btn-edit" data-client-id="${client.id}" data-action="edit-client">✏️ Éditer</button>
+                  <button class="btn-action btn-delete" data-client-id="${client.id}" data-action="delete-client">🗑️ Supprimer</button>
                 </div>
               </td>
             </tr>
@@ -552,7 +552,7 @@ class AdminApp {
               <div class="attachment-list">
                 ${ticket.attachments.map(att => `
                   <div class="attachment-item">
-                    <span class="attachment-icon"></span>
+                    <span class="attachment-icon">📎</span>
                     <a href="/api/attachments/${att.id}" target="_blank" class="attachment-link">
                       ${att.filename}
                     </a>
@@ -607,7 +607,7 @@ class AdminApp {
           <div class="modal-actions">
             <button type="button" class="btn btn-secondary close-modal-btn">Fermer</button>
             <button type="button" class="btn btn-primary edit-ticket-btn" data-ticket-id="${id}">
-               Modifier le ticket
+              ✏️ Modifier le ticket
             </button>
           </div>
         </div>
@@ -699,21 +699,21 @@ class AdminApp {
 
   getStatusLabel(status) {
     const labels = {
-      'open': ' Ouvert',
-      'in_progress': ' En cours',
+      'open': '🔴 Ouvert',
+      'in_progress': '🟡 En cours',
       'waiting_client': '⏳ En attente client',
-      'resolved': ' Résolu',
-      'closed': ' Fermé'
+      'resolved': '✅ Résolu',
+      'closed': '⚫ Fermé'
     };
     return labels[status] || status;
   }
 
   getPriorityLabel(priority) {
     const labels = {
-      'low': ' Faible',
-      'normal': ' Normale',
-      'high': 'Élevée',
-      'urgent': ' Urgente'
+      'low': '🟢 Faible',
+      'normal': '🔵 Normale',
+      'high': '🟠 Élevée',
+      'urgent': '🔴 Urgente'
     };
     return labels[priority] || priority;
   }
@@ -755,21 +755,21 @@ class AdminApp {
             <div class="form-group">
               <label class="form-label" for="editTicketPriority">Priorité</label>
               <select id="editTicketPriority" name="priority" class="form-input">
-                <option value="low" ${ticket.priority === 'low' ? 'selected' : ''}> Faible</option>
-                <option value="normal" ${ticket.priority === 'normal' ? 'selected' : ''}> Normale</option>
-                <option value="high" ${ticket.priority === 'high' ? 'selected' : ''}>Élevée</option>
-                <option value="urgent" ${ticket.priority === 'urgent' ? 'selected' : ''}> Urgente</option>
+                <option value="low" ${ticket.priority === 'low' ? 'selected' : ''}>🟢 Faible</option>
+                <option value="normal" ${ticket.priority === 'normal' ? 'selected' : ''}>🔵 Normale</option>
+                <option value="high" ${ticket.priority === 'high' ? 'selected' : ''}>🟠 Élevée</option>
+                <option value="urgent" ${ticket.priority === 'urgent' ? 'selected' : ''}>🔴 Urgente</option>
               </select>
             </div>
             
             <div class="form-group">
               <label class="form-label" for="editTicketStatus">Statut</label>
               <select id="editTicketStatus" name="status" class="form-input">
-                <option value="open" ${ticket.status === 'open' ? 'selected' : ''}> Ouvert</option>
-                <option value="in_progress" ${ticket.status === 'in_progress' ? 'selected' : ''}> En cours</option>
+                <option value="open" ${ticket.status === 'open' ? 'selected' : ''}>🔴 Ouvert</option>
+                <option value="in_progress" ${ticket.status === 'in_progress' ? 'selected' : ''}>🟡 En cours</option>
                 <option value="waiting_client" ${ticket.status === 'waiting_client' ? 'selected' : ''}>⏳ En attente client</option>
-                <option value="resolved" ${ticket.status === 'resolved' ? 'selected' : ''}> Résolu</option>
-                <option value="closed" ${ticket.status === 'closed' ? 'selected' : ''}> Fermé</option>
+                <option value="resolved" ${ticket.status === 'resolved' ? 'selected' : ''}>✅ Résolu</option>
+                <option value="closed" ${ticket.status === 'closed' ? 'selected' : ''}>⚫ Fermé</option>
               </select>
             </div>
           </div>
@@ -936,9 +936,9 @@ class AdminApp {
           <div class="form-group">
             <label class="form-label" for="editProjectStatus">Statut</label>
             <select id="editProjectStatus" name="status" class="form-input">
-              <option value="active" ${project.status === 'active' ? 'selected' : ''}> Actif</option>
-              <option value="paused" ${project.status === 'paused' ? 'selected' : ''}> En pause</option>
-              <option value="completed" ${project.status === 'completed' ? 'selected' : ''}> Terminé</option>
+              <option value="active" ${project.status === 'active' ? 'selected' : ''}>✅ Actif</option>
+              <option value="paused" ${project.status === 'paused' ? 'selected' : ''}>⏸️ En pause</option>
+              <option value="completed" ${project.status === 'completed' ? 'selected' : ''}>✔️ Terminé</option>
               <option value="archived" ${project.status === 'archived' ? 'selected' : ''}>📦 Archivé</option>
             </select>
           </div>
@@ -947,8 +947,8 @@ class AdminApp {
             <div class="project-stats">
               <h4>Statistiques du projet</h4>
               <div class="stats-row">
-                <span> ${project.ticket_count || 0} tickets total</span>
-                <span>${project.active_ticket_count || 0} tickets actifs</span>
+                <span>🎫 ${project.ticket_count || 0} tickets total</span>
+                <span>🔥 ${project.active_ticket_count || 0} tickets actifs</span>
               </div>
               <p><small>📅 Créé le ${api.formatDate(project.created_at)}</small></p>
             </div>
@@ -956,7 +956,7 @@ class AdminApp {
           
           ${project.status !== 'archived' ? `
             <div class="form-warning">
-              <p> Archiver un projet masquera tous ses tickets associés</p>
+              <p>⚠️ Archiver un projet masquera tous ses tickets associés</p>
             </div>
           ` : ''}
           
@@ -1030,7 +1030,7 @@ class AdminApp {
       const stats = response.data.stats;
       
       // Modal de confirmation
-      const modal = this.createModal(' Confirmer la suppression du projet', `
+      const modal = this.createModal('⚠️ Confirmer la suppression du projet', `
         <div class="delete-confirmation">
           <div class="delete-warning">
             <p><strong>Vous êtes sur le point de supprimer le projet :</strong></p>
@@ -1042,20 +1042,20 @@ class AdminApp {
           </div>
           
           <div class="delete-impact">
-            <h4> Impact de la suppression :</h4>
+            <h4>⚠️ Impact de la suppression :</h4>
             <div class="impact-stats">
               <div class="stat-item ${stats.total_tickets > 0 ? 'has-data' : ''}">
-                <span class="stat-icon"></span>
+                <span class="stat-icon">🎫</span>
                 <span class="stat-value">${stats.total_tickets || 0}</span>
                 <span class="stat-label">Tickets</span>
               </div>
               <div class="stat-item ${stats.open_tickets > 0 ? 'critical' : ''}">
-                <span class="stat-icon"></span>
+                <span class="stat-icon">🔥</span>
                 <span class="stat-value">${stats.open_tickets || 0}</span>
                 <span class="stat-label">Ouverts</span>
               </div>
               <div class="stat-item">
-                <span class="stat-icon"></span>
+                <span class="stat-icon">💬</span>
                 <span class="stat-value">Tous</span>
                 <span class="stat-label">Commentaires</span>
               </div>
@@ -1063,7 +1063,7 @@ class AdminApp {
             
             ${stats.open_tickets > 0 ? `
               <div class="critical-warning">
-                <p> <strong>ATTENTION :</strong> Ce projet a encore ${stats.open_tickets} ticket(s) ouvert(s) !</p>
+                <p>🚨 <strong>ATTENTION :</strong> Ce projet a encore ${stats.open_tickets} ticket(s) ouvert(s) !</p>
                 <p>Considérez plutôt l'archivage du projet.</p>
               </div>
             ` : ''}
@@ -1101,7 +1101,7 @@ class AdminApp {
               Annuler
             </button>
             <button type="button" class="btn btn-danger" id="confirmDeleteProjectBtn" disabled>
-               Supprimer définitivement
+              🗑️ Supprimer définitivement
             </button>
           </div>
         </div>
@@ -1238,14 +1238,14 @@ class AdminApp {
             <label class="form-label" for="editClientQuote">Devis *</label>
             <input type="file" id="editClientQuote" name="quote_file" 
                    class="form-input" accept=".pdf,.doc,.docx" required>
-            ${client.quote_file ? `<small>Fichier actuel: <a href="${client.quote_file}" target="_blank">${client.quote_file.split('/').pop()}</a></small>` : '<small class="text-warning"> Devis obligatoire - aucun fichier téléchargé</small>'}
+            ${client.quote_file ? `<small>Fichier actuel: <a href="${client.quote_file}" target="_blank">${client.quote_file.split('/').pop()}</a></small>` : '<small class="text-warning">⚠️ Devis obligatoire - aucun fichier téléchargé</small>'}
           </div>
           
           <div class="form-group">
             <label class="form-label" for="editClientSpecifications">Cahier des charges *</label>
             <input type="file" id="editClientSpecifications" name="specifications_file" 
                    class="form-input" accept=".pdf,.doc,.docx" required>
-            ${client.specifications_file ? `<small>Fichier actuel: <a href="${client.specifications_file}" target="_blank">${client.specifications_file.split('/').pop()}</a></small>` : '<small class="text-warning"> Cahier des charges obligatoire - aucun fichier téléchargé</small>'}
+            ${client.specifications_file ? `<small>Fichier actuel: <a href="${client.specifications_file}" target="_blank">${client.specifications_file.split('/').pop()}</a></small>` : '<small class="text-warning">⚠️ Cahier des charges obligatoire - aucun fichier téléchargé</small>'}
           </div>
           
           
@@ -1262,16 +1262,16 @@ class AdminApp {
           </div>
           
           <div class="form-section">
-            <h3> Configuration SLA</h3>
+            <h3>⏱️ Configuration SLA</h3>
             <p><small>Définir les délais de réponse et de résolution selon la priorité</small></p>
             
             ${['low', 'normal', 'high', 'urgent'].map(priority => {
               const sla = slaRules.find(s => s.priority === priority);
               const priorityLabels = {
-                'low': ' Faible',
-                'normal': ' Normale', 
-                'high': 'Élevée',
-                'urgent': ' Urgente'
+                'low': '🟢 Faible',
+                'normal': '🔵 Normale', 
+                'high': '🟠 Élevée',
+                'urgent': '🔴 Urgente'
               };
               
               return `
@@ -1297,7 +1297,7 @@ class AdminApp {
           </div>
           
           <div class="form-info">
-            <p><small> ${client.project_count || 0} projets - ${client.ticket_count || 0} tickets</small></p>
+            <p><small>📊 ${client.project_count || 0} projets - ${client.ticket_count || 0} tickets</small></p>
             <p><small>📅 Inscrit le ${api.formatDate(client.created_at)}</small></p>
           </div>
           
@@ -1410,7 +1410,7 @@ class AdminApp {
       const projects = projectsResponse.data.projects;
       
       // Modal de confirmation détaillée
-      const modal = this.createModal(' Confirmer la suppression', `
+      const modal = this.createModal('⚠️ Confirmer la suppression', `
         <div class="delete-confirmation">
           <div class="delete-warning">
             <p><strong>Vous êtes sur le point de supprimer le client :</strong></p>
@@ -1423,12 +1423,12 @@ class AdminApp {
           
           ${projects.length > 0 ? `
             <div class="delete-impact">
-              <h4> Impact de la suppression :</h4>
+              <h4>⚠️ Impact de la suppression :</h4>
               <ul>
-                <li> ${projects.length} projet(s) seront supprimés</li>
-                <li> Tous les tickets associés seront supprimés</li>
-                <li> Tous les commentaires seront supprimés</li>
-                <li> Toutes les pièces jointes seront supprimées</li>
+                <li>🗂️ ${projects.length} projet(s) seront supprimés</li>
+                <li>🎫 Tous les tickets associés seront supprimés</li>
+                <li>💬 Tous les commentaires seront supprimés</li>
+                <li>📎 Toutes les pièces jointes seront supprimées</li>
               </ul>
               
               <div class="projects-list">
@@ -1442,7 +1442,7 @@ class AdminApp {
             </div>
           ` : `
             <div class="delete-info">
-              <p> Ce client n'a aucun projet associé.</p>
+              <p>✅ Ce client n'a aucun projet associé.</p>
             </div>
           `}
           
@@ -1461,7 +1461,7 @@ class AdminApp {
               Annuler
             </button>
             <button type="button" class="btn btn-danger" id="confirmDeleteBtn" disabled>
-               Supprimer définitivement
+              🗑️ Supprimer définitivement
             </button>
           </div>
         </div>
@@ -1711,7 +1711,7 @@ class AdminApp {
           </div>
           
           <div class="form-info">
-            <p><small> Une fois le projet créé, vous pourrez y associer des tickets de support.</small></p>
+            <p><small>💡 Une fois le projet créé, vous pourrez y associer des tickets de support.</small></p>
           </div>
           
           <div class="form-actions">
@@ -1821,10 +1821,10 @@ class AdminApp {
             <div class="form-group">
               <label class="form-label" for="ticketPriority">Priorité *</label>
               <select id="ticketPriority" name="priority" class="form-input" required>
-                <option value="low"> Faible</option>
-                <option value="normal" selected> Normale</option>
-                <option value="high">Élevée</option>
-                <option value="urgent"> Urgente</option>
+                <option value="low">🟢 Faible</option>
+                <option value="normal" selected>🔵 Normale</option>
+                <option value="high">🟠 Élevée</option>
+                <option value="urgent">🔴 Urgente</option>
               </select>
             </div>
             
@@ -2228,18 +2228,18 @@ class AdminApp {
     if (diffMs < 0) {
       // SLA dépassé
       const overdue = Math.abs(diffHours);
-      return `<span class="sla-status sla-overdue"> +${overdue}h (dépassé)</span>`;
+      return `<span class="sla-status sla-overdue">⚠️ +${overdue}h (dépassé)</span>`;
     } else if (diffHours <= 2) {
       // Attention : moins de 2h restantes
-      return `<span class="sla-status sla-warning"> ${diffHours}h ${diffMinutes}min</span>`;
+      return `<span class="sla-status sla-warning">🟡 ${diffHours}h ${diffMinutes}min</span>`;
     } else if (diffHours <= 24) {
       // Normal : moins de 24h
-      return `<span class="sla-status sla-ok"> ${diffHours}h ${diffMinutes}min</span>`;
+      return `<span class="sla-status sla-ok">🟢 ${diffHours}h ${diffMinutes}min</span>`;
     } else {
       // Beaucoup de temps
       const days = Math.floor(diffHours / 24);
       const hours = diffHours % 24;
-      return `<span class="sla-status sla-good"> ${days}j ${hours}h</span>`;
+      return `<span class="sla-status sla-good">✅ ${days}j ${hours}h</span>`;
     }
   }
 
@@ -2274,7 +2274,7 @@ class AdminApp {
     const container = document.getElementById('invoicesList');
     
     if (!invoices || invoices.length === 0) {
-      container.innerHTML = '<div class="empty-state"><div class="empty-state-icon"></div><p>Aucune facture trouvée</p></div>';
+      container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🧾</div><p>Aucune facture trouvée</p></div>';
       return;
     }
 
@@ -2304,9 +2304,9 @@ class AdminApp {
               <td>${invoice.due_date ? api.formatDate(invoice.due_date) : '-'}</td>
               <td>
                 <div class="action-buttons">
-                  <button class="btn-action btn-view" data-invoice-id="${invoice.id}" data-action="view-invoice"> Voir</button>
-                  <button class="btn-action btn-edit" data-invoice-id="${invoice.id}" data-action="edit-invoice"> Éditer</button>
-                  <button class="btn-action btn-primary" data-invoice-id="${invoice.id}" data-action="download-invoice"> PDF</button>
+                  <button class="btn-action btn-view" data-invoice-id="${invoice.id}" data-action="view-invoice">👁️ Voir</button>
+                  <button class="btn-action btn-edit" data-invoice-id="${invoice.id}" data-action="edit-invoice">✏️ Éditer</button>
+                  <button class="btn-action btn-primary" data-invoice-id="${invoice.id}" data-action="download-invoice">📄 PDF</button>
                 </div>
               </td>
             </tr>
@@ -2354,11 +2354,11 @@ class AdminApp {
 
   getInvoiceStatusLabel(status) {
     const labels = {
-      'draft': 'Brouillon',
-      'sent': ' Envoyée', 
-      'paid': ' Payée',
-      'overdue': ' En retard',
-      'cancelled': ' Annulée'
+      'draft': '📝 Brouillon',
+      'sent': '📤 Envoyée', 
+      'paid': '✅ Payée',
+      'overdue': '⚠️ En retard',
+      'cancelled': '❌ Annulée'
     };
     return labels[status] || status;
   }
@@ -2374,7 +2374,7 @@ class AdminApp {
           <input type="hidden" name="client_id" value="${clientId}">
           
           <div class="client-info-box">
-            <h4> Informations Client</h4>
+            <h4>👤 Informations Client</h4>
             <div class="info-grid">
               <div class="info-item">
                 <strong>Nom:</strong> ${client.first_name} ${client.last_name}
@@ -2429,7 +2429,7 @@ class AdminApp {
           </div>
           
           <div class="company-info">
-            <h4>Informations Facturation</h4>
+            <h4>🏢 Informations Facturation</h4>
             <div class="info-grid">
               <div class="info-item"><strong>SIREN:</strong> 990204588</div>
               <div class="info-item"><strong>Adresse:</strong> 55 AVENUE MARCEAU, 75016 PARIS</div>
@@ -2694,7 +2694,7 @@ class AdminApp {
 
   showViewInvoiceModal(invoice) {
     this.createModal(`
-      <h2> Détails de la facture</h2>
+      <h2>📄 Détails de la facture</h2>
       
       <div class="invoice-info-card">
         <div class="card-header">
@@ -2704,13 +2704,13 @@ class AdminApp {
           </div>
           <div class="invoice-dates">
             <p><strong>📅 Créée le:</strong> ${api.formatDate(invoice.created_at)}</p>
-            ${invoice.due_date ? `<p><strong>Échéance:</strong> ${api.formatDate(invoice.due_date)}</p>` : ''}
-            ${invoice.paid_date ? `<p><strong> Payée le:</strong> ${api.formatDate(invoice.paid_date)}</p>` : ''}
+            ${invoice.due_date ? `<p><strong>⏰ Échéance:</strong> ${api.formatDate(invoice.due_date)}</p>` : ''}
+            ${invoice.paid_date ? `<p><strong>✅ Payée le:</strong> ${api.formatDate(invoice.paid_date)}</p>` : ''}
           </div>
         </div>
         
         <div class="card-section">
-          <h4> Informations client</h4>
+          <h4>👤 Informations client</h4>
           <div class="client-info-grid">
             <div class="info-item">
               <strong>Nom:</strong> ${invoice.first_name} ${invoice.last_name}
@@ -2723,14 +2723,14 @@ class AdminApp {
         </div>
         
         <div class="card-section">
-          <h4>Description</h4>
+          <h4>📝 Description</h4>
           <div class="description-content">
             ${invoice.description || 'Aucune description'}
           </div>
         </div>
         
         <div class="card-section">
-          <h4>Détails financiers</h4>
+          <h4>💰 Détails financiers</h4>
           <div class="financial-details">
             <div class="amount-line">
               <span>Montant HT:</span>
@@ -2750,10 +2750,10 @@ class AdminApp {
       
       <div class="modal-actions">
         <button type="button" class="btn btn-primary" onclick="adminApp.downloadInvoicePDF(${invoice.id}); adminApp.closeModal();">
-           Télécharger PDF
+          📄 Télécharger PDF
         </button>
         <button type="button" class="btn btn-secondary" onclick="adminApp.editInvoice(${invoice.id}); adminApp.closeModal();">
-           Modifier
+          ✏️ Modifier
         </button>
         <button type="button" class="btn btn-secondary cancel-btn">Fermer</button>
       </div>
@@ -2763,7 +2763,7 @@ class AdminApp {
   showEditInvoiceModal(invoice) {
     this.createModal(`
       <form id="editInvoiceForm">
-        <h2> Modifier la facture ${invoice.invoice_number}</h2>
+        <h2>✏️ Modifier la facture ${invoice.invoice_number}</h2>
         
         <div class="form-grid">
           <div class="form-group">
@@ -2786,11 +2786,11 @@ class AdminApp {
           <div class="form-group">
             <label for="editStatus">Statut</label>
             <select id="editStatus">
-              <option value="draft" ${invoice.status === 'draft' ? 'selected' : ''}>Brouillon</option>
-              <option value="sent" ${invoice.status === 'sent' ? 'selected' : ''}> Envoyée</option>
-              <option value="paid" ${invoice.status === 'paid' ? 'selected' : ''}> Payée</option>
-              <option value="overdue" ${invoice.status === 'overdue' ? 'selected' : ''}> En retard</option>
-              <option value="cancelled" ${invoice.status === 'cancelled' ? 'selected' : ''}> Annulée</option>
+              <option value="draft" ${invoice.status === 'draft' ? 'selected' : ''}>📝 Brouillon</option>
+              <option value="sent" ${invoice.status === 'sent' ? 'selected' : ''}>📤 Envoyée</option>
+              <option value="paid" ${invoice.status === 'paid' ? 'selected' : ''}>✅ Payée</option>
+              <option value="overdue" ${invoice.status === 'overdue' ? 'selected' : ''}>⚠️ En retard</option>
+              <option value="cancelled" ${invoice.status === 'cancelled' ? 'selected' : ''}>❌ Annulée</option>
             </select>
           </div>
         </div>
@@ -2801,7 +2801,7 @@ class AdminApp {
         </div>
         
         <div class="invoice-preview-card">
-          <h4>Aperçu des montants</h4>
+          <h4>💰 Aperçu des montants</h4>
           <div class="preview-amounts">
             <div class="amount-row">
               <span>Montant HT:</span>

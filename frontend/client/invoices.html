@@ -24,16 +24,13 @@
                 <div class="sidebar__nav-section">
                     <div class="sidebar__nav-title">Mon Espace</div>
                     <a href="/client/tickets.html" class="sidebar__nav-item">
-                        <span class="sidebar__nav-icon">🎫</span>
                         <span class="sidebar__nav-text">Mes Tickets</span>
                         <span class="sidebar__nav-badge" id="ticketCount">0</span>
                     </a>
                     <a href="/client/invoices.html" class="sidebar__nav-item sidebar__nav-item--active">
-                        <span class="sidebar__nav-icon">🧾</span>
                         <span class="sidebar__nav-text">Mes Factures</span>
                     </a>
                     <a href="/client/profile.html" class="sidebar__nav-item">
-                        <span class="sidebar__nav-icon">👤</span>
                         <span class="sidebar__nav-text">Mon Profil</span>
                     </a>
                 </div>
@@ -62,7 +59,7 @@
             <header class="main-header">
                 <div class="main-header__left">
                     <button class="sidebar-toggle" onclick="toggleSidebar()">
-                        <span style="font-size: 20px;">☰</span>
+                        <span style="font-size: 20px;">Menu</span>
                     </button>
                     <div>
                         <h1 class="main-title">Mes Factures</h1>
@@ -77,8 +74,8 @@
                         <option value="paid">Payée</option>
                         <option value="overdue">En retard</option>
                     </select>
-                    <button id="refreshInvoices" class="btn btn--secondary btn--sm">🔄 Actualiser</button>
-                    <button id="logoutBtn" class="btn btn--ghost btn--sm">🚪</button>
+                    <button id="refreshInvoices" class="btn btn--secondary btn--sm">Actualiser</button>
+                    <button id="logoutBtn" class="btn btn--ghost btn--sm">Logout</button>
                 </div>
             </header>
 
@@ -96,7 +93,7 @@
                             <div class="card__kpi-value" id="paidAmount">0€</div>
                             <div class="card__kpi-label">Montant payé</div>
                             <div class="card__kpi-trend card__kpi-trend--up">
-                                ✅ À jour
+                                À jour
                             </div>
                         </div>
                     </div>
@@ -105,7 +102,7 @@
                             <div class="card__kpi-value" id="pendingAmount">0€</div>
                             <div class="card__kpi-label">En attente</div>
                             <div class="card__kpi-trend card__kpi-trend--neutral">
-                                ⏳ En cours
+                                En cours
                             </div>
                         </div>
                     </div>
@@ -114,7 +111,7 @@
                             <div class="card__kpi-value" id="overdueAmount">0€</div>
                             <div class="card__kpi-label">En retard</div>
                             <div class="card__kpi-trend card__kpi-trend--down">
-                                ⚠️ Attention
+                                Attention
                             </div>
                         </div>
                     </div>

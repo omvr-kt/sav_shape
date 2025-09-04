@@ -25,16 +25,13 @@
                 <div class="sidebar__nav-section">
                     <div class="sidebar__nav-title">Mon Espace</div>
                     <a href="/client/tickets.html" class="sidebar__nav-item sidebar__nav-item--active">
-                        <span class="sidebar__nav-icon">🎫</span>
                         <span class="sidebar__nav-text">Mes Tickets</span>
                         <span class="sidebar__nav-badge" id="ticketCount">0</span>
                     </a>
                     <a href="/client/invoices.html" class="sidebar__nav-item">
-                        <span class="sidebar__nav-icon">🧾</span>
                         <span class="sidebar__nav-text">Mes Factures</span>
                     </a>
                     <a href="/client/profile.html" class="sidebar__nav-item">
-                        <span class="sidebar__nav-icon">👤</span>
                         <span class="sidebar__nav-text">Mon Profil</span>
                     </a>
                 </div>
@@ -55,7 +52,7 @@
         <div class="main-content" id="mainContent">
             <header class="main-header">
                 <div class="main-header__left">
-                    <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+                    <button class="sidebar-toggle" onclick="toggleSidebar()">Menu</button>
                     <div>
                         <h1 class="main-title">Ticket #TCK-2024-001</h1>
                         <p class="main-subtitle">Problème de connexion sur l'espace admin</p>
@@ -64,7 +61,7 @@
                 <div class="main-header__right">
                     <button class="btn btn--ghost btn--sm">← Retour</button>
                     <button class="btn btn--ghost btn--sm">Actions ▼</button>
-                    <button id="logoutBtn" class="btn btn--ghost btn--sm">🚪</button>
+                    <button id="logoutBtn" class="btn btn--ghost btn--sm">Logout</button>
                 </div>
             </header>
             
@@ -81,13 +78,13 @@
                                 <span class="badge status-en-cours">En cours</span>
                                 <span class="badge" style="background: var(--color-error); color: var(--color-surface);">Urgent</span>
                                 <span style="color: var(--color-muted); font-size: 14px;">
-                                    📁 Site Web E-commerce
+                                    Project: Site Web E-commerce
                                 </span>
                             </div>
                         </div>
                         
                         <div class="alert alert-warning" style="margin: 0; max-width: 300px;">
-                            <div style="font-weight: 600;">⚠️ SLA dans 4h</div>
+                            <div style="font-weight: 600;">SLA dans 4h</div>
                             <div style="font-size: 12px; margin-top: 4px;">
                                 Temps de réponse contractuel bientôt dépassé
                             </div>
@@ -143,24 +140,24 @@
                             </h4>
                             <div style="display: flex; flex-direction: column; gap: var(--space-2);">
                                 <div style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-md);">
-                                    <div style="font-size: 24px;">🖼️</div>
+                                    <div style="font-size: 24px;">Image</div>
                                     <div style="flex: 1;">
                                         <a href="#" style="color: var(--color-primary); font-weight: 500; text-decoration: none;">screenshot-erreur-connexion.png</a>
                                         <div style="font-size: 14px; color: var(--color-muted);">Image • 342 Ko</div>
                                     </div>
                                     <button class="btn btn-outline" style="padding: 6px 12px;">
-                                        📥 Télécharger
+                                        Télécharger
                                     </button>
                                 </div>
                                 
                                 <div style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-md);">
-                                    <div style="font-size: 24px;">📄</div>
+                                    <div style="font-size: 24px;">File</div>
                                     <div style="flex: 1;">
                                         <a href="#" style="color: var(--color-primary); font-weight: 500; text-decoration: none;">logs-navigateur.txt</a>
                                         <div style="font-size: 14px; color: var(--color-muted);">Texte • 12 Ko</div>
                                     </div>
                                     <button class="btn btn-outline" style="padding: 6px 12px;">
-                                        📥 Télécharger
+                                        Télécharger
                                     </button>
                                 </div>
                             </div>
@@ -249,7 +246,7 @@
                                         </div>
                                         <div style="background: var(--color-bg); padding: var(--space-3); border-radius: var(--radius-md); border-left: 3px solid var(--color-primary);">
                                             <p>Bonjour Thomas,</p>
-                                            <p>Merci pour votre réponse rapide ! 🙏</p>
+                                            <p>Merci pour votre réponse rapide !</p>
                                             <p>J'ai essayé le lien de récupération que vous m'avez envoyé, mais j'obtiens toujours la même erreur. Pouvez-vous vérifier si mon compte n'est pas bloqué ?</p>
                                             <p>En attendant, cela nous bloque pour traiter les commandes du jour.</p>
                                             <p>Merci,<br>Marie</p>
@@ -267,7 +264,7 @@
                                 Ajouter une réponse
                             </h4>
                             <div class="alert alert-info" style="margin-bottom: var(--space-3);">
-                                <strong>💡 Conseil :</strong> Soyez précis dans votre description et n'hésitez pas à joindre des captures d'écran pour nous aider à mieux comprendre le problème.
+                                <strong> Conseil :</strong> Soyez précis dans votre description et n'hésitez pas à joindre des captures d'écran pour nous aider à mieux comprendre le problème.
                             </div>
                         </div>
                         
@@ -284,17 +281,17 @@
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <div style="display: flex; gap: var(--space-2); align-items: center;">
                                     <button type="button" class="btn btn-outline">
-                                        📎 Joindre un fichier
+                                         Joindre un fichier
                                     </button>
                                     <input type="file" multiple style="display: none;">
                                 </div>
                                 
                                 <div style="display: flex; gap: var(--space-2);">
                                     <button type="button" class="btn btn-outline">
-                                        💾 Brouillon
+                                         Brouillon
                                     </button>
                                     <button type="submit" class="btn btn-primary">
-                                        📤 Envoyer la réponse
+                                         Envoyer la réponse
                                     </button>
                                 </div>
                             </div>

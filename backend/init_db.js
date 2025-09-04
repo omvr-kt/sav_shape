@@ -5,12 +5,12 @@ const path = require('path');
 // Créer ou ouvrir la base de données
 const db = new sqlite3.Database('sav_shape.db');
 
-console.log('🗄️ Initialisation de la base de données...');
+console.log('Initialisation de la base de données...');
 
 // Utiliser serialize pour exécuter les requêtes en séquence
 db.serialize(() => {
   // Créer les tables
-  console.log('📋 Création des tables...');
+  console.log('Création des tables...');
 
   // Table users
   db.run(`
@@ -32,7 +32,7 @@ db.serialize(() => {
     if (err) {
       console.error('Erreur création table users:', err);
     } else {
-      console.log('✅ Table users créée');
+      console.log('Table users créée');
     }
   });
 
@@ -52,7 +52,7 @@ db.serialize(() => {
     if (err) {
       console.error('Erreur création table projects:', err);
     } else {
-      console.log('✅ Table projects créée');
+      console.log('Table projects créée');
     }
   });
 
@@ -80,7 +80,7 @@ db.serialize(() => {
     if (err) {
       console.error('Erreur création table tickets:', err);
     } else {
-      console.log('✅ Table tickets créée');
+      console.log('Table tickets créée');
     }
   });
 
@@ -100,7 +100,7 @@ db.serialize(() => {
     if (err) {
       console.error('Erreur création table comments:', err);
     } else {
-      console.log('✅ Table comments créée');
+      console.log('Table comments créée');
     }
   });
 
@@ -125,12 +125,12 @@ db.serialize(() => {
     if (err) {
       console.error('Erreur création table invoices:', err);
     } else {
-      console.log('✅ Table invoices créée');
+      console.log('Table invoices créée');
     }
   });
 
   // Créer des utilisateurs de test
-  console.log('👤 Création des utilisateurs de test...');
+  console.log('Création des utilisateurs de test...');
 
   const hashedPassword = bcrypt.hashSync('password123', 10);
 
@@ -142,7 +142,7 @@ db.serialize(() => {
     if (err) {
       console.error('Erreur création admin:', err);
     } else {
-      console.log('✅ Admin créé');
+      console.log('Admin créé');
     }
   });
 
@@ -154,10 +154,10 @@ db.serialize(() => {
     if (err) {
       console.error('Erreur création Jean Dupont:', err);
     } else {
-      console.log('✅ Jean Dupont créé');
+      console.log('Jean Dupont créé');
       
       // Créer des projets pour Jean Dupont
-      console.log('📁 Création des projets pour Jean Dupont...');
+      console.log('Création des projets pour Jean Dupont...');
       
       // Récupérer l'ID de Jean Dupont
       db.get("SELECT id FROM users WHERE email = 'jean.dupont@email.com'", (err, user) => {
@@ -181,7 +181,7 @@ db.serialize(() => {
           if (err) {
             console.error('Erreur création projet 1:', err);
           } else {
-            console.log('✅ Projet E-commerce créé');
+            console.log('Projet E-commerce créé');
             
             // Créer des tickets pour ce projet
             const projetId = this.lastID;
@@ -202,7 +202,7 @@ db.serialize(() => {
               if (err) {
                 console.error('Erreur création ticket 1:', err);
               } else {
-                console.log('✅ Ticket urgent créé');
+                console.log('Ticket urgent créé');
               }
             });
 
@@ -222,7 +222,7 @@ db.serialize(() => {
               if (err) {
                 console.error('Erreur création ticket 2:', err);
               } else {
-                console.log('✅ Ticket fonctionnalité créé');
+                console.log('Ticket fonctionnalité créé');
               }
             });
           }
@@ -241,7 +241,7 @@ db.serialize(() => {
           if (err) {
             console.error('Erreur création projet 2:', err);
           } else {
-            console.log('✅ Projet Application Mobile créé');
+            console.log('Projet Application Mobile créé');
             
             const projetId = this.lastID;
             
@@ -261,7 +261,7 @@ db.serialize(() => {
               if (err) {
                 console.error('Erreur création ticket mobile:', err);
               } else {
-                console.log('✅ Ticket mobile créé');
+                console.log('Ticket mobile créé');
               }
             });
           }
@@ -280,7 +280,7 @@ db.serialize(() => {
           if (err) {
             console.error('Erreur création projet 3:', err);
           } else {
-            console.log('✅ Projet Dashboard créé');
+            console.log('Projet Dashboard créé');
             
             const projetId = this.lastID;
             
@@ -300,7 +300,7 @@ db.serialize(() => {
               if (err) {
                 console.error('Erreur création ticket formation:', err);
               } else {
-                console.log('✅ Ticket formation créé');
+                console.log('Ticket formation créé');
               }
             });
           }
@@ -317,7 +317,7 @@ db.serialize(() => {
     if (err) {
       console.error('Erreur création Marie Martin:', err);
     } else {
-      console.log('✅ Marie Martin créée');
+      console.log('Marie Martin créée');
     }
   });
 
@@ -329,24 +329,24 @@ db.serialize(() => {
           if (!err2) {
             db.get("SELECT COUNT(*) as count FROM tickets", (err3, ticketCount) => {
               if (!err3) {
-                console.log('\n📊 Résumé de la base de données:');
-                console.log(`👥 Utilisateurs: ${userCount.count}`);
-                console.log(`📁 Projets: ${projectCount.count}`);
-                console.log(`🎫 Tickets: ${ticketCount.count}`);
+                console.log('\nRésumé de la base de données:');
+                console.log(`Utilisateurs: ${userCount.count}`);
+                console.log(`Projets: ${projectCount.count}`);
+                console.log(`Tickets: ${ticketCount.count}`);
                 
-                console.log('\n🔑 Informations de connexion:');
+                console.log('\nInformations de connexion:');
                 console.log('Admin: admin@sav.com / password123');
                 console.log('Client: jean.dupont@email.com / password123');
                 console.log('Client: marie.martin@email.com / password123');
                 
-                console.log('\n✅ Base de données initialisée avec succès!');
+                console.log('\nBase de données initialisée avec succès!');
                 
                 // Fermer la base de données
                 db.close((err) => {
                   if (err) {
                     console.error('Erreur fermeture base:', err);
                   } else {
-                    console.log('🔒 Base de données fermée');
+                    console.log('Base de données fermée');
                     process.exit(0);
                   }
                 });

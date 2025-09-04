@@ -14,7 +14,7 @@ class SLAService {
     if (this.isRunning) return;
     
     this.isRunning = true;
-    console.log('🕐 Service SLA démarré');
+    console.log('Service SLA démarré');
     
     // Run immediately then at intervals
     this.checkSLAs();
@@ -29,17 +29,17 @@ class SLAService {
       this.intervalId = null;
     }
     this.isRunning = false;
-    console.log('🛑 Service SLA arrêté');
+    console.log('Service SLA arrêté');
   }
 
   async checkSLAs() {
     try {
-      console.log('🔍 Vérification des SLAs...');
+      console.log('Vérification des SLAs...');
       
       // Ne vérifier les SLA que pendant les horaires de bureau
       const now = new Date();
       if (!businessHours.isBusinessTime(now)) {
-        console.log('⏰ Hors horaires de bureau - vérification SLA suspendue');
+        console.log('Hors horaires de bureau - vérification SLA suspendue');
         return;
       }
 
@@ -49,7 +49,7 @@ class SLAService {
       const overdueTickets = await this.getOverdueTickets();
       const warningTickets = await this.getWarningTickets(warningTime);
 
-      console.log(`📊 SLA Check: ${overdueTickets.length} tickets en retard, ${warningTickets.length} tickets avec warning`);
+      console.log(`SLA Check: ${overdueTickets.length} tickets en retard, ${warningTickets.length} tickets avec warning`);
 
       // Process overdue tickets
       for (const ticket of overdueTickets) {
@@ -62,7 +62,7 @@ class SLAService {
       }
 
     } catch (error) {
-      console.error('❌ Erreur lors de la vérification SLA:', error);
+      console.error('Erreur lors de la vérification SLA:', error);
     }
   }
 
@@ -113,7 +113,7 @@ class SLAService {
 
   async handleOverdueTicket(ticket) {
     try {
-      console.log(`🚨 Ticket #${ticket.id} en retard SLA`);
+      console.log(`Ticket #${ticket.id} en retard SLA`);
       
       const client = {
         id: ticket.client_id,
@@ -132,13 +132,13 @@ class SLAService {
       await this.notifyInternalTeam(ticket, 'overdue');
 
     } catch (error) {
-      console.error(`❌ Erreur handling overdue ticket #${ticket.id}:`, error);
+      console.error(`Erreur handling overdue ticket #${ticket.id}:`, error);
     }
   }
 
   async handleWarningTicket(ticket) {
     try {
-      console.log(`⚠️ Ticket #${ticket.id} warning SLA`);
+      console.log(`Ticket #${ticket.id} warning SLA`);
       
       const client = {
         id: ticket.client_id,
@@ -157,7 +157,7 @@ class SLAService {
       await this.notifyInternalTeam(ticket, 'warning');
 
     } catch (error) {
-      console.error(`❌ Erreur handling warning ticket #${ticket.id}:`, error);
+      console.error(`Erreur handling warning ticket #${ticket.id}:`, error);
     }
   }
 
@@ -180,8 +180,8 @@ class SLAService {
       `);
 
       const subject = type === 'overdue' 
-        ? `🚨 SLA DÉPASSÉ - Ticket #${ticket.id}`
-        : `⚠️ SLA WARNING - Ticket #${ticket.id}`;
+        ? `SLA DÉPASSÉ - Ticket #${ticket.id}`
+        : `SLA WARNING - Ticket #${ticket.id}`;
 
       for (const member of teamMembers) {
         await emailService.sendMail({
@@ -193,13 +193,13 @@ class SLAService {
       }
 
     } catch (error) {
-      console.error('❌ Erreur notification équipe interne:', error);
+      console.error('Erreur notification équipe interne:', error);
     }
   }
 
   getInternalNotificationTemplate(ticket, member, type) {
     const isOverdue = type === 'overdue';
-    const icon = isOverdue ? '🚨' : '⚠️';
+    const icon = isOverdue ? 'URGENT' : 'ATTENTION';
     const title = isOverdue ? 'SLA DÉPASSÉ' : 'SLA BIENTÔT DÉPASSÉ';
     const urgencyClass = isOverdue ? 'urgent' : 'warning';
 
@@ -221,14 +221,14 @@ class SLAService {
         <body>
           <div class="container">
             <div class="header">
-              <h1>${icon} ${title}</h1>
+              <h1>[${icon}] ${title}</h1>
             </div>
             <div class="content">
               <h2>Bonjour ${member.first_name},</h2>
               <p>${isOverdue ? 'Un ticket a dépassé son SLA' : 'Un ticket va bientôt dépasser son SLA'} et nécessite une attention immédiate.</p>
               
               <div class="ticket-info">
-                <h3>📋 Détails du ticket</h3>
+                <h3>Détails du ticket</h3>
                 <p><strong>Ticket #${ticket.id}:</strong> ${ticket.title}</p>
                 <p><strong>Client:</strong> ${ticket.client_first_name} ${ticket.client_last_name}</p>
                 <p><strong>Projet:</strong> ${ticket.project_name}</p>

@@ -238,10 +238,10 @@ class ProjectsApp {
             <div class="form-group">
               <label class="form-label" for="ticketPriority">Priorité *</label>
               <select id="ticketPriority" name="priority" class="form-select" required>
-                <option value="normal">Normale - Dans les temps</option>
-                <option value="high">Haute - Urgent</option>
-                <option value="urgent">Urgente - Critique</option>
-                <option value="low">Basse - Quand possible</option>
+                <option value="normal">🔵 Normale - Dans les temps</option>
+                <option value="high">🟡 Haute - Urgent</option>
+                <option value="urgent">🔴 Urgente - Critique</option>
+                <option value="low">⚪ Basse - Quand possible</option>
               </select>
             </div>
             
@@ -269,7 +269,7 @@ class ProjectsApp {
       <div class="modal" style="display: flex;">
         <div class="modal-content modal-large">
           <div class="modal-header">
-            <h2>${project.name}</h2>
+            <h2>📁 ${project.name}</h2>
             <button class="modal-close">&times;</button>
           </div>
           <div class="modal-body">

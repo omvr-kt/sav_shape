@@ -114,13 +114,13 @@ class Attachment {
   }
 
   static getFileIcon(mime_type) {
-    if (mime_type.startsWith('image/')) return '🖼️';
-    if (mime_type.startsWith('video/')) return '🎥';
-    if (mime_type.includes('pdf')) return '📄';
-    if (mime_type.includes('word')) return '📝';
-    if (mime_type.includes('excel')) return '📊';
-    if (mime_type.includes('text')) return '📄';
-    return '📎';
+    if (mime_type.startsWith('image/')) return 'Image';
+    if (mime_type.startsWith('video/')) return 'Video';
+    if (mime_type.includes('pdf')) return 'PDF';
+    if (mime_type.includes('word')) return 'Word';
+    if (mime_type.includes('excel')) return 'Excel';
+    if (mime_type.includes('text')) return 'Text';
+    return 'File';
   }
 }
 

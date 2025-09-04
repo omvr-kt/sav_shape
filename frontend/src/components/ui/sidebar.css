@@ -87,10 +87,11 @@
 }
 
 .sidebar__nav-item--active {
-  background: rgba(26, 26, 26, 0.1);
-  color: var(--color-primary);
-  border-left-color: var(--color-primary);
+  background: var(--color-neutral-100);
+  color: var(--color-text);
+  border-left-color: var(--color-accent);
   font-weight: 500;
+  border-radius: var(--radius-sm);
 }
 
 .sidebar__nav-icon {

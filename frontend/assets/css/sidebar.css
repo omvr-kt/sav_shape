@@ -75,23 +75,25 @@
   background: var(--color-bg);
 }
 
-/* INDICATEUR DORÉ 2px POUR ITEM ACTIF */
+/* INDICATEUR ÉPURÉ POUR ITEM ACTIF */
 .sidebar-nav-item.active {
-  color: var(--color-primary);
-  background: var(--color-bg);
+  color: var(--color-text);
+  background: rgba(var(--color-text-rgb, 51, 65, 85), 0.05);
   font-weight: 600;
+  border-radius: var(--radius-sm);
 }
 
 .sidebar-nav-item.active::before {
   content: '';
   position: absolute;
-  left: 0;
+  left: 8px;
   top: 50%;
   transform: translateY(-50%);
-  width: 2px;
-  height: 70%;
-  background: var(--color-accent);
-  border-radius: 0 2px 2px 0;
+  width: 3px;
+  height: 3px;
+  background: var(--color-text);
+  border-radius: 50%;
+  opacity: 0.6;
 }
 
 .sidebar-nav-label {

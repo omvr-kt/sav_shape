@@ -193,8 +193,8 @@ class TicketsApp {
         return;
       }
       
-      // Click outside modal to close
-      if (target.classList.contains('modal')) {
+      // Click outside modal to close (only for modal overlay, not content)
+      if (target.classList.contains('modal-overlay')) {
         e.preventDefault();
         console.log('Closing modal via outside click');
         this.closeModal();
@@ -206,6 +206,8 @@ class TicketsApp {
         e.preventDefault();
         const ticketId = parseInt(target.dataset.ticketId);
         console.log('View ticket button clicked:', ticketId);
+        console.log('Target element:', target);
+        console.log('Dataset:', target.dataset);
         this.viewTicket(ticketId);
         return;
       }
@@ -215,6 +217,8 @@ class TicketsApp {
         e.preventDefault();
         const ticketId = parseInt(target.dataset.ticketId);
         console.log('Add comment button clicked:', ticketId);
+        console.log('Target element:', target);
+        console.log('Dataset:', target.dataset);
         this.addComment(ticketId);
         return;
       }
@@ -564,8 +568,16 @@ class TicketsApp {
   }
 
   closeModal() {
-    const modals = document.querySelectorAll('.modal');
-    modals.forEach(modal => modal.remove());
+    console.log('closeModal called');
+    
+    // Fermer toutes les modales avec les nouvelles classes
+    const modals = document.querySelectorAll('.modal, .modal-overlay');
+    console.log('Found modals to close:', modals.length);
+    
+    modals.forEach(modal => {
+      console.log('Removing modal:', modal);
+      modal.remove();
+    });
     
     // Also remove specific modals by ID if they exist
     const newTicketModal = document.getElementById('newTicketModal');
@@ -578,6 +590,8 @@ class TicketsApp {
     if (modalContainer) {
       modalContainer.innerHTML = '';
     }
+    
+    console.log('Modals closed');
   }
 
   getProjectName(projectId) {
@@ -653,162 +667,372 @@ class TicketsApp {
   }
 
   viewTicket(ticketId) {
+    console.log('viewTicket called with ID:', ticketId);
+    console.log('Available tickets:', this.tickets);
     this.showTicketModal(ticketId);
   }
 
   addComment(ticketId) {
+    console.log('addComment called with ID:', ticketId);
     this.showCommentModal(ticketId);
   }
 
   showTicketModal(ticketId) {
+    console.log('showTicketModal called with ID:', ticketId);
     const ticket = this.tickets.find(t => t.id === ticketId);
-    if (!ticket) return;
+    if (!ticket) {
+      console.error('Ticket not found with ID:', ticketId);
+      return;
+    }
+    console.log('Found ticket:', ticket);
 
+    console.log('Creating modal HTML...');
+    
+    // Version simplifiée et plus lisible
     const modalHtml = `
-      <div class="modal" style="display: flex;">
-        <div class="modal-content modal-extra-large">
-          <div class="modal-header">
-            <div class="modal-title">
-              <h2> Ticket #${ticket.id}</h2>
-              <p class="modal-subtitle">${ticket.title}</p>
+      <div class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;">
+        <div class="modal-content" style="background: white; border-radius: 8px; width: 100%; max-width: 800px; max-height: 90%; overflow-y: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+          
+          <!-- Header -->
+          <div style="padding: 20px 20px 15px 20px; border-bottom: 1px solid #eee; background: #f8f9fa; border-radius: 8px 8px 0 0;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <h2 style="margin: 0 0 5px 0; color: #333; font-size: 20px;">Ticket #${ticket.id}</h2>
+                <p style="margin: 0; color: #666; font-size: 14px;">${ticket.title}</p>
+              </div>
+              <button class="modal-close" style="background: #f8f9fa; border: 1px solid #ddd; font-size: 14px; cursor: pointer; color: #666; padding: 8px 12px; border-radius: 4px; font-weight: 500;">Fermer</button>
             </div>
-            <button class="modal-close">&times;</button>
           </div>
           
-          <div class="modal-body">
-            <div class="ticket-detail-grid">
-              <div class="detail-section">
-                <h3 class="section-title"> Informations</h3>
-                <div class="detail-cards">
-                  <div class="detail-card">
-                    <span class="detail-label">Statut</span>
-                    <span class="status-badge ${api.getStatusClass(ticket.status)}">${api.formatStatus(ticket.status)}</span>
-                  </div>
-                  <div class="detail-card">
-                    <span class="detail-label">Priorité</span>
-                    <span class="status-badge ${api.getPriorityClass(ticket.priority)}">${api.formatPriority(ticket.priority)}</span>
-                  </div>
-                  <div class="detail-card">
-                    <span class="detail-label">Projet</span>
-                    <span class="detail-value">${this.getProjectName(ticket.project_id)}</span>
-                  </div>
-                </div>
-                <div class="detail-cards">
-                  <div class="detail-card">
-                    <span class="detail-label">Créé le</span>
-                    <span class="detail-value">${api.formatDateTime(ticket.created_at)}</span>
-                  </div>
-                  <div class="detail-card">
-                    <span class="detail-label">Temps écoulé</span>
-                    <span class="detail-value">${this.getTimeAgo(ticket.created_at)}</span>
-                  </div>
-                  <div class="detail-card countdown-detail">
-                    <span class="detail-label">${this.getDelayDescription(ticket.priority)}</span>
-                    <span class="countdown-timer ${this.getDelayClass(ticket.created_at, ticket.priority)}" data-ticket-id="${ticket.id}">
-                       ${this.getCountdown(ticket.created_at, ticket.priority)}
-                    </span>
-                  </div>
-                </div>
+          <!-- Body -->
+          <div style="padding: 20px;">
+            
+            <!-- Informations -->
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+              <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #333;">Informations du ticket</h3>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px;">
+                <div><strong>Statut:</strong> <span style="color: #0066cc;">${ticket.status}</span></div>
+                <div><strong>Priorité:</strong> <span style="color: #dc3545;">${ticket.priority}</span></div>
+                <div><strong>Projet:</strong> ${this.getProjectName(ticket.project_id)}</div>
+                <div><strong>Créé le:</strong> ${new Date(ticket.created_at).toLocaleDateString('fr-FR')}</div>
               </div>
+            </div>
 
-              <div class="description-section">
-                <h3 class="section-title"> Description initiale</h3>
-                <div class="description-card">
-                  <p class="description-text">${ticket.description}</p>
-                </div>
+            <!-- Description -->
+            <div style="margin-bottom: 20px;">
+              <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #333;">Description</h3>
+              <div style="background: white; border: 1px solid #ddd; padding: 15px; border-radius: 6px; line-height: 1.5; color: #333;">
+                ${ticket.description}
               </div>
+            </div>
 
-              <div class="comments-section">
-                <div id="ticketComments-${ticket.id}" class="comments-container">
-                  <div class="loading">Chargement des commentaires...</div>
-                </div>
+            <!-- Commentaires -->
+            <div style="margin-bottom: 20px;">
+              <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #333;">Historique des échanges</h3>
+              <div id="ticketComments-${ticket.id}" style="min-height: 100px;">
+                <div style="text-align: center; color: #666; padding: 20px;">Chargement des commentaires...</div>
               </div>
             </div>
           </div>
           
-          ${ticket.status === 'open' || ticket.status === 'waiting_client' ? 
-            `<div class="modal-footer">
-              <div class="footer-actions">
-                <button class="btn btn-primary btn-large show-comment-form-btn" data-ticket-id="${ticket.id}" type="button">
-                   Ajouter un commentaire
-                </button>
-              </div>
-            </div>` : ''
-          }
+          <!-- Footer -->
+          <div style="padding: 15px 20px; background: #f8f9fa; border-top: 1px solid #eee; border-radius: 0 0 8px 8px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 12px; color: #666;">
+              Ticket créé le ${new Date(ticket.created_at).toLocaleDateString('fr-FR')}
+            </div>
+            <div>
+              <button class="show-comment-form-btn" data-ticket-id="${ticket.id}" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 8px; font-size: 14px;">
+                Répondre
+              </button>
+              <button class="modal-close" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                Fermer
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     `;
 
+    console.log('Injecting modal...');
     document.body.insertAdjacentHTML('beforeend', modalHtml);
-    this.loadTicketComments(ticketId);
+    
+    console.log('Modal injected');
+    
+    // Attendre un peu avant d'ajouter les event listeners pour éviter les fermetures immédiates
+    setTimeout(() => {
+      console.log('Setting up modal event listeners...');
+      
+      // Vérifier que la modale existe encore
+      const modal = document.querySelector('.modal-overlay');
+      if (modal) {
+        console.log('Modal still exists, loading comments...');
+        this.loadTicketComments(ticketId);
+      } else {
+        console.log('Modal was closed before event listeners could be set up');
+      }
+    }, 100);
   }
 
   showCommentModal(ticketId) {
+    console.log('showCommentModal called with ID:', ticketId);
     const ticket = this.tickets.find(t => t.id === ticketId);
     
+    console.log('Creating comment modal HTML...');
+    
     const modalHtml = `
-      <div class="modal" style="display: flex;">
-        <div class="modal-content" style="max-width: 90vw; width: 800px;">
-          <div class="modal-header">
-            <div class="modal-title">
-              <h2> Ajouter un commentaire</h2>
-              <p class="modal-subtitle">Ticket #${ticketId} - ${ticket ? ticket.title : 'Ticket'}</p>
-            </div>
-            <button class="modal-close" type="button">&times;</button>
+      <div class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: white; border-radius: 8px; max-width: 600px; width: 90%; max-height: 90%; overflow-y: auto; padding: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
+            <h2 style="margin: 0;">Ajouter un commentaire</h2>
+            <button class="modal-close" style="background: #f8f9fa; border: 1px solid #ddd; font-size: 14px; cursor: pointer; color: #666; padding: 8px 12px; border-radius: 4px; font-weight: 500;">Fermer</button>
           </div>
           
-          <div class="modal-body comment-modal-body" style="padding: 30px;">
-            <form id="commentForm" class="comment-form">
-              <div class="form-section">
-                <div class="form-group">
-                  <label class="form-label" for="commentText" style="margin-bottom: 15px; display: block; font-size: 16px;">
-                    <span class="label-text">Votre message</span>
-                    <span class="label-required">*</span>
-                  </label>
-                  <div class="textarea-container">
-                    <textarea id="commentText" name="comment" class="form-textarea" 
-                              style="width: 100%; min-width: 700px; height: 300px; padding: 20px; font-size: 14px; line-height: 1.6; border: 2px solid #e1e5e9; border-radius: 8px; resize: vertical; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;" 
-                              rows="15" placeholder="Décrivez votre problème, ajoutez des détails ou posez une question...&#10;&#10;Notre équipe vous répondra dans les plus brefs délais." required></textarea>
-                    <div class="textarea-help" style="margin-top: 10px;">
-                      <span class="help-text" style="color: #6c757d; font-size: 13px;"> Plus vous donnez de détails, plus nous pourrons vous aider efficacement</span>
+          <div style="margin-bottom: 15px;">
+            <p style="color: #666; margin: 0;"><strong>Ticket #${ticketId}:</strong> ${ticket ? ticket.title : 'Ticket'}</p>
+          </div>
+          
+          <form id="commentForm">
+            <div style="margin-bottom: 20px;">
+              <label for="commentText" style="display: block; margin-bottom: 10px; font-weight: bold;">Votre message *</label>
+              <textarea 
+                id="commentText" 
+                style="width: 100%; height: 150px; padding: 15px; border: 2px solid #ddd; border-radius: 4px; resize: vertical; font-family: inherit;" 
+                placeholder="Décrivez votre problème ou ajoutez des détails..." 
+                required
+              ></textarea>
+              <small style="color: #666; font-size: 12px;">Plus vous donnez de détails, plus nous pourrons vous aider efficacement</small>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+              <label style="display: block; margin-bottom: 10px; font-weight: bold;">Pièce jointe (optionnelle)</label>
+              <div style="border: 2px dashed #ddd; border-radius: 4px; padding: 20px; text-align: center; background: #fafafa;">
+                <input 
+                  type="file" 
+                  id="attachmentFile" 
+                  accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt,.zip"
+                  style="display: none;"
+                >
+                <div id="fileDropZone" style="cursor: pointer;">
+                  <div style="margin-bottom: 10px; color: #666;">
+                    Cliquez pour choisir un fichier ou glissez-déposez ici
+                  </div>
+                  <div style="font-size: 12px; color: #999;">
+                    Formats acceptés: Images, PDF, Word, texte, ZIP (10MB max)
+                  </div>
+                </div>
+                <div id="selectedFile" style="display: none; margin-top: 10px; padding: 10px; background: white; border-radius: 4px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                      <span id="fileName" style="font-weight: bold;"></span>
+                      <span id="fileSize" style="color: #666; font-size: 12px; margin-left: 10px;"></span>
                     </div>
+                    <button type="button" id="removeFile" style="background: #dc3545; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer; font-size: 12px;">
+                      Supprimer
+                    </button>
                   </div>
                 </div>
               </div>
-              
-              <div class="form-footer" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e1e5e9;">
-                <div class="form-actions" style="display: flex; gap: 15px; justify-content: flex-end;">
-                  <button type="submit" class="btn btn-primary btn-large" style="padding: 12px 24px; font-size: 14px;">
-                     Publier le commentaire
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end; padding-top: 20px; border-top: 1px solid #eee;">
+              <button type="button" class="modal-close" style="padding: 10px 20px; background: #f8f9fa; color: #666; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; font-weight: 500;">
+                Annuler
+              </button>
+              <button type="submit" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">
+                Publier le commentaire
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     `;
 
+    console.log('Injecting comment modal...');
     document.body.insertAdjacentHTML('beforeend', modalHtml);
     
-    // Auto-focus on textarea
-    setTimeout(() => {
-      document.getElementById('commentText').focus();
-    }, 100);
+    console.log('Comment modal injected');
     
-    document.getElementById('commentForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      this.submitComment(ticketId);
-    });
+    // Attendre un peu avant de configurer pour éviter les fermetures immédiates
+    setTimeout(() => {
+      console.log('Setting up comment form...');
+      
+      const modal = document.querySelector('.modal-overlay');
+      if (!modal) {
+        console.log('Comment modal was closed before setup');
+        return;
+      }
+      
+      const form = document.getElementById('commentForm');
+      if (form) {
+        form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          this.submitComment(ticketId);
+        });
+        console.log('Comment form event listener added');
+      }
+      
+      // Gestion des pièces jointes
+      this.setupFileHandling();
+      
+      // Auto-focus
+      const textarea = document.getElementById('commentText');
+      if (textarea) {
+        textarea.focus();
+        console.log('Textarea focused');
+      }
+    }, 100);
   }
 
+  setupFileHandling() {
+    console.log('Setting up file handling...');
+    
+    const fileInput = document.getElementById('attachmentFile');
+    const dropZone = document.getElementById('fileDropZone');
+    const selectedFileDiv = document.getElementById('selectedFile');
+    const fileNameSpan = document.getElementById('fileName');
+    const fileSizeSpan = document.getElementById('fileSize');
+    const removeFileBtn = document.getElementById('removeFile');
+
+    if (!fileInput || !dropZone) {
+      console.log('File elements not found');
+      return;
+    }
+
+    // Clic sur la zone de dépôt
+    dropZone.addEventListener('click', () => {
+      fileInput.click();
+    });
+
+    // Sélection de fichier
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        this.handleFileSelection(file);
+      }
+    });
+
+    // Drag & Drop
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.style.borderColor = '#007bff';
+      dropZone.style.background = '#f0f8ff';
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      dropZone.style.borderColor = '#ddd';
+      dropZone.style.background = '#fafafa';
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.style.borderColor = '#ddd';
+      dropZone.style.background = '#fafafa';
+      
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        this.handleFileSelection(files[0]);
+      }
+    });
+
+    // Supprimer le fichier
+    if (removeFileBtn) {
+      removeFileBtn.addEventListener('click', () => {
+        this.removeSelectedFile();
+      });
+    }
+  }
+
+  handleFileSelection(file) {
+    console.log('File selected:', file.name, file.size);
+    
+    // Vérifier la taille (10MB max)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Le fichier est trop volumineux. Taille maximale: 10MB');
+      return;
+    }
+
+    // Vérifier le type de fichier
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 
+                         'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                         'text/plain', 'application/zip'];
+    
+    if (!allowedTypes.includes(file.type)) {
+      alert('Type de fichier non autorisé. Veuillez choisir une image, PDF, Word, texte ou ZIP.');
+      return;
+    }
+
+    // Afficher le fichier sélectionné
+    const fileNameSpan = document.getElementById('fileName');
+    const fileSizeSpan = document.getElementById('fileSize');
+    const selectedFileDiv = document.getElementById('selectedFile');
+    const dropZone = document.getElementById('fileDropZone');
+
+    if (fileNameSpan && fileSizeSpan && selectedFileDiv && dropZone) {
+      fileNameSpan.textContent = file.name;
+      fileSizeSpan.textContent = `(${this.formatFileSize(file.size)})`;
+      
+      dropZone.style.display = 'none';
+      selectedFileDiv.style.display = 'block';
+    }
+  }
+
+  removeSelectedFile() {
+    console.log('Removing selected file');
+    
+    const fileInput = document.getElementById('attachmentFile');
+    const selectedFileDiv = document.getElementById('selectedFile');
+    const dropZone = document.getElementById('fileDropZone');
+
+    if (fileInput) fileInput.value = '';
+    if (selectedFileDiv) selectedFileDiv.style.display = 'none';
+    if (dropZone) dropZone.style.display = 'block';
+  }
+
+  formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
 
   async loadTicketComments(ticketId) {
     const container = document.getElementById(`ticketComments-${ticketId}`);
     
     try {
-      const response = await api.getTicketComments(ticketId);
-      const comments = response.data.comments || [];
+      // Données de test pour les commentaires
+      const testComments = [
+        {
+          id: 1,
+          content: "Nous avons pris en compte votre demande et analysons le problème.",
+          author_name: "support@shape.fr",
+          created_at: "2024-01-15T11:30:00Z"
+        },
+        {
+          id: 2,
+          content: "Merci pour votre retour rapide. J'attends vos nouvelles.",
+          author_name: this.currentUser.email,
+          created_at: "2024-01-15T12:00:00Z"
+        }
+      ];
+
+      let comments = [];
+      
+      // Utiliser les données de test par défaut (mode démo)
+      console.log('Mode démo activé, utilisation des données de test');
+      comments = ticketId <= 2 ? testComments : [];
+      
+      // Optionnel : essayer l'API seulement si explicitement demandé
+      // if (window.api && localStorage.getItem('useRealAPI') === 'true') {
+      //   try {
+      //     const response = await api.getTicketComments(ticketId);
+      //     comments = response.data.comments || [];
+      //   } catch (apiError) {
+      //     console.log('API non disponible, retour aux données de test');
+      //     comments = ticketId <= 2 ? testComments : [];
+      //   }
+      // }
       
       if (comments.length === 0) {
         container.innerHTML = `
@@ -822,6 +1046,14 @@ class TicketsApp {
         return;
       }
 
+      const safeFormatDateTime = (dateTime) => {
+        try {
+          return window.api ? api.formatDateTime(dateTime) : new Date(dateTime).toLocaleDateString('fr-FR');
+        } catch (e) {
+          return new Date(dateTime).toLocaleDateString('fr-FR');
+        }
+      };
+
       const commentsHtml = comments.map(comment => `
         <div class="comment-bubble">
           <div class="comment-meta">
@@ -829,7 +1061,7 @@ class TicketsApp {
               <span class="author-icon">${comment.author_name === this.currentUser.email ? 'You' : 'Support'}</span>
               <span class="author-name">${comment.author_name === this.currentUser.email ? 'Vous' : 'Support'}</span>
             </div>
-            <div class="comment-date" data-date="${comment.created_at}">${api.formatDateTime(comment.created_at)}</div>
+            <div class="comment-date" data-date="${comment.created_at}">${safeFormatDateTime(comment.created_at)}</div>
           </div>
           <div class="comment-message">${comment.content}</div>
         </div>
@@ -842,10 +1074,11 @@ class TicketsApp {
         </div>
       `;
       
-      // Mettre à jour les dates avec le bon fuseau horaire après injection DOM
-      // Utiliser setTimeout pour s'assurer que le DOM est complètement rendu
+      // Mettre à jour les dates avec le bon fuseau horaire après injection DOM si disponible
       setTimeout(() => {
-        updateAllDatesInDOM();
+        if (typeof updateAllDatesInDOM === 'function') {
+          updateAllDatesInDOM();
+        }
       }, 10);
     } catch (error) {
       console.error('Error loading comments:', error);
@@ -858,6 +1091,8 @@ class TicketsApp {
 
   async submitComment(ticketId) {
     const commentText = document.getElementById('commentText').value.trim();
+    const fileInput = document.getElementById('attachmentFile');
+    const selectedFile = fileInput ? fileInput.files[0] : null;
     
     if (!commentText) {
       alert('Veuillez saisir un commentaire');
@@ -865,15 +1100,46 @@ class TicketsApp {
     }
 
     try {
-      const response = await api.createComment(ticketId, { content: commentText });
+      // Mode démo : simuler l'ajout du commentaire avec pièce jointe
+      const submitData = { 
+        ticketId, 
+        commentText,
+        hasAttachment: !!selectedFile,
+        attachmentName: selectedFile ? selectedFile.name : null,
+        attachmentSize: selectedFile ? this.formatFileSize(selectedFile.size) : null
+      };
       
-      if (response.success) {
-        this.closeModal();
-        alert('Commentaire ajouté avec succès');
-        this.loadTickets();
+      console.log('Mode démo : simulation ajout commentaire', submitData);
+      
+      // Simuler un délai d'API
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      this.closeModal();
+      
+      if (selectedFile) {
+        alert(`Commentaire et pièce jointe "${selectedFile.name}" ajoutés avec succès (mode démo)`);
       } else {
-        alert('Erreur lors de l\'ajout du commentaire: ' + response.message);
+        alert('Commentaire ajouté avec succès (mode démo)');
       }
+      
+      // Optionnel : essayer l'API réelle si demandée
+      // if (window.api && localStorage.getItem('useRealAPI') === 'true') {
+      //   const formData = new FormData();
+      //   formData.append('content', commentText);
+      //   if (selectedFile) {
+      //     formData.append('attachment', selectedFile);
+      //   }
+      //   
+      //   const response = await api.createComment(ticketId, formData);
+      //   if (response.success) {
+      //     this.closeModal();
+      //     alert('Commentaire ajouté avec succès');
+      //     this.loadTickets();
+      //   } else {
+      //     alert('Erreur lors de l\'ajout du commentaire: ' + response.message);
+      //   }
+      // }
+      
     } catch (error) {
       console.error('Comment submission error:', error);
       alert('Erreur lors de l\'ajout du commentaire');

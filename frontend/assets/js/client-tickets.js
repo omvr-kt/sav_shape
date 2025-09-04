@@ -700,7 +700,7 @@ class TicketsApp {
                 <h2 style="margin: 0 0 5px 0; color: #333; font-size: 20px;">Ticket #${ticket.id}</h2>
                 <p style="margin: 0; color: #666; font-size: 14px;">${ticket.title}</p>
               </div>
-              <button class="modal-close" style="background: #f8f9fa; border: 1px solid #ddd; font-size: 14px; cursor: pointer; color: #666; padding: 8px 12px; border-radius: 4px; font-weight: 500;">Fermer</button>
+              <button class="modal-close" style="background: #f1f3f4; border: none; font-size: 18px; cursor: pointer; color: #5f6368; padding: 8px; line-height: 1; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-weight: bold;">×</button>
             </div>
           </div>
           
@@ -744,7 +744,7 @@ class TicketsApp {
               <button class="show-comment-form-btn" data-ticket-id="${ticket.id}" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 8px; font-size: 14px;">
                 Répondre
               </button>
-              <button class="modal-close" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+              <button class="modal-close" style="padding: 10px 20px; background: #ffffff; color: #374151; border: 2px solid #d1d5db; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.15s; min-width: 80px;">
                 Fermer
               </button>
             </div>
@@ -754,6 +754,41 @@ class TicketsApp {
     `;
 
     console.log('Injecting modal...');
+    
+    // Ajouter les styles pour les boutons si pas déjà fait
+    if (!document.getElementById('modal-button-styles')) {
+      const styles = document.createElement('style');
+      styles.id = 'modal-button-styles';
+      styles.textContent = `
+        /* Boutons fermer ronds */
+        button[style*="border-radius: 50%"]:hover {
+          background: #e8eaed !important;
+          color: #202124 !important;
+          transform: scale(1.05);
+        }
+        
+        /* Boutons annuler/fermer */
+        button[style*="background: #ffffff"]:hover {
+          background: #f9fafb !important;
+          border-color: #9ca3af !important;
+          color: #111827 !important;
+        }
+        
+        /* Boutons primaires */
+        button[style*="background: #3b82f6"]:hover {
+          background: #2563eb !important;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3) !important;
+        }
+        
+        /* Bouton répondre */
+        button[style*="background: #007bff"]:hover {
+          background: #0056b3 !important;
+        }
+      `;
+      document.head.appendChild(styles);
+    }
+    
     document.body.insertAdjacentHTML('beforeend', modalHtml);
     
     console.log('Modal injected');
@@ -784,7 +819,7 @@ class TicketsApp {
         <div class="modal-content" style="background: white; border-radius: 8px; max-width: 600px; width: 90%; max-height: 90%; overflow-y: auto; padding: 20px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
             <h2 style="margin: 0;">Ajouter un commentaire</h2>
-            <button class="modal-close" style="background: #f8f9fa; border: 1px solid #ddd; font-size: 14px; cursor: pointer; color: #666; padding: 8px 12px; border-radius: 4px; font-weight: 500;">Fermer</button>
+            <button class="modal-close" style="background: #f1f3f4; border: none; font-size: 18px; cursor: pointer; color: #5f6368; padding: 8px; line-height: 1; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-weight: bold;">×</button>
           </div>
           
           <div style="margin-bottom: 15px;">
@@ -835,10 +870,10 @@ class TicketsApp {
             </div>
             
             <div style="display: flex; gap: 10px; justify-content: flex-end; padding-top: 20px; border-top: 1px solid #eee;">
-              <button type="button" class="modal-close" style="padding: 10px 20px; background: #f8f9fa; color: #666; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; font-weight: 500;">
+              <button type="button" class="modal-close" style="padding: 10px 20px; background: #ffffff; color: #374151; border: 2px solid #d1d5db; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.15s; min-width: 100px;">
                 Annuler
               </button>
-              <button type="submit" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">
+              <button type="submit" style="padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.15s; min-width: 140px; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);">
                 Publier le commentaire
               </button>
             </div>

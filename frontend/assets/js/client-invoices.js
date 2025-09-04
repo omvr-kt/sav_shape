@@ -9,6 +9,8 @@ class ClientInvoicesApp {
     await this.checkAuth();
     this.setupEventListeners();
     await this.loadInvoices();
+    // Initialiser le badge tickets dans la sidebar
+    initTicketBadge();
   }
 
   async checkAuth() {

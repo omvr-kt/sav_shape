@@ -17,10 +17,10 @@
   --color-border: #E6E8EB;
 
   /* États */
-  --color-success: #1A7F5A;
-  --color-warning: #DC9A00;
-  --color-error: #C0392B;
-  --color-info: #2F6CAD;
+  --color-success: #5a5a5a;
+  --color-warning: #8b7355;
+  --color-error: #666666;
+  --color-info: #7a7a7a;
 
   /* Rayons */
   --radius-sm: 6px;

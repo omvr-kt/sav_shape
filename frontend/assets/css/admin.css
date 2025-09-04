@@ -867,10 +867,10 @@ input[type="checkbox"] {
   font-weight: 600;
 }
 
-.priority-title.urgent { color: #dc2626; }
-.priority-title.high { color: #ea580c; }
-.priority-title.normal { color: #2563eb; }
-.priority-title.low { color: #059669; }
+.priority-title.urgent { color: #666666; }
+.priority-title.high { color: #8b7355; }
+.priority-title.normal { color: #1a1a2e; }
+.priority-title.low { color: #5a5a5a; }
 
 .sla-preview {
   background: var(--white);
@@ -1070,16 +1070,16 @@ input[type="checkbox"] {
   font-weight: 600;
 }
 
-.status-open { background: #fef2f2; color: #dc2626; }
-.status-in_progress { background: #fef3c7; color: #d97706; }
-.status-waiting_client { background: #ede9fe; color: #7c3aed; }
-.status-resolved { background: #d1fae5; color: #059669; }
+.status-open { background: #f8f8f8; color: #666666; }
+.status-in_progress { background: #f5f5f5; color: #8b7355; }
+.status-waiting_client { background: #f7f7f7; color: #7a7a7a; }
+.status-resolved { background: #f9f9f9; color: #5a5a5a; }
 .status-closed { background: #f3f4f6; color: #374151; }
 
-.priority-low { background: #d1fae5; color: #059669; }
-.priority-normal { background: #dbeafe; color: #2563eb; }
-.priority-high { background: #fed7aa; color: #ea580c; }
-.priority-urgent { background: #fecaca; color: #dc2626; }
+.priority-low { background: #f9f9f9; color: #5a5a5a; }
+.priority-normal { background: #f0f4f8; color: #1a1a2e; }
+.priority-high { background: #f6f4f1; color: #8b7355; }
+.priority-urgent { background: #f5f5f5; color: #666666; }
 
 .ticket-actions {
   display: flex;
@@ -1190,8 +1190,8 @@ input[type="checkbox"] {
 }
 
 .comment-item.comment-internal {
-  background: #fef3c7;
-  border-color: #f59e0b;
+  background: #f6f4f1;
+  border-color: #8b7355;
 }
 
 .comment-header {
@@ -1212,7 +1212,7 @@ input[type="checkbox"] {
 }
 
 .internal-badge {
-  background: #f59e0b;
+  background: #8b7355;
   color: white;
   padding: 0.125rem 0.25rem;
   border-radius: 0.125rem;
@@ -1244,23 +1244,23 @@ input[type="checkbox"] {
 }
 
 .sla-status.sla-good {
-  background-color: #d1fae5;
-  color: #065f46;
+  background-color: #f9f9f9;
+  color: #5a5a5a;
 }
 
 .sla-status.sla-ok {
-  background-color: #dbeafe;
-  color: #1e40af;
+  background-color: #f0f4f8;
+  color: #1a1a2e;
 }
 
 .sla-status.sla-warning {
-  background-color: #fef3c7;
-  color: #92400e;
+  background-color: #f6f4f1;
+  color: #8b7355;
 }
 
 .sla-status.sla-overdue {
-  background-color: #fee2e2;
-  color: #991b1b;
+  background-color: #f5f5f5;
+  color: #666666;
   animation: blink 1s ease-in-out infinite alternate;
 }
 
@@ -1395,28 +1395,28 @@ input[type="checkbox"] {
 }
 
 .status-draft {
-  background: #ffc107;
-  color: #212529;
+  background: #f6f4f1;
+  color: #8b7355;
 }
 
 .status-sent {
-  background: #17a2b8;
-  color: white;
+  background: #f0f4f8;
+  color: #1a1a2e;
 }
 
 .status-paid {
-  background: #28a745;
-  color: white;
+  background: #f9f9f9;
+  color: #5a5a5a;
 }
 
 .status-overdue {
-  background: #dc3545;
-  color: white;
+  background: #f5f5f5;
+  color: #666666;
 }
 
 .status-cancelled {
-  background: #6c757d;
-  color: white;
+  background: #f3f4f6;
+  color: #6c757d;
 }
 
 /* Styles pour la modal d'édition */

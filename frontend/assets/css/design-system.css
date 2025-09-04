@@ -23,10 +23,10 @@
   --color-border: #E6E8EB;         /* Bordures / séparateurs */
 
   /* === ÉTATS === */
-  --color-success: #1A7F5A;        /* Succès */
-  --color-warning: #DC9A00;        /* Alerte */
-  --color-error: #C0392B;          /* Erreur */
-  --color-info: #2F6CAD;           /* Info */
+  --color-success: #5a5a5a;        /* Succès - sobre */
+  --color-warning: #8b7355;        /* Alerte - sobre */
+  --color-error: #666666;          /* Erreur - sobre */
+  --color-info: #7a7a7a;           /* Info - sobre */
 
   /* === RAYONS === */
   --radius-sm: 6px;

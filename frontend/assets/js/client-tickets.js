@@ -403,6 +403,9 @@ class TicketsApp {
     const element = document.getElementById(elementId);
     if (element) {
       element.textContent = value;
+      console.log(`Updated ${elementId} to ${value}`);
+    } else {
+      console.warn(`Element ${elementId} not found!`);
     }
   }
 
@@ -1431,6 +1434,11 @@ class TicketsApp {
 
     this.filteredTickets = this.tickets;
     this.renderTickets();
+    
+    // S'assurer que les éléments DOM sont disponibles avant de mettre à jour les stats
+    setTimeout(() => {
+      this.updateStatsDisplay();
+    }, 100);
   }
 }
 

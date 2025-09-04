@@ -167,6 +167,14 @@
   background-color: var(--gray-100);
 }
 
+/* Header filters spacing */
+.header-filters {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
 /* Dropdown pour filtres */
 .dropdown {
   position: relative;

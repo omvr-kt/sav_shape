@@ -164,146 +164,44 @@
                 </div>
                 
                 <!-- Historique des échanges -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Historique des échanges (3)</h3>
-                        <div style="font-size: 14px; color: var(--color-muted);">
-                            Dernière réponse il y a 2 heures
+                <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 24px;">
+                    <div style="padding: 20px; border-bottom: 1px solid #f3f4f6;">
+                        <h3 style="font-size: 18px; font-weight: 600; color: #1f2937; margin: 0;">Commentaires (<span id="commentsCount">0</span>)</h3>
+                        <div style="font-size: 14px; color: #6b7280; margin-top: 4px;" id="lastCommentTime">
+                            Chargement...
                         </div>
                     </div>
-                    <div class="card-body" style="padding: 0;">
-                        <div style="display: flex; flex-direction: column;">
-                            
-                            <!-- Message 1 - Création du ticket -->
-                            <div style="padding: var(--space-5); border-bottom: 1px solid var(--color-border);">
-                                <div style="display: flex; gap: var(--space-3);">
-                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--color-primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                        <span style="color: var(--color-surface); font-weight: 600; font-size: 14px;">MD</span>
-                                    </div>
-                                    <div style="flex: 1;">
-                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2);">
-                                            <div>
-                                                <div style="font-weight: 600; color: var(--color-primary);">Marie Dubois</div>
-                                                <div style="font-size: 14px; color: var(--color-muted);">Client</div>
-                                            </div>
-                                            <div style="font-size: 14px; color: var(--color-muted);">
-                                                15 jan. 2024, 14:30
-                                            </div>
-                                        </div>
-                                        <div style="background: var(--color-bg); padding: var(--space-3); border-radius: var(--radius-md); border-left: 3px solid var(--color-primary);">
-                                            <strong>Ticket créé</strong><br>
-                                            Problème de connexion sur l'espace admin - [Voir description complète ci-dessus]
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Message 2 - Réponse du support -->
-                            <div style="padding: var(--space-5); border-bottom: 1px solid var(--color-border);">
-                                <div style="display: flex; gap: var(--space-3);">
-                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--color-accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                        <span style="color: var(--color-primary); font-weight: 600; font-size: 14px;">TM</span>
-                                    </div>
-                                    <div style="flex: 1;">
-                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2);">
-                                            <div>
-                                                <div style="font-weight: 600; color: var(--color-primary);">Thomas Martin</div>
-                                                <div style="font-size: 14px; color: var(--color-muted);">Support technique</div>
-                                            </div>
-                                            <div style="font-size: 14px; color: var(--color-muted);">
-                                                15 jan. 2024, 15:45
-                                            </div>
-                                        </div>
-                                        <div style="background: var(--color-surface); padding: var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-border);">
-                                            <p>Bonjour Marie,</p>
-                                            <p>Merci pour votre signalement. J'ai pris en charge votre ticket et je vais investiguer immédiatement.</p>
-                                            <p>J'ai identifié un problème avec notre serveur d'authentification qui affecte certains comptes admin. Nous travaillons actuellement sur une correction.</p>
-                                            <p><strong>Solution temporaire :</strong> Puis-je vous demander d'essayer de vous connecter avec ce lien de récupération : <a href="#" style="color: var(--color-primary);">admin.monsite.com/recovery</a></p>
-                                            <p>Je vous tiens informée de l'avancement.</p>
-                                            <p>Cordialement,<br>Thomas Martin</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Message 3 - Réponse du client -->
-                            <div style="padding: var(--space-5);">
-                                <div style="display: flex; gap: var(--space-3);">
-                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--color-primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                        <span style="color: var(--color-surface); font-weight: 600; font-size: 14px;">MD</span>
-                                    </div>
-                                    <div style="flex: 1;">
-                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2);">
-                                            <div>
-                                                <div style="font-weight: 600; color: var(--color-primary);">Marie Dubois</div>
-                                                <div style="font-size: 14px; color: var(--color-muted);">Client</div>
-                                            </div>
-                                            <div style="font-size: 14px; color: var(--color-muted);">
-                                                Aujourd'hui, 09:15
-                                            </div>
-                                        </div>
-                                        <div style="background: var(--color-bg); padding: var(--space-3); border-radius: var(--radius-md); border-left: 3px solid var(--color-primary);">
-                                            <p>Bonjour Thomas,</p>
-                                            <p>Merci pour votre réponse rapide !</p>
-                                            <p>J'ai essayé le lien de récupération que vous m'avez envoyé, mais j'obtiens toujours la même erreur. Pouvez-vous vérifier si mon compte n'est pas bloqué ?</p>
-                                            <p>En attendant, cela nous bloque pour traiter les commandes du jour.</p>
-                                            <p>Merci,<br>Marie</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                    <div id="commentsList" style="max-height: 400px; overflow-y: auto;">
+                        <div class="loading" style="padding: 40px; text-align: center; color: #9ca3af;">
+                            Chargement des commentaires...
                         </div>
                     </div>
+                </div>
                     
-                    <!-- Zone de réponse -->
-                    <div class="card-footer" style="background: var(--color-bg);">
-                        <div style="margin-bottom: var(--space-3);">
-                            <h4 style="font-family: var(--font-heading); font-size: 16px; color: var(--color-primary); margin-bottom: var(--space-2);">
-                                Ajouter une réponse
-                            </h4>
-                            <div class="alert alert-info" style="margin-bottom: var(--space-3);">
-                                <strong> Conseil :</strong> Soyez précis dans votre description et n'hésitez pas à joindre des captures d'écran pour nous aider à mieux comprendre le problème.
-                            </div>
-                        </div>
+                <!-- Zone d'ajout de commentaire -->
+                <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px;">
+                    <h3 style="font-size: 16px; font-weight: 600; color: #1f2937; margin: 0 0 16px 0;">Ajouter un commentaire</h3>
                         
-                        <form id="commentForm" style="display: flex; flex-direction: column; gap: var(--space-3);">
-                            <div class="form-group">
-                                <textarea 
-                                    id="commentContent"
-                                    class="form-textarea" 
-                                    placeholder="Décrivez votre problème ou votre question..."
-                                    rows="4"
-                                    style="resize: vertical;"
-                                    required
-                                ></textarea>
+                    <form id="commentForm" style="display: flex; flex-direction: column; gap: 16px;">
+                        <textarea 
+                            id="commentContent"
+                            placeholder="Écrivez votre commentaire ou question ici..."
+                            rows="4"
+                            style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; line-height: 1.5; resize: vertical; font-family: inherit;"
+                            required
+                        ></textarea>
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <label for="fileInput" style="display: flex; align-items: center; gap: 6px; color: #6b7280; cursor: pointer; font-size: 14px;">
+                                    📎 Joindre un fichier
+                                </label>
+                                <input type="file" id="fileInput" multiple accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt" style="display: none;">
                             </div>
-                            
-                            <!-- File attachments section -->
-                            <div id="attachmentSection" style="border: 1px dashed var(--color-border); border-radius: var(--radius-md); padding: var(--space-3); display: none;">
-                                <h5 style="margin: 0 0 var(--space-2) 0; color: var(--color-primary);">Pièces jointes sélectionnées</h5>
-                                <div id="selectedFiles" style="display: flex; flex-direction: column; gap: var(--space-2);"></div>
-                            </div>
-                            
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div style="display: flex; gap: var(--space-2); align-items: center;">
-                                    <button type="button" id="attachFileBtn" class="btn btn-outline">
-                                         Joindre un fichier
-                                    </button>
-                                    <input type="file" id="fileInput" multiple accept=".jpg,.jpeg,.png,.gif,.bmp,.webp,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip,.rar" style="display: none;">
-                                    <span style="font-size: 12px; color: var(--color-muted);">
-                                        Max 10MB par fichier
-                                    </span>
-                                </div>
-                                
-                                <div style="display: flex; gap: var(--space-2);">
-                                    <button type="button" class="btn btn-outline">
-                                         Brouillon
-                                    </button>
-                                    <button type="submit" class="btn btn-primary" id="submitBtn">
-                                         Envoyer la réponse
-                                    </button>
-                                </div>
-                            </div>
+                            <button type="submit" id="submitBtn" style="background: #0e2433; color: white; border: none; border-radius: 6px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer;">
+                                Envoyer le commentaire
+                            </button>
+                        </div>
                         </form>
                     </div>
                 </div>
@@ -341,6 +239,160 @@
         }
 
         loadUserInfo();
+        loadTicketComments();
+        
+        // Load ticket comments dynamically
+        async function loadTicketComments() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const ticketId = urlParams.get('id') || 1; // Default to 1 for demo
+                
+                const response = await api.getTicketComments(ticketId);
+                
+                if (response.success) {
+                    renderComments(response.data.comments);
+                    updateCommentsInfo(response.data.comments);
+                } else {
+                    throw new Error(response.message);
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement des commentaires:', error);
+                document.getElementById('commentsList').innerHTML = `
+                    <div style="padding: var(--space-5); text-align: center; color: var(--color-error);">
+                        Erreur lors du chargement des commentaires
+                    </div>
+                `;
+            }
+        }
+        
+        function updateCommentsInfo(comments) {
+            const commentsCount = document.getElementById('commentsCount');
+            const lastCommentTime = document.getElementById('lastCommentTime');
+            
+            commentsCount.textContent = comments.length;
+            
+            if (comments.length > 0) {
+                const lastComment = comments[comments.length - 1];
+                lastCommentTime.textContent = `Dernière réponse ${formatTimeAgo(lastComment.created_at)}`;
+            } else {
+                lastCommentTime.textContent = 'Aucun commentaire';
+            }
+        }
+        
+        function renderComments(comments) {
+            const commentsList = document.getElementById('commentsList');
+            
+            if (comments.length === 0) {
+                commentsList.innerHTML = `
+                    <div style="padding: var(--space-5); text-align: center; color: var(--color-muted);">
+                        <div style="font-size: 48px; margin-bottom: var(--space-3); opacity: 0.3;">💬</div>
+                        <p>Aucun commentaire pour le moment</p>
+                        <p style="font-size: 14px;">Soyez le premier à ajouter un commentaire !</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            commentsList.innerHTML = comments.map((comment, index) => {
+                const isLast = index === comments.length - 1;
+                const borderStyle = isLast ? '' : 'border-bottom: 1px solid var(--color-border);';
+                
+                // Determine if this is from client or support
+                const isClient = comment.author_role === 'client';
+                const avatarBg = isClient ? 'var(--color-primary)' : 'var(--color-accent)';
+                const avatarColor = isClient ? 'var(--color-surface)' : 'var(--color-primary)';
+                const messageBg = isClient ? 'var(--color-bg)' : 'var(--color-surface)';
+                const messageBorder = isClient ? 'border-left: 3px solid var(--color-primary);' : 'border: 1px solid var(--color-border);';
+                
+                // Get author initials
+                const initials = comment.author_name 
+                    ? comment.author_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+                    : 'U';
+                
+                return `
+                    <div style="padding: 16px; ${borderStyle}">
+                        <div style="display: flex; gap: 12px;">
+                            <div style="width: 36px; height: 36px; border-radius: 50%; background: ${avatarBg}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <span style="color: ${avatarColor}; font-weight: 600; font-size: 13px;">${initials}</span>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <div style="font-weight: 600; color: #1f2937; font-size: 14px;">${comment.author_name || 'Utilisateur'}</div>
+                                    <div style="font-size: 12px; color: #9ca3af;">${formatTimeAgo(comment.created_at)}</div>
+                                </div>
+                                <div style="background: #f9fafb; padding: 12px; border-radius: 8px; border-left: 3px solid ${avatarBg};">
+                                    <div style="line-height: 1.5; color: #374151; font-size: 14px;">
+                                        ${comment.content.replace(/\n/g, '<br>')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function getRoleLabel(role) {
+            const roleLabels = {
+                'client': 'Client',
+                'admin': 'Support technique',
+                'team': 'Équipe support'
+            };
+            return roleLabels[role] || 'Utilisateur';
+        }
+        
+        function renderAttachments(attachments) {
+            return `
+                <div style="margin-top: var(--space-3);">
+                    <div style="font-size: 12px; color: var(--color-muted); margin-bottom: var(--space-2); font-weight: 500;">
+                        📎 Pièces jointes (${attachments.length})
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+                        ${attachments.map(attachment => `
+                            <div style="display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-sm);">
+                                <div style="font-size: 16px;">${getFileIcon(attachment.mime_type)}</div>
+                                <div style="flex: 1;">
+                                    <a href="/api/attachments/${attachment.id}/download" target="_blank" style="color: var(--color-primary); font-weight: 500; text-decoration: none; font-size: 14px;">
+                                        ${attachment.original_name}
+                                    </a>
+                                    <div style="font-size: 12px; color: var(--color-muted);">
+                                        ${formatFileSize(attachment.file_size)}
+                                    </div>
+                                </div>
+                                <a href="/api/attachments/${attachment.id}/download" class="btn btn-outline btn-sm" style="padding: 4px 8px; font-size: 12px;">
+                                    ⬇️ Télécharger
+                                </a>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        function formatDateTime(dateString) {
+            return new Date(dateString).toLocaleDateString('fr-FR', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        function formatTimeAgo(dateString) {
+            const now = new Date();
+            const date = new Date(dateString);
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / (1000 * 60));
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            
+            if (diffMins < 1) return 'à l\'instant';
+            if (diffMins < 60) return `il y a ${diffMins}min`;
+            if (diffHours < 24) return `il y a ${diffHours}h`;
+            if (diffDays < 7) return `il y a ${diffDays}j`;
+            return formatDateTime(dateString);
+        }
         
         // Gestion des dropdowns
         document.querySelectorAll('.dropdown').forEach(dropdown => {
@@ -436,6 +488,42 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 10000;
+                padding: 12px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 500;
+                background: ${type === 'success' ? 'var(--color-success)' : 'var(--color-error)'};
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+        
         // Handle form submission
         commentForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -480,9 +568,16 @@
                     }
                 }
 
-                // Success - refresh page or update UI
-                alert('Commentaire ajouté avec succès!');
-                location.reload();
+                // Success - refresh comments and clear form
+                document.getElementById('commentContent').value = '';
+                selectedFiles = [];
+                updateFileDisplay();
+                
+                // Reload comments
+                await loadTicketComments();
+                
+                // Show success notification
+                showNotification('Commentaire ajouté avec succès!', 'success');
                 
             } catch (error) {
                 console.error('Error submitting comment:', error);

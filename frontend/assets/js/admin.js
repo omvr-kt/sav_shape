@@ -47,6 +47,125 @@ class AdminApp {
     // App is now visible by default with sidebar structure
     document.getElementById('currentUser').textContent = 
       `${this.currentUser.first_name} ${this.currentUser.last_name}`;
+    
+    // Set initial title based on current tab
+    this.updateTitle();
+  }
+
+  updateTitle() {
+    // Title mapping for each tab
+    const tabTitles = {
+      'dashboard': 'Tableau de bord',
+      'tickets': 'Gestion des Tickets',
+      'projects': 'Gestion des Projets',
+      'clients': 'Gestion des Clients',
+      'invoices': 'Gestion de la Facturation'
+    };
+
+    const mainTitle = document.querySelector('.main-title');
+    if (mainTitle && tabTitles[this.currentTab]) {
+      mainTitle.textContent = tabTitles[this.currentTab];
+    }
+
+    // Update header actions
+    this.updateHeaderActions();
+  }
+
+  updateHeaderActions() {
+    const headerActions = document.getElementById('mainHeaderActions');
+    if (!headerActions) return;
+
+    // Clear existing actions
+    headerActions.innerHTML = '';
+
+    // Define actions for each tab
+    const tabActions = {
+      'tickets': `
+        <div class="header-filters">
+          <select id="statusFilter" class="filter-select">
+            <option value="">Tous les statuts</option>
+            <option value="open">Ouvert</option>
+            <option value="in_progress">En cours</option>
+            <option value="waiting_client">Attente client</option>
+            <option value="resolved">Résolu</option>
+            <option value="closed">Fermé</option>
+          </select>
+          <select id="priorityFilter" class="filter-select">
+            <option value="">Toutes les priorités</option>
+            <option value="urgent">Urgent</option>
+            <option value="high">Élevée</option>
+            <option value="normal">Normale</option>
+            <option value="low">Faible</option>
+          </select>
+          <button id="refreshTickets" class="btn btn-secondary btn-sm">Actualiser</button>
+        </div>
+      `,
+      'projects': `
+        <button id="addProjectBtn" class="btn btn-primary">+ Nouveau Projet</button>
+      `,
+      'clients': `
+        <button id="addClientBtn" class="btn btn-primary">+ Nouveau Client</button>
+      `,
+      'invoices': `
+        <div class="header-filters">
+          <select id="invoiceStatusFilter" class="filter-select">
+            <option value="">Tous les statuts</option>
+            <option value="draft">Brouillon</option>
+            <option value="sent">Envoyée</option>
+            <option value="paid">Payée</option>
+            <option value="overdue">En retard</option>
+            <option value="cancelled">Annulée</option>
+          </select>
+          <button id="refreshInvoices" class="btn btn-secondary btn-sm">Actualiser</button>
+          <button id="newInvoiceBtn" class="btn btn-primary">+ Nouvelle Facture</button>
+        </div>
+      `
+    };
+
+    // Add actions for current tab
+    if (tabActions[this.currentTab]) {
+      headerActions.innerHTML = tabActions[this.currentTab];
+      
+      // Re-bind event listeners for the new elements
+      this.bindHeaderActionEvents();
+    }
+  }
+
+  bindHeaderActionEvents() {
+    // Rebind events for moved elements
+    const statusFilter = document.getElementById('statusFilter');
+    const priorityFilter = document.getElementById('priorityFilter');
+    const refreshTickets = document.getElementById('refreshTickets');
+    const addProjectBtn = document.getElementById('addProjectBtn');
+    const addClientBtn = document.getElementById('addClientBtn');
+    const newInvoiceBtn = document.getElementById('newInvoiceBtn');
+    const invoiceStatusFilter = document.getElementById('invoiceStatusFilter');
+    const refreshInvoices = document.getElementById('refreshInvoices');
+
+    if (statusFilter) {
+      statusFilter.addEventListener('change', () => this.loadTickets());
+    }
+    if (priorityFilter) {
+      priorityFilter.addEventListener('change', () => this.loadTickets());
+    }
+    if (refreshTickets) {
+      refreshTickets.addEventListener('click', () => this.loadTickets());
+    }
+    if (addProjectBtn) {
+      addProjectBtn.addEventListener('click', () => this.showAddProjectModal());
+    }
+    if (addClientBtn) {
+      addClientBtn.addEventListener('click', () => this.showAddClientModal());
+    }
+    if (newInvoiceBtn) {
+      newInvoiceBtn.addEventListener('click', () => this.showNewInvoiceModal());
+    }
+    if (invoiceStatusFilter) {
+      invoiceStatusFilter.addEventListener('change', () => this.loadInvoices());
+    }
+    if (refreshInvoices) {
+      refreshInvoices.addEventListener('click', () => this.loadInvoices());
+    }
   }
 
   setupEventListeners() {
@@ -121,6 +240,9 @@ class AdminApp {
     document.getElementById(tabName).classList.add('active');
 
     this.currentTab = tabName;
+
+    // Update main title
+    this.updateTitle();
 
     // Load data for the tab
     switch (tabName) {
@@ -337,6 +459,7 @@ class AdminApp {
             <th>Statut</th>
             <th>Tickets</th>
             <th>Créé le</th>
+            <th>SLA</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -348,10 +471,11 @@ class AdminApp {
               <td><span class="status-badge status-${project.status}">${project.status}</span></td>
               <td>${project.ticket_count || 0} (${project.active_ticket_count || 0} actifs)</td>
               <td>${api.formatDate(project.created_at)}</td>
+              <td><span class="sla-status sla-good">Projet actif</span></td>
               <td>
                 <div class="action-buttons">
+                  <button class="btn-action btn-view" data-project-id="${project.id}" data-action="view-project"> Voir</button>
                   <button class="btn-action btn-edit" data-project-id="${project.id}" data-action="edit-project"> Éditer</button>
-                  <button class="btn-action btn-delete" data-project-id="${project.id}" data-action="delete-project"> Supprimer</button>
                 </div>
               </td>
             </tr>
@@ -363,20 +487,20 @@ class AdminApp {
     container.innerHTML = tableHTML;
     
     // Event listeners pour les boutons d'action des projets
+    const viewProjectButtons = document.querySelectorAll('[data-action="view-project"]');
     const editProjectButtons = document.querySelectorAll('[data-action="edit-project"]');
-    const deleteProjectButtons = document.querySelectorAll('[data-action="delete-project"]');
+    
+    viewProjectButtons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        const projectId = parseInt(e.target.dataset.projectId);
+        this.viewProject(projectId);
+      });
+    });
     
     editProjectButtons.forEach(button => {
       button.addEventListener('click', (e) => {
         const projectId = parseInt(e.target.dataset.projectId);
         this.editProject(projectId);
-      });
-    });
-    
-    deleteProjectButtons.forEach(button => {
-      button.addEventListener('click', (e) => {
-        const projectId = parseInt(e.target.dataset.projectId);
-        this.deleteProject(projectId);
       });
     });
   }
@@ -411,7 +535,7 @@ class AdminApp {
             <th>Entreprise</th>
             <th>Projets</th>
             <th>Tickets</th>
-            <th>Inscrit le</th>
+            <th>SLA</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -423,12 +547,11 @@ class AdminApp {
               <td>${client.company || '-'}</td>
               <td>${client.project_count || 0}</td>
               <td>${client.ticket_count || 0}</td>
-              <td>${api.formatDate(client.created_at)}</td>
+              <td><span class="sla-status sla-good">Configuré</span></td>
               <td>
                 <div class="action-buttons">
-                  <button class="btn-action btn-primary" data-client-id="${client.id}" data-action="create-invoice"> Facture</button>
+                  <button class="btn-action btn-view" data-client-id="${client.id}" data-action="view-client"> Voir</button>
                   <button class="btn-action btn-edit" data-client-id="${client.id}" data-action="edit-client"> Éditer</button>
-                  <button class="btn-action btn-delete" data-client-id="${client.id}" data-action="delete-client"> Supprimer</button>
                 </div>
               </td>
             </tr>
@@ -440,14 +563,13 @@ class AdminApp {
     container.innerHTML = tableHTML;
     
     // Event listeners pour les boutons d'action des clients
-    const createInvoiceButtons = document.querySelectorAll('[data-action="create-invoice"]');
+    const viewClientButtons = document.querySelectorAll('[data-action="view-client"]');
     const editClientButtons = document.querySelectorAll('[data-action="edit-client"]');
-    const deleteClientButtons = document.querySelectorAll('[data-action="delete-client"]');
     
-    createInvoiceButtons.forEach(button => {
+    viewClientButtons.forEach(button => {
       button.addEventListener('click', (e) => {
         const clientId = parseInt(e.target.dataset.clientId);
-        this.showCreateInvoiceModal(clientId);
+        this.viewClient(clientId);
       });
     });
     
@@ -455,13 +577,6 @@ class AdminApp {
       button.addEventListener('click', (e) => {
         const clientId = parseInt(e.target.dataset.clientId);
         this.editClient(clientId);
-      });
-    });
-    
-    deleteClientButtons.forEach(button => {
-      button.addEventListener('click', (e) => {
-        const clientId = parseInt(e.target.dataset.clientId);
-        this.deleteClient(clientId);
       });
     });
   }
@@ -969,6 +1084,101 @@ class AdminApp {
       if (assignSelect && updateData.hasOwnProperty('assigned_to')) {
         assignSelect.value = updateData.assigned_to || '';
       }
+    }
+  }
+
+  async viewProject(id) {
+    try {
+      const response = await api.getProject(id);
+      const project = response.data.project;
+      
+      const modal = this.createModal(`Projet - ${project.name}`, `
+        <div class="project-view">
+          <div class="project-header">
+            <div class="project-meta">
+              <div class="meta-row">
+                <span class="meta-label">Client:</span>
+                <span class="meta-value">${project.client_company || project.client_first_name + ' ' + project.client_last_name}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Statut:</span>
+                <span class="status-badge status-${project.status}">${project.status}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Créé le:</span>
+                <span class="meta-value">${api.formatDate(project.created_at)}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Tickets:</span>
+                <span class="meta-value">${project.ticket_count || 0} total (${project.active_ticket_count || 0} actifs)</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="project-content">
+            <h4>Description</h4>
+            <div class="project-description">
+              ${project.description || 'Aucune description fournie'}
+            </div>
+          </div>
+          
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="adminApp.closeModal()">Fermer</button>
+            <button type="button" class="btn btn-primary" onclick="adminApp.editProject(${project.id}); adminApp.closeModal();">Modifier</button>
+          </div>
+        </div>
+      `);
+      
+    } catch (error) {
+      this.showNotification('Erreur lors du chargement du projet', 'error');
+    }
+  }
+
+  async viewClient(id) {
+    try {
+      const response = await api.getUser(id);
+      const client = response.data.user;
+      
+      const modal = this.createModal(`Client - ${client.first_name} ${client.last_name}`, `
+        <div class="client-view">
+          <div class="client-header">
+            <div class="client-meta">
+              <div class="meta-row">
+                <span class="meta-label">Nom complet:</span>
+                <span class="meta-value">${client.first_name} ${client.last_name}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Email:</span>
+                <span class="meta-value">${client.email}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Entreprise:</span>
+                <span class="meta-value">${client.company || 'Aucune'}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Inscrit le:</span>
+                <span class="meta-value">${api.formatDate(client.created_at)}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Projets:</span>
+                <span class="meta-value">${client.project_count || 0}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Tickets:</span>
+                <span class="meta-value">${client.ticket_count || 0}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="adminApp.closeModal()">Fermer</button>
+            <button type="button" class="btn btn-primary" onclick="adminApp.editClient(${client.id}); adminApp.closeModal();">Modifier</button>
+          </div>
+        </div>
+      `);
+      
+    } catch (error) {
+      this.showNotification('Erreur lors du chargement du client', 'error');
     }
   }
 
@@ -2321,6 +2531,28 @@ class AdminApp {
     }
   }
 
+  formatInvoiceSLA(invoice) {
+    if (!invoice.due_date || invoice.status === 'paid' || invoice.status === 'cancelled') {
+      return '<span class="sla-status sla-good">-</span>';
+    }
+
+    const now = new Date();
+    const dueDate = new Date(invoice.due_date);
+    const diffMs = dueDate - now;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMs < 0) {
+      const overdue = Math.abs(diffDays);
+      return `<span class="sla-status sla-overdue"> +${overdue}j (en retard)</span>`;
+    } else if (diffDays <= 3) {
+      return `<span class="sla-status sla-warning"> ${diffDays}j restants</span>`;
+    } else if (diffDays <= 7) {
+      return `<span class="sla-status sla-ok"> ${diffDays}j restants</span>`;
+    } else {
+      return `<span class="sla-status sla-good"> ${diffDays}j restants</span>`;
+    }
+  }
+
   showError(message) {
     this.showNotification(message, 'error');
   }
@@ -2338,7 +2570,6 @@ class AdminApp {
       
       if (response.data && response.data.invoices) {
         this.renderInvoicesTable(response.data.invoices);
-        this.updateInvoicesStats(response.data.invoices);
       } else {
         container.innerHTML = '<div class="error-message">Format de réponse invalide</div>';
       }
@@ -2362,11 +2593,10 @@ class AdminApp {
           <tr>
             <th>Numéro</th>
             <th>Client</th>
-            <th>Montant HT</th>
-            <th>TVA</th>
             <th>Montant TTC</th>
             <th>Statut</th>
             <th>Échéance</th>
+            <th>SLA</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -2375,16 +2605,14 @@ class AdminApp {
             <tr>
               <td><strong>${invoice.invoice_number}</strong></td>
               <td>${invoice.company || invoice.first_name + ' ' + invoice.last_name}</td>
-              <td>${invoice.amount_ht}€</td>
-              <td>${invoice.tva_rate}% (${invoice.amount_tva}€)</td>
               <td><strong>${invoice.amount_ttc}€</strong></td>
               <td><span class="status-badge status-${invoice.status}">${this.getInvoiceStatusLabel(invoice.status)}</span></td>
               <td>${invoice.due_date ? api.formatDate(invoice.due_date) : '-'}</td>
+              <td>${this.formatInvoiceSLA(invoice)}</td>
               <td>
                 <div class="action-buttons">
                   <button class="btn-action btn-view" data-invoice-id="${invoice.id}" data-action="view-invoice"> Voir</button>
                   <button class="btn-action btn-edit" data-invoice-id="${invoice.id}" data-action="edit-invoice"> Éditer</button>
-                  <button class="btn-action btn-primary" data-invoice-id="${invoice.id}" data-action="download-invoice"> PDF</button>
                 </div>
               </td>
             </tr>
@@ -2418,17 +2646,6 @@ class AdminApp {
     });
   }
 
-  updateInvoicesStats(invoices) {
-    const totalCount = invoices.length;
-    const paidAmount = invoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + parseFloat(i.amount_ttc), 0);
-    const pendingAmount = invoices.filter(i => ['draft', 'sent'].includes(i.status)).reduce((sum, i) => sum + parseFloat(i.amount_ttc), 0);
-    const overdueCount = invoices.filter(i => i.status === 'overdue').length;
-
-    document.getElementById('totalInvoicesCount').textContent = totalCount;
-    document.getElementById('paidInvoicesAmount').textContent = `${paidAmount.toFixed(2)}€`;
-    document.getElementById('pendingInvoicesAmount').textContent = `${pendingAmount.toFixed(2)}€`;
-    document.getElementById('overdueInvoicesCount').textContent = overdueCount;
-  }
 
   getInvoiceStatusLabel(status) {
     const labels = {

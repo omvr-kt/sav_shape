@@ -60,14 +60,13 @@
         <div class="main-content" id="mainContent">
             <header class="main-header">
                 <h1 class="main-title">Espace Agence</h1>
-                <div class="main-header-actions"></div>
+                <div class="main-header-actions" id="mainHeaderActions"></div>
             </header>
 
             <main class="main-body">
                 <div class="container">
                     <!-- Dashboard Tab -->
                     <div id="dashboard" class="tab-content active">
-                        <h2>Tableau de bord</h2>
                         <div class="stats-grid">
                             <div class="stat-card">
                                 <div class="stat-number" id="totalTickets">-</div>
@@ -106,27 +105,6 @@
 
                     <!-- Tickets Tab -->
                     <div id="tickets" class="tab-content">
-                        <div class="section-header">
-                            <h2>Gestion des Tickets</h2>
-                            <div class="filters">
-                                <select id="statusFilter" class="filter-select">
-                                    <option value="">Tous les statuts</option>
-                                    <option value="open">Ouvert</option>
-                                    <option value="in_progress">En cours</option>
-                                    <option value="waiting_client">Attente client</option>
-                                    <option value="resolved">Résolu</option>
-                                    <option value="closed">Fermé</option>
-                                </select>
-                                <select id="priorityFilter" class="filter-select">
-                                    <option value="">Toutes les priorités</option>
-                                    <option value="urgent">Urgent</option>
-                                    <option value="high">Élevée</option>
-                                    <option value="normal">Normale</option>
-                                    <option value="low">Faible</option>
-                                </select>
-                                <button id="refreshTickets" class="btn btn-secondary btn-sm">Actualiser</button>
-                            </div>
-                        </div>
                         <div id="ticketsList" class="data-table-container">
                             <div class="loading">Chargement des tickets...</div>
                         </div>
@@ -134,10 +112,6 @@
 
                     <!-- Projects Tab -->
                     <div id="projects" class="tab-content">
-                        <div class="section-header">
-                            <h2>Gestion des Projets</h2>
-                            <button id="addProjectBtn" class="btn btn-primary">+ Nouveau Projet</button>
-                        </div>
                         <div id="projectsList" class="data-table-container">
                             <div class="loading">Chargement des projets...</div>
                         </div>
@@ -145,10 +119,6 @@
 
                     <!-- Clients Tab -->
                     <div id="clients" class="tab-content">
-                        <div class="section-header">
-                            <h2>Gestion des Clients</h2>
-                            <button id="addClientBtn" class="btn btn-primary">+ Nouveau Client</button>
-                        </div>
                         <div id="clientsList" class="data-table-container">
                             <div class="loading">Chargement des clients...</div>
                         </div>
@@ -156,43 +126,6 @@
 
                     <!-- Invoices Tab -->
                     <div id="invoices" class="tab-content">
-                        <div class="section-header">
-                            <h2>Gestion de la Facturation</h2>
-                            <div class="header-actions">
-                                <button id="newInvoiceBtn" class="btn btn-primary btn-sm">+ Nouvelle Facture</button>
-                                <select id="invoiceStatusFilter" class="filter-select">
-                                    <option value="">Tous les statuts</option>
-                                    <option value="draft">Brouillon</option>
-                                    <option value="sent">Envoyée</option>
-                                    <option value="paid">Payée</option>
-                                    <option value="overdue">En retard</option>
-                                    <option value="cancelled">Annulée</option>
-                                </select>
-                                <button id="refreshInvoices" class="btn btn-secondary btn-sm">Actualiser</button>
-                            </div>
-                        </div>
-                        
-                        <div class="invoices-summary">
-                            <div class="stats-row">
-                                <div class="stat-item">
-                                    <span class="stat-value" id="totalInvoicesCount">0</span>
-                                    <span class="stat-label">Total des factures</span>
-                                </div>
-                                <div class="stat-item">
-                                    <span class="stat-value" id="paidInvoicesAmount">0€</span>
-                                    <span class="stat-label">Montant payé</span>
-                                </div>
-                                <div class="stat-item">
-                                    <span class="stat-value" id="pendingInvoicesAmount">0€</span>
-                                    <span class="stat-label">En attente</span>
-                                </div>
-                                <div class="stat-item">
-                                    <span class="stat-value" id="overdueInvoicesCount">0</span>
-                                    <span class="stat-label">En retard</span>
-                                </div>
-                            </div>
-                        </div>
-
                         <div id="invoicesList" class="data-table-container">
                             <div class="loading">Chargement des factures...</div>
                         </div>

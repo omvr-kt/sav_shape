@@ -357,6 +357,29 @@ class TicketsApp {
     });
 
     this.renderTickets();
+    this.updateStatsDisplay();
+  }
+
+  updateStatsDisplay() {
+    // Calculer les statistiques basées sur tous les tickets (pas seulement filtrés)
+    const totalCount = this.tickets.length;
+    const inProgressCount = this.tickets.filter(ticket => ticket.status === 'in_progress').length;
+    const waitingClientCount = this.tickets.filter(ticket => ticket.status === 'waiting_client').length;
+    const resolvedCount = this.tickets.filter(ticket => ticket.status === 'resolved' || ticket.status === 'closed').length;
+
+    // Mettre à jour les compteurs dans l'interface
+    this.updateElementText('totalTicketsCount', totalCount);
+    this.updateElementText('inProgressCount', inProgressCount);
+    this.updateElementText('waitingClientCount', waitingClientCount);
+    this.updateElementText('resolvedCount', resolvedCount);
+    this.updateElementText('ticketCount', totalCount); // Badge sidebar
+  }
+
+  updateElementText(elementId, value) {
+    const element = document.getElementById(elementId);
+    if (element) {
+      element.textContent = value;
+    }
   }
 
   renderTickets() {
@@ -1292,6 +1315,9 @@ class TicketsApp {
     ];
 
     this.filteredTickets = this.tickets;
+    
+    // Appliquer les filtres et mettre à jour l'affichage
+    this.filterTickets();
   }
 }
 

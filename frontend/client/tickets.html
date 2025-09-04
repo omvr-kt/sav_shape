@@ -126,7 +126,7 @@
                     <div class="card">
                         <div class="card-body">
                             <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-2);">
-                                <div style="font-size: 24px; font-weight: 700; color: var(--color-primary);">12</div>
+                                <div id="totalTicketsCount" style="font-size: 24px; font-weight: 700; color: var(--color-primary);">0</div>
                                 <div style="font-size: 14px; color: var(--color-muted); line-height: 1.2;">
                                     Total des<br>tickets
                                 </div>
@@ -137,7 +137,7 @@
                     <div class="card">
                         <div class="card-body">
                             <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-2);">
-                                <div style="font-size: 24px; font-weight: 700; color: var(--color-warning);">3</div>
+                                <div id="inProgressCount" style="font-size: 24px; font-weight: 700; color: var(--color-warning);">0</div>
                                 <div style="font-size: 14px; color: var(--color-muted); line-height: 1.2;">
                                     Actifs<br>en cours
                                 </div>
@@ -148,7 +148,7 @@
                     <div class="card">
                         <div class="card-body">
                             <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-2);">
-                                <div style="font-size: 24px; font-weight: 700; color: var(--color-info);">2</div>
+                                <div id="waitingClientCount" style="font-size: 24px; font-weight: 700; color: var(--color-info);">0</div>
                                 <div style="font-size: 14px; color: var(--color-muted); line-height: 1.2;">
                                     En attente<br>de réponse
                                 </div>
@@ -159,7 +159,7 @@
                     <div class="card">
                         <div class="card-body">
                             <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-2);">
-                                <div style="font-size: 24px; font-weight: 700; color: var(--color-success);">7</div>
+                                <div id="resolvedCount" style="font-size: 24px; font-weight: 700; color: var(--color-success);">0</div>
                                 <div style="font-size: 14px; color: var(--color-muted); line-height: 1.2;">
                                     Tickets<br>terminés
                                 </div>
@@ -171,7 +171,7 @@
                 <!-- Liste des tickets -->
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">Liste de vos tickets</h3>
+                        <h2 class="card__title">Liste de vos tickets</h2>
                     </div>
                     <div class="card-body" style="padding: 0;">
                         <div class="list" id="ticketsList">

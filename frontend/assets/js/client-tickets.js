@@ -371,6 +371,34 @@ class TicketsApp {
     });
 
     this.renderTickets();
+    this.updateStatsDisplay();
+  }
+
+  updateStatsDisplay() {
+    // Calculer les statistiques basées sur tous les tickets (pas seulement filtrés)
+    const totalCount = this.tickets.length;
+    const inProgressCount = this.tickets.filter(ticket => ticket.status === 'in_progress').length;
+    const waitingClientCount = this.tickets.filter(ticket => ticket.status === 'waiting_client').length;
+    const resolvedCount = this.tickets.filter(ticket => ticket.status === 'resolved' || ticket.status === 'closed').length;
+    
+    // Calculer les tickets actifs (non terminés) pour le badge sidebar
+    const activeTicketsCount = this.tickets.filter(ticket => 
+      ticket.status !== 'resolved' && ticket.status !== 'closed'
+    ).length;
+
+    // Mettre à jour les compteurs dans l'interface
+    this.updateElementText('totalTicketsCount', totalCount);
+    this.updateElementText('inProgressCount', inProgressCount);
+    this.updateElementText('waitingClientCount', waitingClientCount);
+    this.updateElementText('resolvedCount', resolvedCount);
+    this.updateElementText('ticketCount', activeTicketsCount); // Badge sidebar - tickets actifs uniquement
+  }
+
+  updateElementText(elementId, value) {
+    const element = document.getElementById(elementId);
+    if (element) {
+      element.textContent = value;
+    }
   }
 
   renderTickets() {
@@ -567,19 +595,53 @@ class TicketsApp {
       project_id: parseInt(formData.get('project_id')),
       title: formData.get('title'),
       description: formData.get('description'),
-      priority: formData.get('priority')
+      priority: formData.get('priority') || 'normal'
     };
 
     try {
-      const response = await api.createTicket(ticketData);
+      // En mode test/développement, ajouter directement aux données locales
+      const token = localStorage.getItem('token');
+      const isTestMode = !token || token === 'test' || window.location.hostname === 'localhost';
       
-      if (response.success) {
+      if (isTestMode) {
+        console.log('Mode test: ajout du ticket localement');
+        
+        // Créer un nouveau ticket avec un ID unique
+        const newTicket = {
+          id: this.tickets.length + 1,
+          title: ticketData.title,
+          description: ticketData.description,
+          status: 'open', // Nouveau ticket
+          priority: ticketData.priority,
+          project_id: ticketData.project_id,
+          created_at: new Date().toISOString()
+        };
+        
+        // Ajouter aux données locales
+        this.tickets.push(newTicket);
+        
+        // Mettre à jour l'affichage
+        this.filterTickets();
+        
+        // Mettre à jour le badge sidebar sur toutes les pages
+        updateTicketBadge();
+        
         this.closeModal();
-        this.loadTickets(); // Refresh the list
         alert('Ticket créé avec succès !');
+        
       } else {
-        alert('Erreur lors de la création du ticket: ' + response.message);
+        // Mode production : utiliser l'API réelle
+        const response = await api.createTicket(ticketData);
+        
+        if (response.success) {
+          this.closeModal();
+          this.loadTickets(); // Refresh the list
+          alert('Ticket créé avec succès !');
+        } else {
+          alert('Erreur lors de la création du ticket: ' + response.message);
+        }
       }
+      
     } catch (error) {
       console.error('Create ticket error:', error);
       alert('Erreur lors de la création du ticket');

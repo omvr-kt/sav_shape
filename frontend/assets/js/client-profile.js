@@ -9,6 +9,8 @@ class ProfileApp {
     console.log('ProfileApp: Initializing...');
     this.checkAuth();
     this.setupEventListeners();
+    // Initialiser le badge tickets dans la sidebar
+    initTicketBadge();
   }
 
   checkAuth() {

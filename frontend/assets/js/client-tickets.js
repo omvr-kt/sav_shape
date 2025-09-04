@@ -158,10 +158,21 @@ class TicketsApp {
       });
     }
 
-    // Search input
-    document.getElementById('ticketSearch').addEventListener('input', () => {
-      this.filterTickets();
-    });
+    // Status filter
+    const statusFilter = document.getElementById('statusFilter');
+    if (statusFilter) {
+      statusFilter.addEventListener('change', () => {
+        this.filterTickets();
+      });
+    }
+
+    // Search input (if exists)
+    const searchInput = document.getElementById('ticketSearch');
+    if (searchInput) {
+      searchInput.addEventListener('input', () => {
+        this.filterTickets();
+      });
+    }
 
     // Status filter - check if element exists first
     const statusFilterEl = document.getElementById('ticketStatusFilter');
@@ -342,13 +353,16 @@ class TicketsApp {
   }
 
   filterTickets() {
-    const searchTerm = document.getElementById('ticketSearch').value.toLowerCase();
+    const searchInput = document.getElementById('ticketSearch');
+    const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+    const statusFilter = document.getElementById('statusFilter');
+    const currentStatus = statusFilter ? statusFilter.value : this.currentStatusFilter;
 
     this.filteredTickets = this.tickets.filter(ticket => {
-      const matchesSearch = ticket.title.toLowerCase().includes(searchTerm) ||
+      const matchesSearch = !searchTerm || ticket.title.toLowerCase().includes(searchTerm) ||
                            (ticket.description && ticket.description.toLowerCase().includes(searchTerm));
       
-      const matchesStatus = !this.currentStatusFilter || ticket.status === this.currentStatusFilter;
+      const matchesStatus = !currentStatus || ticket.status === currentStatus;
       
       // Filter by selected project
       const matchesProject = !this.currentProjectId || ticket.project_id == this.currentProjectId;
@@ -368,40 +382,45 @@ class TicketsApp {
     }
     
     if (this.filteredTickets.length === 0) {
-      container.innerHTML = '<div class="empty-state">Aucun ticket trouvé</div>';
+      container.innerHTML = '<div class="empty-state"><div class="empty-state-icon"></div><p>Aucun ticket trouvé</p></div>';
       return;
     }
 
-    container.innerHTML = this.filteredTickets.map(ticket => `
-      <div class="ticket-item">
-        <div class="ticket-header">
-          <div class="ticket-info">
-            <h3 class="ticket-title">#${ticket.id} - ${ticket.title}</h3>
-            <p class="ticket-description">${ticket.description}</p>
-          </div>
-          <div class="ticket-meta">
-            <span class="status-badge ${api.getStatusClass(ticket.status)}">${api.formatStatus(ticket.status)}</span>
-            <span class="status-badge ${api.getPriorityClass(ticket.priority)}">${api.formatPriority(ticket.priority)}</span>
-          </div>
-          <div class="ticket-countdown">
-            <div class="countdown-label">${this.getDelayDescription(ticket.priority)}</div>
-            <div class="countdown-timer ${this.getDelayClass(ticket.created_at, ticket.priority)}" data-ticket-id="${ticket.id}">
-               ${this.getCountdown(ticket.created_at, ticket.priority)}
-            </div>
-          </div>
-        </div>
-        <div class="ticket-details">
-          <span class="ticket-project"> Projet: ${this.getProjectName(ticket.project_id)}</span>
-          <span class="ticket-date"> ${api.formatDateTime(ticket.created_at)}</span>
-        </div>
-        <div class="ticket-actions">
-          <button class="btn btn-sm btn-outline view-ticket-btn" data-ticket-id="${ticket.id}">Voir détails</button>
-          ${ticket.status === 'open' || ticket.status === 'waiting_client' ? 
-            `<button class="btn btn-sm btn-primary add-comment-btn" data-ticket-id="${ticket.id}">Ajouter commentaire</button>` : ''
-          }
-        </div>
-      </div>
-    `).join('');
+    const tableHTML = `
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Titre</th>
+            <th>Projet</th>
+            <th>Priorité</th>
+            <th>Statut</th>
+            <th>SLA</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${this.filteredTickets.map(ticket => `
+            <tr>
+              <td>${ticket.title}</td>
+              <td>${this.getProjectName(ticket.project_id)}</td>
+              <td><span class="status-badge ${this.getPriorityClass(ticket.priority)}">${this.getPriorityLabel(ticket.priority)}</span></td>
+              <td><span class="status-badge ${this.getStatusClass(ticket.status)}">${this.getStatusLabel(ticket.status)}</span></td>
+              <td>${this.formatSLACountdown(ticket)}</td>
+              <td>
+                <div class="action-buttons">
+                  <button class="btn-action btn-view view-ticket-btn" data-ticket-id="${ticket.id}"> Voir</button>
+                  ${ticket.status === 'open' || ticket.status === 'waiting_client' ? 
+                    `<button class="btn-action btn-edit add-comment-btn" data-ticket-id="${ticket.id}"> Répondre</button>` : ''
+                  }
+                </div>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+
+    container.innerHTML = tableHTML;
     
     // Start countdown updates
     this.startCountdownUpdates();
@@ -647,13 +666,33 @@ class TicketsApp {
   }
 
   getDelayClass(dateString, priority) {
-    const created = new Date(dateString);
-    return businessHours.getBusinessDelayClass(created, priority);
+    if (typeof businessHours !== 'undefined') {
+      const created = new Date(dateString);
+      return businessHours.getBusinessDelayClass(created, priority);
+    }
+    return 'sla-good';
   }
 
   getCountdown(dateString, priority) {
-    const created = new Date(dateString);
-    return businessHours.getBusinessCountdown(created, priority);
+    if (typeof businessHours !== 'undefined') {
+      const created = new Date(dateString);
+      return businessHours.getBusinessCountdown(created, priority);
+    }
+    return 'Dans les délais';
+  }
+
+  formatSLACountdown(ticket) {
+    const countdown = this.getCountdown(ticket.created_at, ticket.priority);
+    const delayClass = this.getDelayClass(ticket.created_at, ticket.priority);
+    return `<span class="sla-status ${delayClass}">${countdown}</span>`;
+  }
+
+  getStatusClass(status) {
+    return `status-${status}`;
+  }
+
+  getPriorityClass(priority) {
+    return `priority-${priority}`;
   }
 
   getDelayDescription(priority) {
@@ -1292,6 +1331,7 @@ class TicketsApp {
     ];
 
     this.filteredTickets = this.tickets;
+    this.renderTickets();
   }
 }
 

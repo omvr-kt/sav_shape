@@ -24,7 +24,6 @@
 
             <nav class="sidebar__nav">
                 <div class="sidebar__nav-section">
-                    <div class="sidebar__nav-title">Mon Espace</div>
                     <a href="/client/dashboard-new.html" class="sidebar__nav-item sidebar__nav-item--active">
                         <span class="sidebar__nav-text">Tableau de bord</span>
                     </a>
@@ -54,21 +53,17 @@
 
         <!-- Main Content -->
         <div class="main-content" id="mainContent">
-            <header class="main-header" style="padding: var(--space-2) var(--space-3); margin-bottom: var(--space-2);">
-                <div class="main-header__left">
-                    <div style="padding-left: var(--space-2);">
-                        <h1 class="main-title" style="margin-bottom: var(--space-1);">Tableau de bord</h1>
-                        <p class="main-subtitle" style="margin: 0;">Vue d'ensemble de votre espace client</p>
+            <header class="main-header">
+                <h1 class="main-title">Tableau de bord</h1>
+                <div class="main-header-actions" id="mainHeaderActions">
+                    <div class="header-filters">
+                        <select id="periodSelect" class="filter-select">
+                            <option value="7d">7 derniers jours</option>
+                            <option value="30d" selected>30 derniers jours</option>
+                            <option value="3m">3 derniers mois</option>
+                            <option value="1y">Cette année</option>
+                        </select>
                     </div>
-                </div>
-                <div class="main-header__right">
-                    <select id="periodSelect" class="btn btn--ghost btn--sm">
-                        <option value="7d">7 derniers jours</option>
-                        <option value="30d" selected>30 derniers jours</option>
-                        <option value="3m">3 derniers mois</option>
-                        <option value="1y">Cette année</option>
-                    </select>
-                    <button id="logoutBtn" class="btn btn--ghost btn--sm">Déconnexion</button>
                 </div>
             </header>
             

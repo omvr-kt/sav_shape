@@ -22,7 +22,6 @@
 
             <nav class="sidebar__nav">
                 <div class="sidebar__nav-section">
-                    <div class="sidebar__nav-title">Mon Espace</div>
                     <a href="/client/tickets.html" class="sidebar__nav-item">
                         <span class="sidebar__nav-text">Mes Tickets</span>
                         <span class="sidebar__nav-badge" id="ticketCount">0</span>
@@ -33,13 +32,6 @@
                     <a href="/client/profile.html" class="sidebar__nav-item">
                         <span class="sidebar__nav-text">Mon Profil</span>
                     </a>
-                </div>
-
-                <div class="sidebar__nav-section">
-                    <div class="sidebar__nav-title">Projets</div>
-                    <div id="projectLinks">
-                        <!-- Liens des projets chargés dynamiquement -->
-                    </div>
                 </div>
             </nav>
 
@@ -56,54 +48,23 @@
 
         <!-- Main Content -->
         <div class="main-content" id="mainContent">
-            <header class="main-header" style="padding: var(--space-2) var(--space-3); margin-bottom: var(--space-2);">
-                <div class="main-header__left">
-                    <div style="padding-left: var(--space-2);">
-                        <h1 class="main-title" style="margin-bottom: var(--space-1);">Mes Factures</h1>
-                        <p class="main-subtitle" style="margin: 0;">Consultez vos factures et paiements</p>
+            <header class="main-header">
+                <h1 class="main-title">Mes Factures</h1>
+                <div class="main-header-actions" id="mainHeaderActions">
+                    <div class="header-filters">
+                        <select id="invoiceStatusFilter" class="filter-select">
+                            <option value="">Tous les statuts</option>
+                            <option value="draft">Brouillon</option>
+                            <option value="sent">Envoyée</option>
+                            <option value="paid">Payée</option>
+                            <option value="overdue">En retard</option>
+                        </select>
+                        <button id="refreshInvoicesBtn" class="btn btn-secondary btn-sm">Actualiser</button>
                     </div>
-                </div>
-                <div class="main-header__right">
-                    <button id="logoutBtn" class="btn btn--ghost btn--sm">Déconnexion</button>
                 </div>
             </header>
 
             <main class="page-content">
-                <!-- Actions principales -->
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-5);">
-                    <div style="display: flex; gap: var(--space-3); align-items: center;">
-                        <div class="dropdown">
-                            <button class="dropdown-toggle">
-                                <span>Filtrer par statut</span>
-                                <span>▼</span>
-                            </button>
-                            <div class="dropdown-menu">
-                                <a href="#" class="dropdown-item status-filter-item" data-status="">
-                                    Tous les statuts
-                                </a>
-                                <a href="#" class="dropdown-item status-filter-item" data-status="draft">
-                                    <span class="badge status-draft">Brouillon</span>
-                                    Brouillon
-                                </a>
-                                <a href="#" class="dropdown-item status-filter-item" data-status="sent">
-                                    <span class="badge status-sent">Envoyée</span>
-                                    Envoyée
-                                </a>
-                                <a href="#" class="dropdown-item status-filter-item" data-status="paid">
-                                    <span class="badge status-paid">Payée</span>
-                                    Payée
-                                </a>
-                                <a href="#" class="dropdown-item status-filter-item" data-status="overdue">
-                                    <span class="badge status-overdue">En retard</span>
-                                    En retard
-                                </a>
-                            </div>
-                        </div>
-                        <button class="btn btn-secondary" id="refreshInvoicesBtn">
-                            Actualiser
-                        </button>
-                    </div>
-                </div>
 
                 <!-- Statistiques rapides -->
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-5);">
@@ -153,18 +114,8 @@
                 </div>
 
                 <!-- Liste des factures -->
-                <div class="card">
-                    <div class="card__header">
-                        <h2 class="card__title">Vos factures</h2>
-                    </div>
-                    <div class="card__body--no-padding">
-                        <div id="invoicesList" class="data-table-container">
-                            <div class="loading">
-                                <div class="spinner"></div>
-                                <p>Chargement des factures...</p>
-                            </div>
-                        </div>
-                    </div>
+                <div id="invoicesList" class="data-table-container">
+                    <div class="loading">Chargement des factures...</div>
                 </div>
             </main>
         </div>

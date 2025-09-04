@@ -104,7 +104,7 @@ class ClientInvoicesApp {
     }
 
     // Refresh button
-    const refreshInvoicesBtn = document.getElementById('refreshInvoices');
+    const refreshInvoicesBtn = document.getElementById('refreshInvoicesBtn');
     if (refreshInvoicesBtn) {
       refreshInvoicesBtn.addEventListener('click', () => {
         this.loadInvoices();
@@ -167,12 +167,7 @@ class ClientInvoicesApp {
     const container = document.getElementById('invoicesList');
     
     if (!this.invoices || this.invoices.length === 0) {
-      container.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-state-icon">No Invoices</div>
-          <h3>Aucune facture</h3>
-          <p>Vos factures apparaîtront ici lorsqu'elles seront créées.</p>
-        </div>`;
+      container.innerHTML = '<div class="empty-state"><div class="empty-state-icon"></div><p>Aucune facture trouvée</p></div>';
       return;
     }
 
@@ -184,63 +179,53 @@ class ClientInvoicesApp {
     }
 
     const tableHTML = `
-      <div class="invoices-table">
-        <table class="data-table">
-          <thead>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Numéro</th>
+            <th>Client</th>
+            <th>Montant TTC</th>
+            <th>Statut</th>
+            <th>Échéance</th>
+            <th>SLA</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filteredInvoices.map(invoice => `
             <tr>
-              <th>Numéro de facture</th>
-              <th>Description</th>
-              <th>Montant HT</th>
-              <th>TVA</th>
-              <th>Montant TTC</th>
-              <th>Statut</th>
-              <th>Date d'émission</th>
-              <th>Échéance</th>
-              <th>Actions</th>
+              <td><strong>${invoice.invoice_number}</strong></td>
+              <td>${invoice.company || invoice.first_name + ' ' + invoice.last_name}</td>
+              <td><strong>${parseFloat(invoice.amount_ttc).toFixed(2)}€</strong></td>
+              <td><span class="status-badge status-${invoice.status}">${this.getInvoiceStatusLabel(invoice.status)}</span></td>
+              <td>${invoice.due_date ? api.formatDate(invoice.due_date) : '-'}</td>
+              <td>${this.formatInvoiceSLA(invoice)}</td>
+              <td>
+                <div class="action-buttons">
+                  <button class="btn-action btn-view" data-invoice-id="${invoice.id}" data-action="view-invoice"> Voir</button>
+                  <button class="btn-action btn-edit" data-invoice-id="${invoice.id}" data-action="edit-invoice"> Éditer</button>
+                </div>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            ${filteredInvoices.map(invoice => `
-              <tr>
-                <td><strong>${invoice.invoice_number}</strong></td>
-                <td>${invoice.description}</td>
-                <td>${parseFloat(invoice.amount_ht).toFixed(2)}€</td>
-                <td>${parseFloat(invoice.tva_rate).toFixed(0)}% (${parseFloat(invoice.amount_tva).toFixed(2)}€)</td>
-                <td><strong>${parseFloat(invoice.amount_ttc).toFixed(2)}€</strong></td>
-                <td>
-                  <span class="invoice-status status-${invoice.status}">
-                    ${this.getStatusLabel(invoice.status)}
-                  </span>
-                </td>
-                <td>${api.formatDate(invoice.created_at)}</td>
-                <td>${invoice.due_date ? api.formatDate(invoice.due_date) : '-'}</td>
-                <td>
-                  <div class="action-buttons">
-                    <button class="btn-action btn-view" data-invoice-id="${invoice.id}">Voir</button>
-                    <button class="btn-action btn-download" data-invoice-id="${invoice.id}">PDF</button>
-                  </div>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
+          `).join('')}
+        </tbody>
+      </table>
     `;
 
     container.innerHTML = tableHTML;
     
     // Ajouter les event listeners
-    container.querySelectorAll('.btn-view').forEach(btn => {
+    container.querySelectorAll('[data-action="view-invoice"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const invoiceId = parseInt(e.target.dataset.invoiceId);
         this.viewInvoice(invoiceId);
       });
     });
     
-    container.querySelectorAll('.btn-download').forEach(btn => {
+    container.querySelectorAll('[data-action="edit-invoice"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const invoiceId = parseInt(e.target.dataset.invoiceId);
-        this.downloadInvoice(invoiceId);
+        this.editInvoice(invoiceId);
       });
     });
   }
@@ -266,6 +251,43 @@ class ClientInvoicesApp {
       'cancelled': 'Annulée'
     };
     return labels[status] || status;
+  }
+
+  getInvoiceStatusLabel(status) {
+    const labels = {
+      'draft': 'Brouillon',
+      'sent': 'Envoyée',
+      'paid': 'Payée',
+      'overdue': 'En retard',
+      'cancelled': 'Annulée'
+    };
+    return labels[status] || status;
+  }
+
+  formatInvoiceSLA(invoice) {
+    if (invoice.status === 'paid') {
+      return '<span class="sla-status sla-good">Payée</span>';
+    } else if (invoice.status === 'overdue') {
+      return '<span class="sla-status sla-critical">En retard</span>';
+    } else if (invoice.due_date) {
+      const dueDate = new Date(invoice.due_date);
+      const now = new Date();
+      const daysUntilDue = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
+      
+      if (daysUntilDue < 0) {
+        return '<span class="sla-status sla-critical">Échue</span>';
+      } else if (daysUntilDue <= 3) {
+        return '<span class="sla-status sla-warning">Bientôt due</span>';
+      } else {
+        return '<span class="sla-status sla-good">Dans les délais</span>';
+      }
+    }
+    return '<span class="sla-status sla-good">-</span>';
+  }
+
+  editInvoice(invoiceId) {
+    // Placeholder for edit functionality
+    console.log('Edit invoice:', invoiceId);
   }
 
   async viewInvoice(invoiceId) {

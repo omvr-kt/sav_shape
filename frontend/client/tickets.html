@@ -25,7 +25,6 @@
 
             <nav class="sidebar__nav">
                 <div class="sidebar__nav-section">
-                    <div class="sidebar__nav-title">Mon Espace</div>
                     <a href="/client/tickets.html" class="sidebar__nav-item sidebar__nav-item--active">
                         <span class="sidebar__nav-text">Mes Tickets</span>
                         <span class="sidebar__nav-badge" id="ticketCount">0</span>
@@ -52,74 +51,30 @@
 
         <!-- Main Content -->
         <div class="main-content" id="mainContent">
-            <header class="main-header" style="padding: var(--space-2) var(--space-3); margin-bottom: var(--space-2);">
-                <div class="main-header__left">
-                    <div style="padding-left: var(--space-2);">
-                        <h1 class="main-title" style="margin-bottom: var(--space-1);">Mes Tickets</h1>
-                        <p class="main-subtitle" style="margin: 0;">Gestion de vos demandes de support</p>
+            <header class="main-header">
+                <h1 class="main-title">Mes Tickets</h1>
+                <div class="main-header-actions" id="mainHeaderActions">
+                    <div class="header-filters">
+                        <select id="statusFilter" class="filter-select">
+                            <option value="">Tous les statuts</option>
+                            <option value="open">Nouveau</option>
+                            <option value="in_progress">En cours</option>
+                            <option value="waiting_client">En attente client</option>
+                            <option value="resolved">Résolu</option>
+                        </select>
+                        <select id="projectSelect" class="filter-select">
+                            <option value="">Tous les projets</option>
+                            <option value="1">Site Web E-commerce</option>
+                            <option value="2">Application Mobile</option>
+                            <option value="3">Refonte Interface</option>
+                        </select>
+                        <button id="refreshTickets" class="btn btn-secondary btn-sm">Actualiser</button>
+                        <button id="newTicketBtn" class="btn btn-primary">+ Nouveau Ticket</button>
                     </div>
-                </div>
-                <div class="main-header__right">
-                    <select id="projectSelect" class="btn btn--ghost btn--sm">
-                        <option value="">Tous les projets</option>
-                        <option value="1">Site Web E-commerce</option>
-                        <option value="2">Application Mobile</option>
-                        <option value="3">Refonte Interface</option>
-                    </select>
-                    <button id="logoutBtn" class="btn btn--ghost btn--sm">Déconnexion</button>
                 </div>
             </header>
             
             <main class="page-content">
-                <!-- Actions principales -->
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-5);">
-                    <div style="display: flex; gap: var(--space-3); align-items: center;">
-                        <button class="btn btn-primary" id="newTicketBtn">
-                            <span>+</span>
-                            Nouveau Ticket
-                        </button>
-                        
-                        <div class="dropdown">
-                            <button class="dropdown-toggle">
-                                <span>Filtrer par statut</span>
-                                <span>▼</span>
-                            </button>
-                            <div class="dropdown-menu">
-                                <a href="#" class="dropdown-item status-filter-item" data-status="">Tous les statuts</a>
-                                <div class="dropdown-divider"></div>
-                                <a href="#" class="dropdown-item status-filter-item" data-status="open">
-                                    <span class="badge status-nouveau">Nouveau</span>
-                                    Nouveau
-                                </a>
-                                <a href="#" class="dropdown-item status-filter-item" data-status="in_progress">
-                                    <span class="badge status-en-cours">En cours</span>
-                                    En cours
-                                </a>
-                                <a href="#" class="dropdown-item status-filter-item" data-status="waiting_client">
-                                    <span class="badge status-attente-client">En attente</span>
-                                    En attente client
-                                </a>
-                                <a href="#" class="dropdown-item status-filter-item" data-status="resolved">
-                                    <span class="badge status-resolu">Résolu</span>
-                                    Résolu
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div style="display: flex; gap: var(--space-3); align-items: center;">
-                        <input 
-                            type="text" 
-                            id="ticketSearch"
-                            placeholder="Rechercher dans mes tickets..." 
-                            class="form-input"
-                            style="min-width: 250px;"
-                        >
-                        <button class="btn btn-outline">
-                            Rechercher
-                        </button>
-                    </div>
-                </div>
                 
                 <!-- Statistiques rapides -->
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-5);">
@@ -169,124 +124,8 @@
                 </div>
                 
                 <!-- Liste des tickets -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Liste de vos tickets</h3>
-                    </div>
-                    <div class="card-body" style="padding: 0;">
-                        <div class="list" id="ticketsList">
-                            <!-- Ticket 1 -->
-                            <div class="list-item">
-                                <div class="list-item-header">
-                                    <div>
-                                        <h4 class="list-item-title">Problème de connexion sur l'espace admin</h4>
-                                        <div class="list-item-meta">
-                                            <span style="font-family: monospace; background: var(--color-bg); padding: 2px 6px; border-radius: 4px; font-size: 12px;">#TCK-2024-001</span>
-                                            <span>•</span>
-                                            <span>Project: Site Web E-commerce</span>
-                                            <span>•</span>
-                                            <span>Créé le 15 jan. 2024</span>
-                                        </div>
-                                    </div>
-                                    <div style="display: flex; gap: var(--space-2); align-items: center;">
-                                        <span class="badge status-en-cours">En cours</span>
-                                        <span class="badge" style="background: var(--color-error); color: var(--color-surface);">Urgent</span>
-                                    </div>
-                                </div>
-                                <div class="list-item-content">
-                                    Impossible de se connecter à l'interface d'administration depuis hier. L'erreur affichée est "Identifiants incorrects" même avec les bons identifiants.
-                                </div>
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--color-border);">
-                                    <div class="list-item-meta">
-                                        <span>Dernière mise à jour : il y a 2h</span>
-                                        <span>•</span>
-                                        <span class="sla-warning"> SLA dans 4h</span>
-                                    </div>
-                                    <div class="table-actions">
-                                        <button class="btn btn-outline view-ticket-btn" data-ticket-id="1"> Voir</button>
-                                        <button class="btn btn-tertiary add-comment-btn" data-ticket-id="1"> Répondre</button>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Ticket 2 -->
-                            <div class="list-item">
-                                <div class="list-item-header">
-                                    <div>
-                                        <h4 class="list-item-title">Demande de modification du design de la page d'accueil</h4>
-                                        <div class="list-item-meta">
-                                            <span style="font-family: monospace; background: var(--color-bg); padding: 2px 6px; border-radius: 4px; font-size: 12px;">#TCK-2024-002</span>
-                                            <span>•</span>
-                                            <span>Project: Refonte Interface</span>
-                                            <span>•</span>
-                                            <span>Créé le 10 jan. 2024</span>
-                                        </div>
-                                    </div>
-                                    <div style="display: flex; gap: var(--space-2); align-items: center;">
-                                        <span class="badge status-attente-client">En attente client</span>
-                                        <span class="badge" style="background: var(--color-info); color: var(--color-surface);">Normal</span>
-                                    </div>
-                                </div>
-                                <div class="list-item-content">
-                                    Nous souhaitons modifier l'apparence de la section héro de notre page d'accueil pour la rendre plus moderne et attractive.
-                                </div>
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--color-border);">
-                                    <div class="list-item-meta">
-                                        <span>Dernière mise à jour : il y a 1 jour</span>
-                                        <span>•</span>
-                                        <span class="sla-ok"> SLA respecté</span>
-                                    </div>
-                                    <div class="table-actions">
-                                        <button class="btn btn-outline view-ticket-btn" data-ticket-id="2"> Voir</button>
-                                        <button class="btn btn-tertiary add-comment-btn" data-ticket-id="2"> Répondre</button>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Ticket 3 -->
-                            <div class="list-item">
-                                <div class="list-item-header">
-                                    <div>
-                                        <h4 class="list-item-title">Bug sur le processus de commande mobile</h4>
-                                        <div class="list-item-meta">
-                                            <span style="font-family: monospace; background: var(--color-bg); padding: 2px 6px; border-radius: 4px; font-size: 12px;">#TCK-2024-003</span>
-                                            <span>•</span>
-                                            <span>Project: Application Mobile</span>
-                                            <span>•</span>
-                                            <span>Créé le 8 jan. 2024</span>
-                                        </div>
-                                    </div>
-                                    <div style="display: flex; gap: var(--space-2); align-items: center;">
-                                        <span class="badge status-resolu">Résolu</span>
-                                        <span class="badge" style="background: var(--color-warning); color: var(--color-primary);">Élevé</span>
-                                    </div>
-                                </div>
-                                <div class="list-item-content">
-                                    Les utilisateurs rencontrent une erreur lors de la validation de leur commande sur l'application mobile Android.
-                                </div>
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--color-border);">
-                                    <div class="list-item-meta">
-                                        <span>Résolu le 12 jan. 2024</span>
-                                        <span>•</span>
-                                        <span class="sla-ok"> Résolu en 2 jours</span>
-                                    </div>
-                                    <div class="table-actions">
-                                        <button class="btn btn-outline view-ticket-btn" data-ticket-id="3"> Voir</button>
-                                        <button class="btn btn-tertiary"> Évaluer</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Pagination -->
-                <div class="pagination">
-                    <a href="#" class="pagination-item">‹ Précédent</a>
-                    <a href="#" class="pagination-item active">1</a>
-                    <a href="#" class="pagination-item">2</a>
-                    <a href="#" class="pagination-item">3</a>
-                    <a href="#" class="pagination-item">Suivant ›</a>
+                <div id="ticketsList" class="data-table-container">
+                    <div class="loading">Chargement des tickets...</div>
                 </div>
             </main>
         </div>
@@ -302,10 +141,13 @@
     <script>
 
         // Logout functionality
-        document.getElementById('logoutBtn').addEventListener('click', function() {
-            localStorage.removeItem('token');
-            window.location.href = '/connexion.html';
-        });
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function() {
+                localStorage.removeItem('token');
+                window.location.href = '/connexion.html';
+            });
+        }
 
         // Load user info
         function loadUserInfo() {

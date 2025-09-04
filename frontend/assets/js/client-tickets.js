@@ -7,6 +7,7 @@ class TicketsApp {
     this.currentProjectId = null;
     this.currentStatusFilter = '';
     this.countdownInterval = null;
+    this.testComments = {}; // Stockage des commentaires de test
     this.init();
   }
 
@@ -223,16 +224,6 @@ class TicketsApp {
         return;
       }
 
-      // Add comment button
-      if (target.classList.contains('add-comment-btn')) {
-        e.preventDefault();
-        const ticketId = parseInt(target.dataset.ticketId);
-        console.log('Add comment button clicked:', ticketId);
-        console.log('Target element:', target);
-        console.log('Dataset:', target.dataset);
-        this.addComment(ticketId);
-        return;
-      }
 
       // Show comment form button (in modal)
       if (target.classList.contains('show-comment-form-btn')) {
@@ -477,8 +468,7 @@ class TicketsApp {
               </div>
             </div>
             <div style="display: flex; gap: 8px; margin-left: 16px;">
-              <button class="btn btn-outline btn-sm view-ticket-btn" data-ticket-id="${ticket.id}" style="padding: 6px 12px; font-size: 13px; background: #f9fafb; border: 1px solid #d1d5db; color: #374151; border-radius: 6px;">Voir</button>
-              <button class="btn btn-primary btn-sm add-comment-btn" data-ticket-id="${ticket.id}" style="padding: 6px 12px; font-size: 13px; background: #0e2433; border: 1px solid #0e2433; color: white; border-radius: 6px;">Répondre</button>
+              <button class="btn btn-primary btn-sm view-ticket-btn" data-ticket-id="${ticket.id}" style="padding: 6px 12px; font-size: 13px; background: #0e2433; border: 1px solid #0e2433; color: white; border-radius: 6px;">💬 Conversation</button>
             </div>
           </div>
         </div>
@@ -815,637 +805,483 @@ class TicketsApp {
     this.showCommentModal(ticketId);
   }
 
-  showTicketModal(ticketId) {
+  async showTicketModal(ticketId) {
     console.log('showTicketModal called with ID:', ticketId);
     const ticket = this.tickets.find(t => t.id === ticketId);
     if (!ticket) {
       console.error('Ticket not found with ID:', ticketId);
       return;
     }
-    console.log('Found ticket:', ticket);
 
-    console.log('Creating modal HTML...');
-    
-    // Version simplifiée et plus lisible
-    const modalHtml = `
-      <div class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;">
-        <div class="modal-content" style="background: white; border-radius: 8px; width: 100%; max-width: 800px; max-height: 90%; overflow-y: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
-          
-          <!-- Header -->
-          <div style="padding: 20px 20px 15px 20px; border-bottom: 1px solid #eee; background: #f8f9fa; border-radius: 8px 8px 0 0;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-              <div>
-                <h2 style="margin: 0 0 5px 0; color: #333; font-size: 20px;">Ticket #${ticket.id}</h2>
-                <p style="margin: 0; color: #666; font-size: 14px;">${ticket.title}</p>
-              </div>
-              <button class="modal-close" style="background: #f1f3f4; border: none; font-size: 18px; cursor: pointer; color: #5f6368; padding: 8px; line-height: 1; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-weight: bold;">×</button>
-            </div>
-          </div>
-          
-          <!-- Body -->
-          <div style="padding: 20px;">
-            
-            <!-- Informations -->
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
-              <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #333;">Informations du ticket</h3>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px;">
-                <div><strong>Statut:</strong> <span style="color: #0066cc;">${ticket.status}</span></div>
-                <div><strong>Priorité:</strong> <span style="color: #dc3545;">${ticket.priority}</span></div>
-                <div><strong>Projet:</strong> ${this.getProjectName(ticket.project_id)}</div>
-                <div><strong>Créé le:</strong> ${new Date(ticket.created_at).toLocaleDateString('fr-FR')}</div>
-              </div>
-            </div>
-
-            <!-- Description -->
-            <div style="margin-bottom: 20px;">
-              <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #333;">Description</h3>
-              <div style="background: white; border: 1px solid #ddd; padding: 15px; border-radius: 6px; line-height: 1.5; color: #333;">
-                ${ticket.description}
-              </div>
-            </div>
-
-            <!-- Commentaires -->
-            <div style="margin-bottom: 20px;">
-              <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #333;">Historique des échanges</h3>
-              <div id="ticketComments-${ticket.id}" style="min-height: 100px;">
-                <div style="text-align: center; color: #666; padding: 20px;">Chargement des commentaires...</div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Footer -->
-          <div style="padding: 15px 20px; background: #f8f9fa; border-top: 1px solid #eee; border-radius: 0 0 8px 8px; display: flex; justify-content: space-between; align-items: center;">
-            <div style="font-size: 12px; color: #666;">
-              Ticket créé le ${new Date(ticket.created_at).toLocaleDateString('fr-FR')}
-            </div>
-            <div>
-              <button class="show-comment-form-btn" data-ticket-id="${ticket.id}" style="padding: 8px 16px; background: #0e2433; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 8px; font-size: 14px;">
-                Répondre
-              </button>
-              <button class="modal-close" style="padding: 10px 20px; background: #ffffff; color: #374151; border: 2px solid #d1d5db; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.15s; min-width: 80px;">
-                Fermer
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-
-    console.log('Injecting modal...');
-    
-    // Ajouter les styles pour les boutons si pas déjà fait
-    if (!document.getElementById('modal-button-styles')) {
-      const styles = document.createElement('style');
-      styles.id = 'modal-button-styles';
-      styles.textContent = `
-        /* Boutons fermer ronds */
-        button[style*="border-radius: 50%"]:hover {
-          background: #e8eaed !important;
-          color: #202124 !important;
-          transform: scale(1.05);
+    try {
+      // Charger les commentaires du ticket
+      let comments = [];
+      try {
+        const response = await api.getTicketComments(ticketId);
+        if (response.success) {
+          comments = response.data.comments || [];
         }
-        
-        /* Boutons annuler/fermer */
-        button[style*="background: #ffffff"]:hover {
-          background: #f9fafb !important;
-          border-color: #9ca3af !important;
-          color: #111827 !important;
-        }
-        
-        /* Boutons primaires Shape */
-        button[style*="background: #0e2433"]:hover {
-          background: #1a3547 !important;
-          transform: translateY(-1px);
-          box-shadow: 0 4px 8px rgba(14, 36, 51, 0.3) !important;
-        }
-      `;
-      document.head.appendChild(styles);
-    }
-    
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-    
-    console.log('Modal injected');
-    
-    // Attendre un peu avant d'ajouter les event listeners pour éviter les fermetures immédiates
-    setTimeout(() => {
-      console.log('Setting up modal event listeners...');
-      
-      // Vérifier que la modale existe encore
-      const modal = document.querySelector('.modal-overlay');
-      if (modal) {
-        console.log('Modal still exists, loading comments...');
-        this.loadTicketComments(ticketId);
-      } else {
-        console.log('Modal was closed before event listeners could be set up');
+      } catch (error) {
+        console.warn('Could not load comments from API:', error);
+        // Utiliser des données de test pour les commentaires
+        comments = this.getTestComments(ticketId);
       }
-    }, 100);
-  }
 
-  showCommentModal(ticketId) {
-    console.log('showCommentModal called with ID:', ticketId);
-    const ticket = this.tickets.find(t => t.id === ticketId);
-    
-    console.log('Creating comment modal HTML...');
-    
-    const modalHtml = `
-      <div class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; align-items: center; justify-content: center;">
-        <div class="modal-content" style="background: white; border-radius: 8px; max-width: 600px; width: 90%; max-height: 90%; overflow-y: auto; padding: 20px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
-            <h2 style="margin: 0;">Ajouter un commentaire</h2>
-            <button class="modal-close" style="background: #f1f3f4; border: none; font-size: 18px; cursor: pointer; color: #5f6368; padding: 8px; line-height: 1; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-weight: bold;">×</button>
-          </div>
-          
-          <div style="margin-bottom: 15px;">
-            <p style="color: #666; margin: 0;"><strong>Ticket #${ticketId}:</strong> ${ticket ? ticket.title : 'Ticket'}</p>
-          </div>
-          
-          <form id="commentForm">
-            <div style="margin-bottom: 20px;">
-              <label for="commentText" style="display: block; margin-bottom: 10px; font-weight: bold;">Votre message *</label>
-              <textarea 
-                id="commentText" 
-                style="width: 100%; height: 150px; padding: 15px; border: 2px solid #ddd; border-radius: 4px; resize: vertical; font-family: inherit;" 
-                placeholder="Décrivez votre problème ou ajoutez des détails..." 
-                required
-              ></textarea>
-              <small style="color: #666; font-size: 12px;">Plus vous donnez de détails, plus nous pourrons vous aider efficacement</small>
+      const modalHtml = `
+        <div class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;">
+          <div class="modal-content" style="background: white; border-radius: 8px; width: 100%; max-width: 1000px; max-height: 90%; overflow-y: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+            
+            <!-- Header -->
+            <div style="padding: 20px 20px 15px 20px; border-bottom: 1px solid #eee; background: #f8f9fa; border-radius: 8px 8px 0 0;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                  <h2 style="margin: 0 0 5px 0; color: #333; font-size: 20px;">Ticket #${ticket.id}</h2>
+                  <p style="margin: 0; color: #666; font-size: 14px;">${ticket.title}</p>
+                </div>
+                <button class="modal-close" style="background: #f1f3f4; border: none; font-size: 18px; cursor: pointer; color: #5f6368; padding: 8px; line-height: 1; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-weight: bold;">×</button>
+              </div>
             </div>
             
-            <div style="margin-bottom: 20px;">
-              <label style="display: block; margin-bottom: 10px; font-weight: bold;">Pièce jointe (optionnelle)</label>
-              <div style="border: 2px dashed #ddd; border-radius: 4px; padding: 20px; text-align: center; background: #fafafa;">
-                <input 
-                  type="file" 
-                  id="attachmentFile" 
-                  accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt,.zip"
-                  style="display: none;"
-                >
-                <div id="fileDropZone" style="cursor: pointer;">
-                  <div style="margin-bottom: 10px; color: #666;">
-                    Cliquez pour choisir un fichier ou glissez-déposez ici
-                  </div>
-                  <div style="font-size: 12px; color: #999;">
-                    Formats acceptés: Images, PDF, Word, texte, ZIP (10MB max)
+            <!-- Body -->
+            <div style="padding: 20px;">
+              
+              <!-- Informations principales du ticket -->
+              <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #333;">Informations du ticket</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px;">
+                  <div><strong>Statut:</strong> <span class="status-badge status-${ticket.status}">${this.getStatusLabel(ticket.status)}</span></div>
+                  <div><strong>Priorité:</strong> <span class="priority-badge priority-${ticket.priority}">${this.getPriorityLabel(ticket.priority)}</span></div>
+                  <div><strong>Projet:</strong> ${this.getProjectName(ticket.project_id)}</div>
+                  <div><strong>Créé le:</strong> ${new Date(ticket.created_at).toLocaleDateString('fr-FR')}</div>
+                </div>
+              </div>
+
+              <!-- Description -->
+              <div style="margin-bottom: 20px;">
+                <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #333;">Description du problème</h3>
+                <div style="background: white; border: 1px solid #ddd; padding: 15px; border-radius: 6px; line-height: 1.5; color: #333;">
+                  ${ticket.description}
+                </div>
+              </div>
+              
+              <!-- Conversation avec l'équipe -->
+              <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 20px;">
+                <div style="padding: 20px; border-bottom: 1px solid #f3f4f6;">
+                  <h3 style="font-size: 18px; font-weight: 600; color: #1f2937; margin: 0;">Conversation avec l'équipe (<span id="commentsCount">${comments.length}</span>)</h3>
+                  <div style="font-size: 14px; color: #6b7280; margin-top: 4px;" id="lastCommentTime">
+                    ${comments.length > 0 ? 'Dernière réponse ' + this.formatTimeAgo(comments[comments.length - 1].created_at) : 'Tous les échanges entre vous et notre équipe support'}
                   </div>
                 </div>
-                <div id="selectedFile" style="display: none; margin-top: 10px; padding: 10px; background: white; border-radius: 4px;">
-                  <div style="display: flex; align-items: center; justify-content: space-between;">
-                    <div>
-                      <span id="fileName" style="font-weight: bold;"></span>
-                      <span id="fileSize" style="color: #666; font-size: 12px; margin-left: 10px;"></span>
+                <div id="commentsList" style="max-height: 500px; overflow-y: auto; padding: 16px;">
+                  ${this.renderComments(comments)}
+                </div>
+              </div>
+
+              <!-- Zone d'ajout de commentaire -->
+              <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px;">
+                <h3 style="font-size: 16px; font-weight: 600; color: #1f2937; margin: 0 0 16px 0;">Ajouter un commentaire</h3>
+                    
+                <form id="commentForm" style="display: flex; flex-direction: column; gap: 16px;">
+                  <textarea 
+                    id="commentContent"
+                    placeholder="Écrivez votre commentaire ou question ici..."
+                    rows="4"
+                    style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; line-height: 1.5; resize: vertical; font-family: inherit;"
+                    required
+                  ></textarea>
+                  
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <label for="fileInput" style="display: flex; align-items: center; gap: 6px; color: #6b7280; cursor: pointer; font-size: 14px;">
+                        📎 Joindre un fichier
+                      </label>
+                      <input type="file" id="fileInput" multiple accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt" style="display: none;">
                     </div>
-                    <button type="button" id="removeFile" style="background: #dc3545; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer; font-size: 12px;">
-                      Supprimer
+                    <button type="submit" id="submitBtn" style="background: #0e2433; color: white; border: none; border-radius: 6px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer;">
+                      Envoyer le commentaire
                     </button>
                   </div>
-                </div>
+                </form>
               </div>
             </div>
-            
-            <div style="display: flex; gap: 10px; justify-content: flex-end; padding-top: 20px; border-top: 1px solid #eee;">
-              <button type="button" class="modal-close" style="padding: 10px 20px; background: #ffffff; color: #374151; border: 2px solid #d1d5db; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.15s; min-width: 100px;">
-                Annuler
-              </button>
-              <button type="submit" style="padding: 10px 20px; background: #0e2433; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.15s; min-width: 140px; box-shadow: 0 2px 4px rgba(14, 36, 51, 0.2);">
-                Publier le commentaire
-              </button>
-            </div>
-          </form>
+          </div>
         </div>
-      </div>
-    `;
-
-    console.log('Injecting comment modal...');
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-    
-    console.log('Comment modal injected');
-    
-    // Attendre un peu avant de configurer pour éviter les fermetures immédiates
-    setTimeout(() => {
-      console.log('Setting up comment form...');
+      `;
       
+      // Injecter dans le DOM
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+      
+      // Gestionnaires d'événements
       const modal = document.querySelector('.modal-overlay');
-      if (!modal) {
-        console.log('Comment modal was closed before setup');
-        return;
-      }
+      const closeBtn = modal.querySelector('.modal-close');
+      const commentForm = modal.querySelector('#commentForm');
       
-      const form = document.getElementById('commentForm');
-      if (form) {
-        form.addEventListener('submit', (e) => {
-          e.preventDefault();
-          this.submitComment(ticketId);
-        });
-        console.log('Comment form event listener added');
-      }
-      
-      // Gestion des pièces jointes
-      this.setupFileHandling();
-      
-      // Auto-focus
-      const textarea = document.getElementById('commentText');
-      if (textarea) {
-        textarea.focus();
-        console.log('Textarea focused');
-      }
-    }, 100);
-  }
-
-  setupFileHandling() {
-    console.log('Setting up file handling...');
-    
-    const fileInput = document.getElementById('attachmentFile');
-    const dropZone = document.getElementById('fileDropZone');
-    const selectedFileDiv = document.getElementById('selectedFile');
-    const fileNameSpan = document.getElementById('fileName');
-    const fileSizeSpan = document.getElementById('fileSize');
-    const removeFileBtn = document.getElementById('removeFile');
-
-    if (!fileInput || !dropZone) {
-      console.log('File elements not found');
-      return;
-    }
-
-    // Clic sur la zone de dépôt
-    dropZone.addEventListener('click', () => {
-      fileInput.click();
-    });
-
-    // Sélection de fichier
-    fileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        this.handleFileSelection(file);
-      }
-    });
-
-    // Drag & Drop
-    dropZone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      dropZone.style.borderColor = '#007bff';
-      dropZone.style.background = '#f0f8ff';
-    });
-
-    dropZone.addEventListener('dragleave', (e) => {
-      e.preventDefault();
-      dropZone.style.borderColor = '#ddd';
-      dropZone.style.background = '#fafafa';
-    });
-
-    dropZone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      dropZone.style.borderColor = '#ddd';
-      dropZone.style.background = '#fafafa';
-      
-      const files = e.dataTransfer.files;
-      if (files.length > 0) {
-        this.handleFileSelection(files[0]);
-      }
-    });
-
-    // Supprimer le fichier
-    if (removeFileBtn) {
-      removeFileBtn.addEventListener('click', () => {
-        this.removeSelectedFile();
+      closeBtn.addEventListener('click', () => this.closeModal());
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) this.closeModal();
       });
+      
+      // Gestionnaire de soumission de commentaire
+      commentForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await this.addCommentToTicket(ticketId, e.target);
+      });
+      
+    } catch (error) {
+      console.error('Error showing ticket modal:', error);
+      alert('Erreur lors de l\'affichage du ticket');
     }
   }
 
-  handleFileSelection(file) {
-    console.log('File selected:', file.name, file.size);
-    
-    // Vérifier la taille (10MB max)
-    if (file.size > 10 * 1024 * 1024) {
-      alert('Le fichier est trop volumineux. Taille maximale: 10MB');
-      return;
+  renderComments(comments) {
+    if (comments.length === 0) {
+      return `
+        <div style="padding: 40px; text-align: center; color: #9ca3af;">
+          <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;">💬</div>
+          <p>Aucun commentaire pour le moment</p>
+          <p style="font-size: 14px;">Soyez le premier à ajouter un commentaire !</p>
+        </div>
+      `;
     }
-
-    // Vérifier le type de fichier
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 
-                         'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                         'text/plain', 'application/zip'];
     
-    if (!allowedTypes.includes(file.type)) {
-      alert('Type de fichier non autorisé. Veuillez choisir une image, PDF, Word, texte ou ZIP.');
-      return;
-    }
-
-    // Afficher le fichier sélectionné
-    const fileNameSpan = document.getElementById('fileName');
-    const fileSizeSpan = document.getElementById('fileSize');
-    const selectedFileDiv = document.getElementById('selectedFile');
-    const dropZone = document.getElementById('fileDropZone');
-
-    if (fileNameSpan && fileSizeSpan && selectedFileDiv && dropZone) {
-      fileNameSpan.textContent = file.name;
-      fileSizeSpan.textContent = `(${this.formatFileSize(file.size)})`;
+    return comments.map((comment, index) => {
+      // Determine if this is from client or support team
+      const isFromClient = comment.role === 'client';
       
-      dropZone.style.display = 'none';
-      selectedFileDiv.style.display = 'block';
-    }
-  }
-
-  removeSelectedFile() {
-    console.log('Removing selected file');
-    
-    const fileInput = document.getElementById('attachmentFile');
-    const selectedFileDiv = document.getElementById('selectedFile');
-    const dropZone = document.getElementById('fileDropZone');
-
-    if (fileInput) fileInput.value = '';
-    if (selectedFileDiv) selectedFileDiv.style.display = 'none';
-    if (dropZone) dropZone.style.display = 'block';
-  }
-
-  formatFileSize(bytes) {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  }
-
-  async loadTicketComments(ticketId) {
-    const container = document.getElementById(`ticketComments-${ticketId}`);
-    
-    try {
-      // Données de test pour les commentaires
-      const testComments = [
-        {
-          id: 1,
-          content: "Nous avons pris en compte votre demande et analysons le problème.",
-          author_name: "support@shape.fr",
-          created_at: "2024-01-15T11:30:00Z"
-        },
-        {
-          id: 2,
-          content: "Merci pour votre retour rapide. J'attends vos nouvelles.",
-          author_name: this.currentUser.email,
-          created_at: "2024-01-15T12:00:00Z"
-        }
-      ];
-
-      let comments = [];
+      // Get author initials
+      const initials = comment.first_name 
+          ? comment.first_name.charAt(0).toUpperCase()
+          : (isFromClient ? 'V' : 'S'); // V=Vous, S=Support
       
-      // Utiliser les données de test par défaut (mode démo)
-      console.log('Mode démo activé, utilisation des données de test');
-      comments = ticketId <= 2 ? testComments : [];
-      
-      // Optionnel : essayer l'API seulement si explicitement demandé
-      // if (window.api && localStorage.getItem('useRealAPI') === 'true') {
-      //   try {
-      //     const response = await api.getTicketComments(ticketId);
-      //     comments = response.data.comments || [];
-      //   } catch (apiError) {
-      //     console.log('API non disponible, retour aux données de test');
-      //     comments = ticketId <= 2 ? testComments : [];
-      //   }
-      // }
-      
-      if (comments.length === 0) {
-        container.innerHTML = `
-          <h3 class="section-title"> Commentaires</h3>
-          <div class="empty-comments">
-            <div class="empty-icon"></div>
-            <p class="empty-text">Aucun commentaire pour le moment</p>
-            <p class="empty-subtext">Les échanges avec notre équipe apparaîtront ici</p>
-          </div>
-        `;
-        return;
-      }
-
-      const safeFormatDateTime = (dateTime) => {
-        try {
-          return window.api ? api.formatDateTime(dateTime) : new Date(dateTime).toLocaleDateString('fr-FR');
-        } catch (e) {
-          return new Date(dateTime).toLocaleDateString('fr-FR');
-        }
-      };
-
-      const commentsHtml = comments.map(comment => `
-        <div class="comment-bubble">
-          <div class="comment-meta">
-            <div class="comment-author">
-              <span class="author-icon">${comment.author_name === this.currentUser.email ? 'You' : 'Support'}</span>
-              <span class="author-name">${comment.author_name === this.currentUser.email ? 'Vous' : 'Support'}</span>
+      return `
+        <div style="display: flex; ${isFromClient ? 'justify-content: flex-end' : 'justify-content: flex-start'}; margin-bottom: 16px;">
+          <div style="max-width: 70%; ${isFromClient ? 'margin-left: auto' : 'margin-right: auto'};">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; ${isFromClient ? 'flex-direction: row-reverse;' : ''}">
+              <div style="width: 28px; height: 28px; border-radius: 50%; background: ${isFromClient ? '#0e2433' : '#e3f2fd'}; display: flex; align-items: center; justify-content: center;">
+                <span style="color: ${isFromClient ? 'white' : '#1565c0'}; font-weight: 600; font-size: 11px;">
+                  ${initials}
+                </span>
+              </div>
+              <span style="font-size: 12px; color: #6b7280; font-weight: 500;">
+                ${isFromClient ? 'Vous' : (comment.first_name || 'Équipe support')} ${!isFromClient && comment.last_name ? comment.last_name : ''}
+              </span>
+              <span style="font-size: 11px; color: #9ca3af;">
+                ${this.formatTimeAgo(comment.created_at)}
+              </span>
             </div>
-            <div class="comment-date" data-date="${comment.created_at}">${safeFormatDateTime(comment.created_at)}</div>
+            <div style="background: ${isFromClient ? '#0e2433' : '#ffffff'}; color: ${isFromClient ? 'white' : '#374151'}; padding: 12px 16px; border-radius: 12px; ${isFromClient ? 'border-bottom-right-radius: 4px;' : 'border-bottom-left-radius: 4px;'} box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: ${isFromClient ? 'none' : '1px solid #e5e7eb'};">
+              <div style="line-height: 1.4; font-size: 14px;">
+                ${comment.content.replace(/\n/g, '<br>')}
+              </div>
+              ${comment.is_internal ? '<div style="margin-top: 6px; padding: 2px 6px; background: rgba(255,255,255,0.2); border-radius: 4px; font-size: 11px;">Message interne équipe</div>' : ''}
+            </div>
           </div>
-          <div class="comment-message">${comment.content}</div>
-        </div>
-      `).join('');
-
-      container.innerHTML = `
-        <h3 class="section-title"> Commentaires (${comments.length})</h3>
-        <div class="comments-list">
-          ${commentsHtml}
         </div>
       `;
-      
-      // Mettre à jour les dates avec le bon fuseau horaire après injection DOM si disponible
-      setTimeout(() => {
-        if (typeof updateAllDatesInDOM === 'function') {
-          updateAllDatesInDOM();
-        }
-      }, 10);
-    } catch (error) {
-      console.error('Error loading comments:', error);
-      container.innerHTML = `
-        <h3>Commentaires</h3>
-        <div class="error-message">Erreur lors du chargement des commentaires</div>
-      `;
-    }
+    }).join('');
+  }
+  
+  formatTimeAgo(dateString) {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffMins < 1) return 'à l\'instant';
+    if (diffMins < 60) return `il y a ${diffMins}min`;
+    if (diffHours < 24) return `il y a ${diffHours}h`;
+    if (diffDays < 7) return `il y a ${diffDays}j`;
+    return this.formatDateTime(dateString);
+  }
+  
+  formatDateTime(dateString) {
+    return new Date(dateString).toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   }
 
-  async submitComment(ticketId) {
-    const commentText = document.getElementById('commentText').value.trim();
-    const fileInput = document.getElementById('attachmentFile');
-    const selectedFile = fileInput ? fileInput.files[0] : null;
-    
-    if (!commentText) {
-      alert('Veuillez saisir un commentaire');
+  async addCommentToTicket(ticketId, form) {
+    const content = form.querySelector('#commentContent').value.trim();
+    if (!content) {
+      alert('Le commentaire ne peut pas être vide');
       return;
     }
 
+    const submitBtn = form.querySelector('#submitBtn');
+    const originalText = submitBtn.textContent;
+    
     try {
-      // Mode démo : simuler l'ajout du commentaire avec pièce jointe
-      const submitData = { 
-        ticketId, 
-        commentText,
-        hasAttachment: !!selectedFile,
-        attachmentName: selectedFile ? selectedFile.name : null,
-        attachmentSize: selectedFile ? this.formatFileSize(selectedFile.size) : null
-      };
-      
-      console.log('Mode démo : simulation ajout commentaire', submitData);
-      
-      // Simuler un délai d'API
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      this.closeModal();
-      
-      if (selectedFile) {
-        alert(`Commentaire et pièce jointe "${selectedFile.name}" ajoutés avec succès (mode démo)`);
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Envoi en cours...';
+
+      // En mode test, simuler l'ajout du commentaire
+      const token = localStorage.getItem('token');
+      const isTestMode = !token || token === 'test' || window.location.hostname === 'localhost';
+
+      if (isTestMode) {
+        // Simuler un délai d'envoi
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Ajouter le nouveau commentaire aux données de test
+        this.addTestComment(ticketId, content);
+        
+        // Afficher une notification de succès
+        alert('Commentaire ajouté avec succès !');
+        
+        // Success - refresh modal avec les nouvelles données
+        this.closeModal();
+        this.showTicketModal(ticketId);
       } else {
-        alert('Commentaire ajouté avec succès (mode démo)');
+        // Mode production - utiliser l'API
+        const commentResponse = await api.createComment(ticketId, { content });
+        
+        if (!commentResponse.success) {
+          throw new Error(commentResponse.message || 'Erreur lors de la création du commentaire');
+        }
+
+        // Success - refresh modal
+        this.closeModal();
+        this.showTicketModal(ticketId);
       }
-      
-      // Optionnel : essayer l'API réelle si demandée
-      // if (window.api && localStorage.getItem('useRealAPI') === 'true') {
-      //   const formData = new FormData();
-      //   formData.append('content', commentText);
-      //   if (selectedFile) {
-      //     formData.append('attachment', selectedFile);
-      //   }
-      //   
-      //   const response = await api.createComment(ticketId, formData);
-      //   if (response.success) {
-      //     this.closeModal();
-      //     alert('Commentaire ajouté avec succès');
-      //     this.loadTickets();
-      //   } else {
-      //     alert('Erreur lors de l\'ajout du commentaire: ' + response.message);
-      //   }
-      // }
       
     } catch (error) {
-      console.error('Comment submission error:', error);
-      alert('Erreur lors de l\'ajout du commentaire');
+      console.error('Error submitting comment:', error);
+      alert(`Erreur: ${error.message}`);
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalText;
     }
   }
 
-  showCommentForm(ticketId) {
-    this.showCommentModal(ticketId);
+  getStatusLabel(status) {
+    const labels = {
+      'open': 'Nouveau',
+      'in_progress': 'En cours',
+      'waiting_client': 'En attente client',
+      'resolved': 'Résolu',
+      'closed': 'Fermé'
+    };
+    return labels[status] || status;
   }
 
-  formatDate(dateString) {
-    try {
-      return new Date(dateString).toLocaleDateString('fr-FR', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        timeZone: 'Europe/Paris'
-      });
-    } catch {
-      return dateString;
-    }
-  }
-
-  async handleLogout() {
-    // Clear countdown interval
-    if (this.countdownInterval) {
-      clearInterval(this.countdownInterval);
-    }
-    
-    await api.logout();
-    window.location.href = '/';
-  }
-
-  toggleDropdown(dropdown) {
-    // Close all other dropdowns first
-    document.querySelectorAll('.dropdown').forEach(d => {
-      if (d !== dropdown) {
-        d.classList.remove('active');
-      }
-    });
-    
-    // Toggle current dropdown
-    dropdown.classList.toggle('active');
-  }
-
-  setStatusFilter(status) {
-    console.log('Setting status filter to:', status);
-    this.currentStatusFilter = status;
-    
-    // Close dropdown
-    document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('active'));
-    
-    // Update dropdown button text
-    const dropdownToggle = document.querySelector('.dropdown-toggle span');
-    if (dropdownToggle) {
-      if (status === '') {
-        dropdownToggle.textContent = 'Filtrer par statut';
-      } else {
-        const statusText = {
-          'open': 'Nouveau',
-          'in_progress': 'En cours', 
-          'waiting_client': 'En attente client',
-          'resolved': 'Résolu'
-        }[status] || status;
-        dropdownToggle.textContent = `Statut: ${statusText}`;
-      }
-    }
-    
-    // Close dropdown
-    const dropdown = document.querySelector('.dropdown');
-    if (dropdown) {
-      dropdown.classList.remove('active');
-    }
-    
-    // Apply filter
-    this.filterTickets();
+  getPriorityLabel(priority) {
+    const labels = {
+      'low': 'Basse',
+      'normal': 'Normale',
+      'high': 'Élevée',
+      'urgent': 'Urgente'
+    };
+    return labels[priority] || priority;
   }
 
   loadTestData() {
-    // Charger des données de test pour les tickets avec des dates récentes
-    const now = new Date();
-    const yesterday = new Date(now);
-    yesterday.setDate(now.getDate() - 1);
-    const twoDaysAgo = new Date(now);
-    twoDaysAgo.setDate(now.getDate() - 2);
-    const threeDaysAgo = new Date(now);
-    threeDaysAgo.setDate(now.getDate() - 3);
+    // Charger des données de test pour la démonstration
+    this.projects = [
+      { id: 1, name: 'Site Web E-commerce' },
+      { id: 2, name: 'Application Mobile' },
+      { id: 3, name: 'Refonte Interface' }
+    ];
     
     this.tickets = [
       {
         id: 1,
-        title: "Problème de connexion sur l'espace admin",
-        description: "Impossible de se connecter à l'interface d'administration depuis hier. L'erreur affichée est \"Identifiants incorrects\" même avec les bons identifiants.",
+        title: 'Problème de connexion sur l\'espace admin',
+        description: 'Depuis hier soir, il m\'est impossible de me connecter à l\'interface d\'administration.',
         status: 'in_progress',
         priority: 'urgent',
         project_id: 1,
-        created_at: yesterday.toISOString()
+        created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() // Il y a 2h
       },
       {
-        id: 2,
-        title: "Demande de modification du design de la page d'accueil",
-        description: "Nous souhaitons modifier l'apparence de la section héro de notre page d'accueil pour la rendre plus moderne et attractive.",
-        status: 'waiting_client',
+        id: 2, 
+        title: 'Nouvelle fonctionnalité de recherche',
+        description: 'Souhait d\'ajouter un filtre avancé dans la recherche de produits.',
+        status: 'open',
         priority: 'normal',
-        project_id: 2,
-        created_at: twoDaysAgo.toISOString()
+        project_id: 1,
+        created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() // Il y a 1 jour
       },
       {
         id: 3,
-        title: "Bug sur le processus de commande mobile",
-        description: "Les utilisateurs rencontrent une erreur lors de la validation de leur commande sur l'application mobile Android.",
+        title: 'Bug affichage mobile',
+        description: 'Le menu ne s\'affiche pas correctement sur les écrans de téléphone.',
         status: 'resolved',
         priority: 'high',
-        project_id: 3,
-        created_at: threeDaysAgo.toISOString()
+        project_id: 2,
+        created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() // Il y a 3 jours
       }
     ];
-
-    this.projects = [
-      { id: 1, name: 'Site Web E-commerce' },
-      { id: 2, name: 'Refonte Interface' },
-      { id: 3, name: 'Application Mobile' }
-    ];
-
-    this.filteredTickets = this.tickets;
-    this.renderTickets();
     
-    // S'assurer que les éléments DOM sont disponibles avant de mettre à jour les stats
-    setTimeout(() => {
-      this.updateStatsDisplay();
-    }, 100);
+    this.filterTickets();
+    this.updateStatsDisplay();
+    
+    // Populate project selector
+    const projectSelect = document.getElementById('projectSelect');
+    if (projectSelect) {
+      projectSelect.innerHTML = '<option value="">Tous les projets</option>';
+      this.projects.forEach(project => {
+        const option = document.createElement('option');
+        option.value = project.id;
+        option.textContent = project.name;
+        projectSelect.appendChild(option);
+      });
+    }
+  }
+
+  async handleLogout() {
+    localStorage.removeItem('token');
+    window.location.href = '/connexion.html';
+  }
+
+  setStatusFilter(status) {
+    this.currentStatusFilter = status;
+    const statusFilter = document.getElementById('statusFilter');
+    if (statusFilter) {
+      statusFilter.value = status;
+    }
+    this.filterTickets();
+  }
+
+  toggleDropdown(dropdown) {
+    dropdown.classList.toggle('active');
+  }
+
+  showCommentForm(ticketId) {
+    console.log('showCommentForm called with ID:', ticketId);
+    // Cette fonction pourrait ouvrir un formulaire de commentaire séparé
+    // Pour l'instant, on redirige vers la vue complète
+    this.viewTicket(ticketId);
+  }
+
+  initializeTestComments() {
+    // Initialiser les commentaires de test si pas déjà fait
+    if (Object.keys(this.testComments).length === 0) {
+      this.testComments = {
+        1: [
+          {
+            id: 1,
+            content: "Bonjour, j'ai bien reçu votre signalement. Je vais investiguer le problème de connexion immédiatement.",
+            role: 'admin',
+            first_name: 'Thomas',
+            last_name: 'Martin',
+            is_internal: false,
+            created_at: new Date(Date.now() - 1.5 * 60 * 60 * 1000).toISOString() // Il y a 1h30
+          },
+          {
+            id: 2,
+            content: "J'ai identifié le problème. Il s'agit d'un souci de cache côté serveur. Je procède à la correction.",
+            role: 'admin',
+            first_name: 'Thomas',
+            last_name: 'Martin',
+            is_internal: false,
+            created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString() // Il y a 1h
+          },
+          {
+            id: 3,
+            content: "Le client signale un problème critique sur l'admin. Priorité absolue.",
+            role: 'admin',
+            first_name: 'Sophie',
+            last_name: 'Durand',
+            is_internal: true, // Message interne entre admins
+            created_at: new Date(Date.now() - 45 * 60 * 1000).toISOString() // Il y a 45min
+          },
+          {
+            id: 4,
+            content: "Merci pour votre réactivité ! Le problème semble maintenant résolu de mon côté.",
+            role: 'client',
+            first_name: 'Marie',
+            last_name: 'Dubois',
+            is_internal: false,
+            created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString() // Il y a 30min
+          },
+          {
+            id: 5,
+            content: "Parfait ! Je marque le ticket comme résolu. N'hésitez pas si vous rencontrez d'autres difficultés.",
+            role: 'admin',
+            first_name: 'Thomas',
+            last_name: 'Martin',
+            is_internal: false,
+            created_at: new Date(Date.now() - 15 * 60 * 1000).toISOString() // Il y a 15min
+          }
+        ],
+        2: [
+          {
+            id: 6,
+            content: "Votre demande de nouvelle fonctionnalité a été reçue. Nous allons l'étudier avec l'équipe.",
+            role: 'admin',
+            first_name: 'Julie',
+            last_name: 'Bernard',
+            is_internal: false,
+            created_at: new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString() // Il y a 20h
+          },
+          {
+            id: 7,
+            content: "Cette fonctionnalité nécessite une analyse approfondie de l'UX. À prévoir pour la v2.1.",
+            role: 'admin',
+            first_name: 'Marc',
+            last_name: 'Lefort',
+            is_internal: true, // Message interne
+            created_at: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString() // Il y a 18h
+          }
+        ],
+        3: [
+          {
+            id: 8,
+            content: "Bug reproduit et corrigé ! La mise à jour sera déployée dans la journée.",
+            role: 'admin',
+            first_name: 'Alex',
+            last_name: 'Moreau',
+            is_internal: false,
+            created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() // Il y a 2 jours
+          }
+        ]
+      };
+    }
+  }
+
+  getTestComments(ticketId) {
+    this.initializeTestComments();
+    return this.testComments[ticketId] || [];
+  }
+
+  addTestComment(ticketId, content) {
+    this.initializeTestComments();
+    
+    if (!this.testComments[ticketId]) {
+      this.testComments[ticketId] = [];
+    }
+    
+    // Générer un nouvel ID basé sur le nombre total de commentaires
+    let maxId = 0;
+    Object.values(this.testComments).forEach(comments => {
+      comments.forEach(comment => {
+        if (comment.id > maxId) maxId = comment.id;
+      });
+    });
+    
+    const newComment = {
+      id: maxId + 1,
+      content: content,
+      role: 'client',
+      first_name: 'Marie', // Client de test
+      last_name: 'Dubois',
+      is_internal: false,
+      created_at: new Date().toISOString()
+    };
+    
+    this.testComments[ticketId].push(newComment);
+    console.log(`Ajouté nouveau commentaire de test pour le ticket ${ticketId}:`, newComment);
   }
 }
 
-// Initialize app when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('DOM loaded - initializing TicketsApp');
+// Initialiser l'application
+window.addEventListener('DOMContentLoaded', () => {
+  console.log('DOM loaded, initializing TicketsApp...');
   window.ticketsApp = new TicketsApp();
-  // Alias for backward compatibility with clientApp references
-  window.clientApp = window.ticketsApp;
 });

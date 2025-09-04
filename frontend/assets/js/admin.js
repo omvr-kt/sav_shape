@@ -680,58 +680,82 @@ class AdminApp {
             </div>
           ` : ''}
           
-          <!-- Commentaires -->
-          <div class="ticket-comments">
-            <h4>Historique et commentaires (${comments.length})</h4>
+          <!-- Conversation avec le client -->
+          <div class="ticket-comments" style="margin-bottom: 20px;">
+            <h4 style="font-size: 16px; font-weight: 600; color: #1f2937; margin-bottom: 16px;">Conversation avec le client (${comments.length})</h4>
             
-            <div class="comments-list" id="commentsList">
-              ${comments.map(comment => `
-                <div class="comment-item ${comment.is_internal ? 'comment-internal' : ''}">
-                  <div class="comment-header">
-                    <span class="comment-author">${comment.author_name}</span>
-                    <span class="comment-date" data-date="${comment.created_at}">${api.formatDateTime(comment.created_at)}</span>
-                    ${comment.is_internal ? '<span class="internal-badge">Interne</span>' : ''}
+            <div class="comments-list" id="commentsList" style="max-height: 400px; overflow-y: auto; padding: 16px; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 8px;">
+              ${comments.map(comment => {
+                const isFromClient = comment.role === 'client';
+                
+                // Get author initials
+                const initials = comment.first_name 
+                    ? comment.first_name.charAt(0).toUpperCase()
+                    : (isFromClient ? 'C' : 'S'); // C=Client, S=Support
+                
+                return `
+                  <div style="display: flex; ${isFromClient ? 'justify-content: flex-start' : 'justify-content: flex-end'}; margin-bottom: 16px;">
+                    <div style="max-width: 70%; ${isFromClient ? 'margin-right: auto' : 'margin-left: auto'};">
+                      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; ${isFromClient ? '' : 'flex-direction: row-reverse;'}">
+                        <div style="width: 28px; height: 28px; border-radius: 50%; background: ${isFromClient ? '#e3f2fd' : '#0e2433'}; display: flex; align-items: center; justify-content: center;">
+                          <span style="color: ${isFromClient ? '#1565c0' : 'white'}; font-weight: 600; font-size: 11px;">
+                            ${initials}
+                          </span>
+                        </div>
+                        <span style="font-size: 12px; color: #6b7280; font-weight: 500;">
+                          ${isFromClient ? (comment.first_name || 'Client') : (comment.first_name || 'Équipe support')} ${!isFromClient && comment.last_name ? comment.last_name : ''}
+                        </span>
+                        <span style="font-size: 11px; color: #9ca3af;">
+                          ${api.formatDateTime(comment.created_at)}
+                        </span>
+                      </div>
+                      <div style="background: ${isFromClient ? '#ffffff' : '#0e2433'}; color: ${isFromClient ? '#374151' : 'white'}; padding: 12px 16px; border-radius: 12px; ${isFromClient ? 'border-bottom-left-radius: 4px;' : 'border-bottom-right-radius: 4px;'} box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: ${isFromClient ? '1px solid #e5e7eb' : 'none'};">
+                        <div style="line-height: 1.4; font-size: 14px;">
+                          ${comment.content.replace(/\n/g, '<br>')}
+                        </div>
+                        ${comment.is_internal ? '<div style="margin-top: 6px; padding: 2px 6px; background: rgba(255,255,255,0.2); border-radius: 4px; font-size: 11px;">Message interne</div>' : ''}
+                      </div>
+                    </div>
                   </div>
-                  <div class="comment-content">
-                    ${comment.content.replace(/\n/g, '<br>')}
-                  </div>
-                </div>
-              `).join('')}
+                `;
+              }).join('')}
             </div>
+          </div>
             
             <!-- Ajouter un commentaire -->
-            <div class="add-comment-section">
-              <h5>Ajouter un commentaire</h5>
+            <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-top: 20px;">
+              <h3 style="font-size: 16px; font-weight: 600; color: #1f2937; margin: 0 0 16px 0;">Ajouter un commentaire</h3>
               <form id="addCommentForm">
-                <div class="form-group">
-                  <textarea id="commentContent" name="content" class="form-input" 
-                            rows="3" placeholder="Votre commentaire..." required></textarea>
-                </div>
+                <textarea id="commentContent" name="content" placeholder="Écrivez votre commentaire ou question ici..." 
+                          style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; line-height: 1.5; resize: vertical; min-height: 80px; font-family: inherit;" required></textarea>
                 
-                <!-- File attachment section -->
-                <div class="form-group">
-                  <button type="button" id="attachFileBtn" class="btn btn-outline btn-sm">
-                    📎 Joindre des fichiers
+                <div style="display: flex; align-items: center; gap: 12px; margin-top: 12px;">
+                  <button type="button" id="attachFileBtn" style="display: flex; align-items: center; gap: 6px; background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; font-size: 13px; cursor: pointer;">
+                    📎 Joindre fichiers
                   </button>
                   <input type="file" id="fileInput" multiple accept=".jpg,.jpeg,.png,.gif,.bmp,.webp,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip,.rar" style="display: none;">
-                  <small style="color: #666; margin-left: 10px;">Max 10MB par fichier</small>
                 </div>
                 
                 <!-- Selected files display -->
-                <div id="selectedFilesSection" class="form-group" style="display: none;">
-                  <label>Fichiers sélectionnés:</label>
+                <div id="selectedFilesSection" style="display: none; margin-top: 8px;">
+                  <small style="color: #6b7280; display: block; margin-bottom: 4px;">Fichiers sélectionnés:</small>
                   <div id="selectedFilesList"></div>
                 </div>
                 
-                <div class="form-group">
-                  <label>
-                    <input type="checkbox" id="commentInternal" name="is_internal">
+                <div style="margin: 12px 0; display: flex; align-items: center; gap: 8px;">
+                  <input type="checkbox" id="commentInternal" name="is_internal" style="margin: 0;">
+                  <label for="commentInternal" style="font-size: 13px; color: #6b7280; cursor: pointer;">
                     Commentaire interne (invisible pour le client)
                   </label>
                 </div>
-                <div class="form-actions">
-                  <button type="button" class="btn btn-secondary cancel-btn" onclick="adminApp.closeModal()">Annuler</button>
-                  <button type="submit" class="btn btn-primary" id="submitCommentBtn">Ajouter le commentaire</button>
+                
+                <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px;">
+                  <button type="button" class="btn btn-secondary cancel-btn" onclick="adminApp.closeModal()" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 16px; font-size: 14px; cursor: pointer;">
+                    Annuler
+                  </button>
+                  <button type="submit" id="submitCommentBtn" style="background: #0e2433; color: white; border: none; border-radius: 6px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer;">
+                    Envoyer le commentaire
+                  </button>
                 </div>
               </form>
             </div>

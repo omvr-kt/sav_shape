@@ -418,6 +418,55 @@
   color: var(--white);
 }
 
+/* Header Actions Uniform Styling */
+.main-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-filters {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-filters select {
+  min-width: 180px;
+}
+
+.main-header-actions .btn,
+.header-filters .btn {
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.main-header-actions .btn-primary {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.main-header-actions .btn-secondary {
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+}
+
+/* Ensure consistent spacing and alignment */
+.main-header {
+  justify-content: space-between;
+}
+
+.main-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-color, #1f2937);
+}
+
 /* Notifications */
 .notification {
   position: fixed;

@@ -104,6 +104,12 @@ class Ticket {
     const fieldsToUpdate = [];
     const values = [];
 
+    // Get current ticket data for SLA calculations
+    const currentTicket = await this.findById(id);
+    if (!currentTicket) {
+      throw new Error('Ticket not found');
+    }
+
     Object.keys(updates).forEach(key => {
       if (allowedFields.includes(key)) {
         fieldsToUpdate.push(`${key} = ?`);
@@ -115,9 +121,17 @@ class Ticket {
       throw new Error('No valid fields to update');
     }
 
-    if (updates.status === 'closed' || updates.status === 'resolved') {
-      fieldsToUpdate.push('closed_at = ?');
-      values.push(new Date().toISOString());
+    // Handle status changes and SLA adjustments
+    if (updates.status && updates.status !== currentTicket.status) {
+      await this.handleStatusChange(currentTicket, updates.status, fieldsToUpdate, values);
+    }
+
+    // Handle priority changes and recalculate SLA if needed
+    if (updates.priority && updates.priority !== currentTicket.priority && 
+        currentTicket.status !== 'closed' && currentTicket.status !== 'resolved') {
+      const newDeadline = await this.recalculateSLAForStatusChange(currentTicket, updates.status || currentTicket.status, updates.priority);
+      fieldsToUpdate.push('sla_deadline = ?');
+      values.push(newDeadline);
     }
 
     values.push(new Date().toISOString());
@@ -130,6 +144,83 @@ class Ticket {
     `, values);
 
     return this.findById(id);
+  }
+
+  static async handleStatusChange(currentTicket, newStatus, fieldsToUpdate, values) {
+    const now = new Date().toISOString();
+
+    // Set closed_at when ticket is resolved or closed
+    if (newStatus === 'closed' || newStatus === 'resolved') {
+      fieldsToUpdate.push('closed_at = ?');
+      values.push(now);
+      return;
+    }
+
+    // Reset closed_at if ticket is reopened
+    if ((currentTicket.status === 'closed' || currentTicket.status === 'resolved') &&
+        (newStatus === 'open' || newStatus === 'in_progress')) {
+      fieldsToUpdate.push('closed_at = NULL');
+    }
+
+    // Handle SLA suspension and resumption
+    const oldStatus = currentTicket.status;
+    
+    // If moving to waiting_client, suspend SLA (store time spent)
+    if (newStatus === 'waiting_client' && oldStatus !== 'waiting_client') {
+      const timeSpent = this.calculateTimeSpent(currentTicket.created_at, currentTicket.sla_paused_at);
+      fieldsToUpdate.push('sla_paused_at = ?', 'sla_time_spent = ?');
+      values.push(now, timeSpent);
+    }
+    
+    // If resuming from waiting_client, recalculate SLA deadline
+    else if (oldStatus === 'waiting_client' && 
+             (newStatus === 'open' || newStatus === 'in_progress')) {
+      const newDeadline = await this.recalculateSLAForStatusChange(currentTicket, newStatus);
+      fieldsToUpdate.push('sla_deadline = ?', 'sla_paused_at = NULL');
+      values.push(newDeadline);
+    }
+  }
+
+  static calculateTimeSpent(createdAt, pausedAt) {
+    const start = new Date(createdAt);
+    const end = pausedAt ? new Date(pausedAt) : new Date();
+    return Math.floor((end - start) / (1000 * 60 * 60)); // Hours spent
+  }
+
+  static async recalculateSLAForStatusChange(ticket, newStatus, newPriority = null) {
+    // Don't recalculate for closed/resolved tickets
+    if (newStatus === 'closed' || newStatus === 'resolved') {
+      return ticket.sla_deadline;
+    }
+
+    const priority = newPriority || ticket.priority;
+    const timeSpent = ticket.sla_time_spent || 0;
+    
+    // Get total SLA time for this ticket
+    const slaRule = await db.get(`
+      SELECT response_time_hours 
+      FROM sla_rules 
+      WHERE client_id = ? AND priority = ?
+    `, [ticket.client_id, priority]);
+
+    let totalSLAHours = 24;
+    if (slaRule) {
+      totalSLAHours = slaRule.response_time_hours;
+    } else {
+      switch (priority) {
+        case 'urgent': totalSLAHours = 2; break;
+        case 'high': totalSLAHours = 8; break;
+        case 'normal': totalSLAHours = 24; break;
+        case 'low': totalSLAHours = 72; break;
+      }
+    }
+
+    // Calculate remaining SLA time
+    const remainingHours = Math.max(0, totalSLAHours - timeSpent);
+    
+    // Calculate new deadline from now
+    const deadline = businessHours.calculateSLADeadline(remainingHours);
+    return deadline.toISOString();
   }
 
   static async calculateSLADeadline(client_id, priority) {
@@ -168,7 +259,7 @@ class Ticket {
       LEFT JOIN users u ON t.client_id = u.id
       LEFT JOIN projects p ON t.project_id = p.id
       WHERE t.sla_deadline IS NOT NULL
-        AND t.status NOT IN ('resolved', 'closed')
+        AND t.status NOT IN ('resolved', 'closed', 'waiting_client')
       ORDER BY t.sla_deadline ASC
     `);
     

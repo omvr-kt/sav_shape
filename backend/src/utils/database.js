@@ -129,6 +129,8 @@ const initDatabase = async () => {
         closed_at DATETIME,
         sla_notified_warning BOOLEAN DEFAULT 0,
         sla_notified_overdue BOOLEAN DEFAULT 0,
+        sla_paused_at DATETIME,
+        sla_time_spent INTEGER DEFAULT 0,
         FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
         FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL

@@ -589,6 +589,17 @@ class AdminApp {
       const ticket = response.data.ticket;
       const comments = response.data.comments || [];
       
+      // Charger les pièces jointes pour chaque commentaire
+      for (let comment of comments) {
+        try {
+          const attachmentsResponse = await api.getCommentAttachments(comment.id);
+          comment.attachments = attachmentsResponse.success ? attachmentsResponse.data.attachments : [];
+        } catch (error) {
+          console.warn(`Erreur chargement pièces jointes pour commentaire ${comment.id}:`, error);
+          comment.attachments = [];
+        }
+      }
+      
       const modal = this.createModal(`Ticket - ${ticket.title}`, `
         <div class="ticket-view">
           <!-- En-tête du ticket -->
@@ -713,6 +724,7 @@ class AdminApp {
                         <div style="line-height: 1.4; font-size: 14px;">
                           ${comment.content.replace(/\n/g, '<br>')}
                         </div>
+                        ${this.renderAttachments(comment.attachments, isFromClient)}
                         ${comment.is_internal ? '<div style="margin-top: 6px; padding: 2px 6px; background: rgba(255,255,255,0.2); border-radius: 4px; font-size: 11px;">Message interne</div>' : ''}
                       </div>
                     </div>
@@ -2456,6 +2468,14 @@ class AdminApp {
       updateAllDatesInDOM();
     }, 10);
     
+    // Scroller automatiquement vers le bas de la conversation
+    setTimeout(() => {
+      const commentsList = document.getElementById('commentsList');
+      if (commentsList) {
+        commentsList.scrollTop = commentsList.scrollHeight;
+      }
+    }, 100); // Petit délai pour s'assurer que le contenu est rendu
+    
     // Ajouter event listeners pour fermer le modal
     const overlay = modal.querySelector('.modal-overlay');
     const closeBtn = modal.querySelector('.modal-close');
@@ -3268,6 +3288,84 @@ class AdminApp {
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  renderAttachments(attachments, isFromClient) {
+    if (!attachments || attachments.length === 0) {
+      return '';
+    }
+
+    return `
+      <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid ${isFromClient ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.1)'};">
+        ${attachments.map(attachment => {
+          const isImage = attachment.mime_type && attachment.mime_type.startsWith('image/');
+          const fileIcon = isImage ? '🖼️' : '📎';
+          const fileSize = this.formatFileSize(attachment.file_size);
+          
+          return `
+            <div style="display: flex; align-items: center; gap: 6px; margin: 4px 0; padding: 6px 8px; background: ${isFromClient ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)'}; border-radius: 4px; font-size: 12px;">
+              <span>${fileIcon}</span>
+              <a href="javascript:void(0)" 
+                 onclick="window.adminApp.downloadAttachment(${attachment.id})"
+                 style="color: ${isFromClient ? '#93c5fd' : '#bfdbfe'}; text-decoration: none; font-weight: 500; cursor: pointer;"
+                 onmouseover="this.style.textDecoration='underline'"
+                 onmouseout="this.style.textDecoration='none'">
+                ${attachment.original_filename}
+              </a>
+              <span style="color: ${isFromClient ? '#9ca3af' : '#d1d5db'};">(${fileSize})</span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  downloadAttachment(attachmentId) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Vous devez être connecté pour télécharger des fichiers');
+      return;
+    }
+
+    const url = `/api/attachments/download/${attachmentId}`;
+    
+    fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Erreur lors du téléchargement');
+      }
+      
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'fichier';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+      
+      return response.blob().then(blob => ({ blob, filename }));
+    })
+    .then(({ blob, filename }) => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    })
+    .catch(error => {
+      console.error('Erreur téléchargement:', error);
+      alert('Erreur lors du téléchargement du fichier');
+    });
   }
 }
 

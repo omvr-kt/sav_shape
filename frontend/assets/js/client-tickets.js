@@ -361,11 +361,39 @@ class TicketsApp {
                              (ticket.description && ticket.description.toLowerCase().includes(searchTerm));
         
         const matchesStatus = !currentStatus || ticket.status === currentStatus;
+        const matchesProject = !this.currentProjectId || ticket.project_id === this.currentProjectId;
         
-        // Filter by selected project
-        const matchesProject = !this.currentProjectId || ticket.project_id == this.currentProjectId;
-
         return matchesSearch && matchesStatus && matchesProject;
+      });
+
+      // Trier les tickets par SLA et statut
+      this.filteredTickets.sort((a, b) => {
+        // D'abord, placer les tickets terminés en fin de liste
+        const aCompleted = ['resolved', 'closed'].includes(a.status);
+        const bCompleted = ['resolved', 'closed'].includes(b.status);
+        
+        if (aCompleted && !bCompleted) return 1;
+        if (!aCompleted && bCompleted) return -1;
+        
+        // Pour les tickets non terminés, trier par SLA (plus urgent en premier)
+        if (!aCompleted && !bCompleted) {
+          const aSLA = this.calculateSLATimeRemaining(a);
+          const bSLA = this.calculateSLATimeRemaining(b);
+          
+          if (!aSLA && !bSLA) return 0;
+          if (!aSLA) return 1;
+          if (!bSLA) return -1;
+          
+          // Les tickets dépassés en premier
+          if (aSLA.expired && !bSLA.expired) return -1;
+          if (!aSLA.expired && bSLA.expired) return 1;
+          
+          // Trier par temps restant (moins de temps = plus urgent)
+          return aSLA.remaining - bSLA.remaining;
+        }
+        
+        // Pour les tickets terminés, trier par date de création (plus récent en premier)
+        return new Date(b.created_at) - new Date(a.created_at);
       });
 
       console.log('📋 Tickets filtrés:', this.filteredTickets?.length || 0);
@@ -432,11 +460,14 @@ class TicketsApp {
       return;
     }
     
-    console.log('🎯 Construction HTML pour', this.filteredTickets.length, 'tickets');
+    // Trier les tickets selon la priorité client
+    const sortedTickets = this.sortTicketsForClient(this.filteredTickets);
+    
+    console.log('🎯 Construction HTML pour', sortedTickets.length, 'tickets triés');
 
     try {
-      const htmlContent = this.filteredTickets.map((ticket, index) => {
-        console.log(`🎫 Rendu du ticket ${index + 1}/${this.filteredTickets.length}:`, ticket.id, ticket.title);
+      const htmlContent = sortedTickets.map((ticket, index) => {
+        console.log(`🎫 Rendu du ticket ${index + 1}/${sortedTickets.length}:`, ticket.id, ticket.title);
         
         try {
           const statusText = {
@@ -497,6 +528,9 @@ class TicketsApp {
                   <div style="font-size: 12px; color: #9ca3af;">
                     ${projectName} • ${formattedDate}
                   </div>
+                  <div style="margin-top: 8px;">
+                    ${this.formatSLADisplay(this.calculateSLATimeRemaining(ticket))}
+                  </div>
                 </div>
                 <div style="display: flex; gap: 8px; margin-left: 16px;">
                   <button class="btn btn-primary btn-sm view-ticket-btn" data-ticket-id="${ticket.id}" style="padding: 6px 12px; font-size: 13px; background: #0e2433; border: 1px solid #0e2433; color: white; border-radius: 6px;">💬 Conversation</button>
@@ -523,6 +557,31 @@ class TicketsApp {
       container.innerHTML = '<div class="error-state">Erreur lors de l\'affichage des tickets</div>';
       throw error;
     }
+  }
+
+  sortTicketsForClient(tickets) {
+    return tickets.sort((a, b) => {
+      // Priorité par statut pour les clients
+      const statusPriority = {
+        'waiting_client': 1,  // En attente client (priorité max pour le client)
+        'in_progress': 2,     // En cours
+        'open': 3,            // Ouverts
+        'resolved': 4,        // Résolus
+        'closed': 5           // Fermés
+      };
+
+      const statusA = statusPriority[a.status] || 999;
+      const statusB = statusPriority[b.status] || 999;
+
+      if (statusA !== statusB) {
+        return statusA - statusB;
+      }
+
+      // Tri secondaire par date de création (plus récent en premier)
+      const dateA = new Date(a.created_at);
+      const dateB = new Date(b.created_at);
+      return dateB - dateA;
+    });
   }
 
   startCountdownUpdates() {
@@ -661,63 +720,63 @@ class TicketsApp {
   }
 
   async createTicket() {
+    console.log('=== CRÉATION TICKET CLIENT ===');
     const formData = new FormData(document.getElementById('newTicketForm'));
     const ticketData = {
       project_id: parseInt(formData.get('project_id')),
-      title: formData.get('title'),
-      description: formData.get('description'),
-      priority: formData.get('priority') || 'normal'
+      title: formData.get('title').trim(),
+      description: formData.get('description').trim(),
+      priority: formData.get('priority')
     };
 
+    console.log('Données du formulaire:', ticketData);
+
+    // Client-side validation
+    if (!ticketData.project_id) {
+      console.log('Erreur de validation: Projet requis');
+      alert('Veuillez sélectionner un projet');
+      return;
+    }
+    if (!ticketData.title || ticketData.title.length < 3) {
+      console.log('Erreur de validation: Titre requis');
+      alert('Le titre doit contenir au moins 3 caractères');
+      return;
+    }
+    if (!ticketData.description || ticketData.description.length < 10) {
+      console.log('Erreur de validation: Description requise');
+      alert('La description doit contenir au moins 10 caractères');
+      return;
+    }
+
     try {
-      // En mode test/développement, ajouter directement aux données locales
-      const token = localStorage.getItem('token');
-      const isTestMode = !token || token === 'test' || window.location.hostname === 'localhost';
-      
-      if (isTestMode) {
-        console.log('Mode test: ajout du ticket localement');
-        
-        // Créer un nouveau ticket avec un ID unique
-        const newTicket = {
-          id: this.tickets.length + 1,
-          title: ticketData.title,
-          description: ticketData.description,
-          status: 'open', // Nouveau ticket
-          priority: ticketData.priority,
-          project_id: ticketData.project_id,
-          created_at: new Date().toISOString()
-        };
-        
-        // Ajouter aux données locales
-        this.tickets.push(newTicket);
-        
-        // Mettre à jour l'affichage
-        this.filterTickets();
-        
-        // Mettre à jour le badge sidebar sur toutes les pages
-        if (typeof window.refreshTicketBadge === 'function') {
-          window.refreshTicketBadge();
-        }
-        
-        this.closeModal();
-        alert('Ticket créé avec succès !');
-        
-      } else {
-        // Mode production : utiliser l'API réelle
-        const response = await api.createTicket(ticketData);
-        
-        if (response.success) {
-          this.closeModal();
-          this.loadTickets(); // Refresh the list
-          alert('Ticket créé avec succès !');
-        } else {
-          alert('Erreur lors de la création du ticket: ' + response.message);
-        }
+      const submitBtn = document.querySelector('#newTicketForm button[type="submit"]');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Création...';
       }
+
+      console.log('Appel API createTicket...');
+      const response = await api.createTicket(ticketData);
+      console.log('Réponse API:', response);
       
+      if (response.success) {
+        console.log('Ticket créé avec succès');
+        this.closeModal();
+        this.loadTickets(); // Refresh the list
+        alert('Ticket créé avec succès !');
+      } else {
+        console.log('Erreur API:', response.message);
+        alert('Erreur lors de la création du ticket: ' + response.message);
+      }
     } catch (error) {
       console.error('Create ticket error:', error);
       alert('Erreur lors de la création du ticket');
+    } finally {
+      const submitBtn = document.querySelector('#newTicketForm button[type="submit"]');
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Créer le ticket';
+      }
     }
   }
 
@@ -1173,6 +1232,74 @@ class TicketsApp {
     if (diffHours < 24) return `il y a ${diffHours}h`;
     if (diffDays < 7) return `il y a ${diffDays}j`;
     return this.formatDateTime(dateString);
+  }
+
+  calculateSLATimeRemaining(ticket) {
+    if (!ticket.created_at || !ticket.priority) {
+      return null;
+    }
+
+    // Ne calculer les SLA que pour les tickets en cours et en attente client
+    if (!['in_progress', 'waiting_client'].includes(ticket.status)) {
+      return null;
+    }
+
+    // Définir les SLA en heures selon la priorité
+    const slaHours = {
+      'urgent': 4,
+      'high': 24,
+      'normal': 72,
+      'low': 168
+    };
+
+    const slaHour = slaHours[ticket.priority] || 72;
+    const createdAt = new Date(ticket.created_at);
+    const now = new Date();
+    
+    // Si le ticket est en attente client, le SLA est en pause
+    if (ticket.status === 'waiting_client') {
+      return {
+        deadline: null,
+        remaining: null,
+        expired: false,
+        paused: true,
+        hours: 0,
+        minutes: 0
+      };
+    }
+    
+    const slaDeadline = new Date(createdAt.getTime() + (slaHour * 60 * 60 * 1000));
+    const timeRemaining = slaDeadline.getTime() - now.getTime();
+    
+    return {
+      deadline: slaDeadline,
+      remaining: timeRemaining,
+      expired: timeRemaining <= 0,
+      paused: false,
+      hours: Math.floor(Math.abs(timeRemaining) / (1000 * 60 * 60)),
+      minutes: Math.floor((Math.abs(timeRemaining) % (1000 * 60 * 60)) / (1000 * 60))
+    };
+  }
+
+  formatSLADisplay(slaInfo) {
+    if (!slaInfo) return '';
+    
+    if (slaInfo.paused) {
+      return `<span style="color: #f59e0b; font-weight: 500;">⏸️ SLA en pause (attente client)</span>`;
+    }
+    
+    if (slaInfo.expired) {
+      return `<span style="color: #dc2626; font-weight: 600;">⚠️ Dépassé de ${slaInfo.hours}h${slaInfo.minutes > 0 ? ` ${slaInfo.minutes}min` : ''}</span>`;
+    }
+    
+    let color = '#10b981'; // Vert par défaut
+    if (slaInfo.remaining < 2 * 60 * 60 * 1000) { // Moins de 2h
+      color = '#dc2626'; // Rouge
+    } else if (slaInfo.remaining < 8 * 60 * 60 * 1000) { // Moins de 8h
+      color = '#f59e0b'; // Orange
+    }
+    
+    return `<span style="color: ${color}; font-weight: 500;">⏱️ ${slaInfo.hours}h${slaInfo.minutes > 0 ? ` ${slaInfo.minutes}min` : ''}</span>`;
   }
   
   formatDateTime(dateString) {

@@ -429,10 +429,30 @@ async function updateTicketBadge() {
     
     // D'abord, vérifier si l'app tickets est chargée et utiliser ses données
     if (window.ticketsApp && window.ticketsApp.tickets && Array.isArray(window.ticketsApp.tickets)) {
-      // Utiliser la même logique que updateStatsDisplay() : compter seulement les tickets actifs
-      totalTickets = window.ticketsApp.tickets.filter(ticket => 
-        ticket.status !== 'resolved' && ticket.status !== 'closed'
-      ).length;
+      // Logique différente selon le rôle utilisateur
+      const token = localStorage.getItem('token');
+      let userRole = 'client';
+      
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          userRole = payload.role || 'client';
+        } catch (e) {
+          userRole = 'client';
+        }
+      }
+      
+      if (userRole === 'admin' || userRole === 'team') {
+        // Pour les admins : compter les tickets "ouverts"
+        totalTickets = window.ticketsApp.tickets.filter(ticket => 
+          ticket.status === 'open'
+        ).length;
+      } else {
+        // Pour les clients : compter les tickets "en cours"
+        totalTickets = window.ticketsApp.tickets.filter(ticket => 
+          ticket.status === 'in_progress'
+        ).length;
+      }
       console.log('Badge mis à jour depuis ticketsApp:', totalTickets);
     } else {
       // Sinon, utiliser l'API directement
@@ -463,10 +483,30 @@ async function updateTicketBadge() {
               tickets = result;
             }
             
-            // Compter seulement les tickets actifs
-            totalTickets = tickets.filter(ticket => 
-              ticket.status !== 'resolved' && ticket.status !== 'closed'
-            ).length;
+            // Logique différente selon le rôle utilisateur pour l'API
+            const token = localStorage.getItem('token');
+            let userRole = 'client';
+            
+            if (token) {
+              try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                userRole = payload.role || 'client';
+              } catch (e) {
+                userRole = 'client';
+              }
+            }
+            
+            if (userRole === 'admin' || userRole === 'team') {
+              // Pour les admins : compter les tickets "ouverts"
+              totalTickets = tickets.filter(ticket => 
+                ticket.status === 'open'
+              ).length;
+            } else {
+              // Pour les clients : compter les tickets "en cours"
+              totalTickets = tickets.filter(ticket => 
+                ticket.status === 'in_progress'
+              ).length;
+            }
             
             console.log('Badge mis à jour depuis API:', totalTickets);
           } else {

@@ -335,6 +335,11 @@ class ProjectsApp {
         alert('Ticket créé avec succès !');
         // Optionally refresh projects to update ticket count
         this.loadProjects();
+        
+        // Rediriger vers la page tickets pour voir le nouveau ticket
+        if (window.clientApp && typeof window.clientApp.showTab === 'function') {
+          window.clientApp.showTab('tickets');
+        }
       } else {
         // Handle specific error messages from server
         let errorMessage = 'Erreur lors de la création du ticket';

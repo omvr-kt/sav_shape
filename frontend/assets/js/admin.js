@@ -9,6 +9,10 @@ class AdminApp {
     this.checkAuth();
     this.setupEventListeners();
     this.loadDashboard();
+    // Initialiser le badge tickets pour l'admin
+    if (typeof initTicketBadge === 'function') {
+      initTicketBadge();
+    }
   }
 
   checkAuth() {
@@ -88,7 +92,6 @@ class AdminApp {
             <option value="in_progress">En cours</option>
             <option value="waiting_client">Attente client</option>
             <option value="resolved">Résolu</option>
-            <option value="closed">Fermé</option>
           </select>
           <select id="priorityFilter" class="filter-select">
             <option value="">Toutes les priorités</option>
@@ -350,9 +353,13 @@ class AdminApp {
       if (statusFilter) filters.status = statusFilter;
       if (priorityFilter) filters.priority = priorityFilter;
 
+      console.log('Admin - Chargement tickets avec filtres:', filters);
       const response = await api.getTickets(filters);
+      console.log('Admin - Réponse API tickets:', response);
       
       if (response.data && response.data.tickets) {
+        console.log('Admin - Nombre de tickets reçus:', response.data.tickets.length);
+        console.log('Admin - Détail des tickets:', response.data.tickets.map(t => ({id: t.id, title: t.title, status: t.status})));
         this.renderTicketsTable(response.data.tickets);
       } else {
         console.error('Invalid response format:', response);
@@ -372,6 +379,9 @@ class AdminApp {
       return;
     }
 
+    // Trier les tickets selon la priorité admin
+    const sortedTickets = this.sortTicketsForAdmin(tickets);
+
     const tableHTML = `
       <table class="data-table">
         <thead>
@@ -386,14 +396,14 @@ class AdminApp {
           </tr>
         </thead>
         <tbody>
-          ${tickets.map(ticket => `
+          ${sortedTickets.map(ticket => `
             <tr>
               <td>${ticket.title}</td>
               <td>${ticket.client_company || ticket.client_first_name + ' ' + ticket.client_last_name}</td>
               <td>${ticket.project_name}</td>
               <td><span class="status-badge ${api.getPriorityClass(ticket.priority)}">${api.formatPriority(ticket.priority)}</span></td>
               <td><span class="status-badge ${api.getStatusClass(ticket.status)}">${api.formatStatus(ticket.status)}</span></td>
-              <td>${this.formatSLACountdown(ticket)}</td>
+              <td>${this.formatSLADisplay(this.calculateSLATimeRemaining(ticket))}</td>
               <td>
                 <div class="action-buttons">
                   <button class="btn-action btn-view" data-ticket-id="${ticket.id}" data-action="view"> Voir</button>
@@ -639,7 +649,6 @@ class AdminApp {
                 <option value="in_progress" ${ticket.status === 'in_progress' ? 'selected' : ''}>En cours</option>
                 <option value="waiting_client" ${ticket.status === 'waiting_client' ? 'selected' : ''}>En attente client</option>
                 <option value="resolved" ${ticket.status === 'resolved' ? 'selected' : ''}>Résolu</option>
-                <option value="closed" ${ticket.status === 'closed' ? 'selected' : ''}>Fermé</option>
               </select>
               <button type="button" class="btn btn-sm btn-primary update-ticket-status" data-ticket-id="${id}">
                 Mettre à jour
@@ -930,7 +939,7 @@ class AdminApp {
     const labels = {
       'open': ' Ouvert',
       'in_progress': ' En cours',
-      'waiting_client': '⏳ En attente client',
+      'waiting_client': 'En attente client',
       'resolved': ' Résolu',
       'closed': ' Fermé'
     };
@@ -996,9 +1005,8 @@ class AdminApp {
               <select id="editTicketStatus" name="status" class="form-input">
                 <option value="open" ${ticket.status === 'open' ? 'selected' : ''}> Ouvert</option>
                 <option value="in_progress" ${ticket.status === 'in_progress' ? 'selected' : ''}> En cours</option>
-                <option value="waiting_client" ${ticket.status === 'waiting_client' ? 'selected' : ''}>⏳ En attente client</option>
+                <option value="waiting_client" ${ticket.status === 'waiting_client' ? 'selected' : ''}>En attente client</option>
                 <option value="resolved" ${ticket.status === 'resolved' ? 'selected' : ''}> Résolu</option>
-                <option value="closed" ${ticket.status === 'closed' ? 'selected' : ''}> Fermé</option>
               </select>
             </div>
           </div>
@@ -2546,34 +2554,7 @@ class AdminApp {
     }, 5000);
   }
 
-  formatSLACountdown(ticket) {
-    if (!ticket.sla_deadline || ticket.status === 'closed' || ticket.status === 'resolved') {
-      return '<span class="sla-status sla-none">-</span>';
-    }
-
-    const now = api.getCurrentFrenchTime();
-    const deadline = new Date(ticket.sla_deadline);
-    const diffMs = deadline - now;
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-
-    if (diffMs < 0) {
-      // SLA dépassé
-      const overdue = Math.abs(diffHours);
-      return `<span class="sla-status sla-overdue"> +${overdue}h (dépassé)</span>`;
-    } else if (diffHours <= 2) {
-      // Attention : moins de 2h restantes
-      return `<span class="sla-status sla-warning"> ${diffHours}h ${diffMinutes}min</span>`;
-    } else if (diffHours <= 24) {
-      // Normal : moins de 24h
-      return `<span class="sla-status sla-ok"> ${diffHours}h ${diffMinutes}min</span>`;
-    } else {
-      // Beaucoup de temps
-      const days = Math.floor(diffHours / 24);
-      const hours = diffHours % 24;
-      return `<span class="sla-status sla-good"> ${days}j ${hours}h</span>`;
-    }
-  }
+  // Ancienne fonction remplacée par calculateSLATimeRemaining et formatSLADisplay
 
   formatInvoiceSLA(invoice) {
     if (!invoice.due_date || invoice.status === 'paid' || invoice.status === 'cancelled') {
@@ -3365,6 +3346,116 @@ class AdminApp {
     .catch(error => {
       console.error('Erreur téléchargement:', error);
       alert('Erreur lors du téléchargement du fichier');
+    });
+  }
+
+  calculateSLATimeRemaining(ticket) {
+    if (!ticket.created_at || !ticket.priority) {
+      return null;
+    }
+
+    // Ne calculer les SLA que pour les tickets en cours et en attente client
+    if (!['in_progress', 'waiting_client'].includes(ticket.status)) {
+      return null;
+    }
+
+    // Définir les SLA en heures selon la priorité
+    const slaHours = {
+      'urgent': 4,
+      'high': 24,
+      'normal': 72,
+      'low': 168
+    };
+
+    const slaHour = slaHours[ticket.priority] || 72;
+    const createdAt = new Date(ticket.created_at);
+    const now = new Date();
+    
+    // Si le ticket est en attente client, le SLA est en pause
+    if (ticket.status === 'waiting_client') {
+      return {
+        deadline: null,
+        remaining: null,
+        expired: false,
+        paused: true,
+        hours: 0,
+        minutes: 0
+      };
+    }
+    
+    const slaDeadline = new Date(createdAt.getTime() + (slaHour * 60 * 60 * 1000));
+    const timeRemaining = slaDeadline.getTime() - now.getTime();
+    
+    return {
+      deadline: slaDeadline,
+      remaining: timeRemaining,
+      expired: timeRemaining <= 0,
+      paused: false,
+      hours: Math.floor(Math.abs(timeRemaining) / (1000 * 60 * 60)),
+      minutes: Math.floor((Math.abs(timeRemaining) % (1000 * 60 * 60)) / (1000 * 60))
+    };
+  }
+
+  formatSLADisplay(slaInfo) {
+    if (!slaInfo) return '';
+    
+    if (slaInfo.paused) {
+      return `<span style="color: #f59e0b; font-weight: 500;">⏸️ SLA en pause (attente client)</span>`;
+    }
+    
+    if (slaInfo.expired) {
+      return `<span style="color: #dc2626; font-weight: 600;">⚠️ Dépassé de ${slaInfo.hours}h${slaInfo.minutes > 0 ? ` ${slaInfo.minutes}min` : ''}</span>`;
+    }
+    
+    // Afficher le temps restant même si pas dépassé
+    let color = '#10b981'; // Vert par défaut
+    if (slaInfo.remaining < 2 * 60 * 60 * 1000) { // Moins de 2h
+      color = '#dc2626'; // Rouge
+    } else if (slaInfo.remaining < 8 * 60 * 60 * 1000) { // Moins de 8h
+      color = '#f59e0b'; // Orange
+    }
+    
+    return `<span style="color: ${color}; font-weight: 500;">⏱️ Reste ${slaInfo.hours}h${slaInfo.minutes > 0 ? ` ${slaInfo.minutes}min` : ''}</span>`;
+  }
+
+  sortTicketsForAdmin(tickets) {
+    return tickets.sort((a, b) => {
+      // 1. Priorité par statut
+      const statusPriority = {
+        'open': 1,
+        'in_progress': 2,
+        'waiting_client': 3,
+        'resolved': 4,
+        'closed': 5
+      };
+
+      const statusA = statusPriority[a.status] || 999;
+      const statusB = statusPriority[b.status] || 999;
+
+      if (statusA !== statusB) {
+        return statusA - statusB;
+      }
+
+      // 2. Pour les tickets "en cours", trier par SLA (plus serré en premier)
+      if (a.status === 'in_progress' && b.status === 'in_progress') {
+        const slaA = this.calculateSLATimeRemaining(a);
+        const slaB = this.calculateSLATimeRemaining(b);
+
+        // Si l'un des deux n'a pas de SLA, le mettre à la fin
+        if (!slaA && !slaB) return 0;
+        if (!slaA) return 1;
+        if (!slaB) return -1;
+
+        // Trier par temps restant (moins de temps = plus urgent)
+        if (slaA.remaining !== slaB.remaining) {
+          return slaA.remaining - slaB.remaining;
+        }
+      }
+
+      // 3. Tri secondaire par date de création (plus récent en premier)
+      const dateA = new Date(a.created_at);
+      const dateB = new Date(b.created_at);
+      return dateB - dateA;
     });
   }
 }

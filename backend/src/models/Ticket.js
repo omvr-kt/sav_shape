@@ -5,14 +5,23 @@ class Ticket {
   static async create(ticketData) {
     const { title, description, priority, client_id, project_id } = ticketData;
     
-    const slaDeadline = await this.calculateSLADeadline(client_id, priority);
+    console.log('Ticket.create() - Données reçues:', { title, description, priority, client_id, project_id });
     
+    const slaDeadline = await this.calculateSLADeadline(client_id, priority);
+    console.log('Ticket.create() - SLA deadline calculée:', slaDeadline);
+    
+    console.log('Ticket.create() - Exécution INSERT...');
     const result = await db.run(`
       INSERT INTO tickets (title, description, priority, client_id, project_id, sla_deadline)
       VALUES (?, ?, ?, ?, ?, ?)
     `, [title, description, priority, client_id, project_id, slaDeadline]);
     
-    return this.findById(result.id);
+    console.log('Ticket.create() - Résultat INSERT:', result);
+    
+    const newTicket = await this.findById(result.id);
+    console.log('Ticket.create() - Ticket créé:', newTicket);
+    
+    return newTicket;
   }
 
   static async findById(id) {

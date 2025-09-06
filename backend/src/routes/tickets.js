@@ -12,6 +12,9 @@ router.get('/', verifyToken, async (req, res) => {
     const { client_id, project_id, status, priority, assigned_to, overdue_only } = req.query;
     let filters = {};
 
+    console.log('API Tickets - User role:', req.user.role, 'User ID:', req.user.id);
+    console.log('API Tickets - Query params:', req.query);
+
     if (req.user.role === 'client') {
       filters.client_id = req.user.id;
     } else {
@@ -24,7 +27,9 @@ router.get('/', verifyToken, async (req, res) => {
     if (priority) filters.priority = priority;
     if (overdue_only === 'true') filters.overdue_only = true;
 
+    console.log('API Tickets - Filters appliqués:', filters);
     const tickets = await Ticket.findAll(filters);
+    console.log('API Tickets - Nombre de tickets trouvés:', tickets.length);
 
     res.json({
       success: true,
@@ -113,10 +118,18 @@ router.get('/:id', verifyToken, validateId, async (req, res) => {
 
 router.post('/', verifyToken, validateTicketCreation, async (req, res) => {
   try {
+    console.log('=== CRÉATION TICKET ===');
+    console.log('User:', req.user.role, 'ID:', req.user.id);
+    console.log('Body reçu:', req.body);
+    
     const ticketData = { ...req.body };
     
+    console.log('Recherche projet ID:', ticketData.project_id);
     const project = await Project.findById(ticketData.project_id);
+    console.log('Projet trouvé:', project);
+    
     if (!project) {
+      console.log('ERREUR: Projet non trouvé');
       return res.status(400).json({
         success: false,
         message: 'Projet non trouvé'
@@ -125,6 +138,7 @@ router.post('/', verifyToken, validateTicketCreation, async (req, res) => {
 
     if (req.user.role === 'client') {
       if (project.client_id !== req.user.id) {
+        console.log('ERREUR: Client non autorisé pour ce projet');
         return res.status(403).json({
           success: false,
           message: 'Vous ne pouvez créer des tickets que pour vos propres projets'
@@ -135,7 +149,10 @@ router.post('/', verifyToken, validateTicketCreation, async (req, res) => {
       ticketData.client_id = project.client_id;
     }
 
+    console.log('Données ticket finales:', ticketData);
+    console.log('Appel Ticket.create()...');
     const ticket = await Ticket.create(ticketData);
+    console.log('Ticket créé avec succès:', ticket);
 
     res.status(201).json({
       success: true,

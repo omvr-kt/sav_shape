@@ -944,12 +944,13 @@ class TicketsApp {
                   
                   <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div style="display: flex; align-items: center; gap: 12px;">
-                      <label for="fileInput" style="display: flex; align-items: center; gap: 6px; color: #6b7280; cursor: pointer; font-size: 14px;">
+                      <label for="fileInput" style="display: flex; align-items: center; gap: 6px; color: #6b7280; cursor: pointer; font-size: 14px; transition: color 0.2s;" onmouseover="this.style.color='#374151'" onmouseout="this.style.color='#6b7280'">
                         📎 Joindre un fichier
                       </label>
                       <input type="file" id="fileInput" multiple accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt" style="display: none;">
+                      <div id="fileList" style="font-size: 12px; color: #6b7280;"></div>
                     </div>
-                    <button type="submit" id="submitBtn" style="background: #0e2433; color: white; border: none; border-radius: 6px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer;">
+                    <button type="submit" id="submitBtn" style="background: #0e2433; color: white; border: none; border-radius: 6px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#1e3a8a'" onmouseout="this.style.background='#0e2433'">
                       Envoyer le commentaire
                     </button>
                   </div>
@@ -973,6 +974,21 @@ class TicketsApp {
         if (e.target === modal) this.closeModal();
       });
       
+      // Gestionnaire de changement de fichier
+      const fileInput = modal.querySelector('#fileInput');
+      const fileList = modal.querySelector('#fileList');
+      
+      fileInput.addEventListener('change', (e) => {
+        const files = e.target.files;
+        if (files.length > 0) {
+          const fileNames = Array.from(files).map(file => file.name).join(', ');
+          fileList.textContent = `${files.length} fichier(s) sélectionné(s): ${fileNames}`;
+          fileList.style.color = '#059669';
+        } else {
+          fileList.textContent = '';
+        }
+      });
+
       // Gestionnaire de soumission de commentaire
       commentForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -1033,6 +1049,7 @@ class TicketsApp {
               <div style="line-height: 1.4; font-size: 14px;">
                 ${comment.content.replace(/\n/g, '<br>')}
               </div>
+              ${this.renderAttachments(comment.attachments, isFromClient)}
               ${comment.is_internal ? '<div style="margin-top: 6px; padding: 2px 6px; background: rgba(255,255,255,0.2); border-radius: 4px; font-size: 11px;">Message interne équipe</div>' : ''}
             </div>
           </div>
@@ -1040,7 +1057,109 @@ class TicketsApp {
       `;
     }).join('');
   }
-  
+
+  renderAttachments(attachments, isFromClient) {
+    if (!attachments || attachments.length === 0) {
+      return '';
+    }
+
+    return `
+      <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid ${isFromClient ? 'rgba(255,255,255,0.2)' : '#e5e7eb'};">
+        ${attachments.map(attachment => {
+          const isImage = attachment.mime_type && attachment.mime_type.startsWith('image/');
+          const fileIcon = isImage ? '🖼️' : '📎';
+          const fileSize = this.formatFileSize(attachment.file_size);
+          
+          if (attachment.isTestFile) {
+            // Mode test - pas de téléchargement possible
+            return `
+              <div style="display: flex; align-items: center; gap: 6px; margin: 4px 0; padding: 6px 8px; background: ${isFromClient ? 'rgba(255,255,255,0.1)' : '#f3f4f6'}; border-radius: 4px; font-size: 12px;">
+                <span>${fileIcon}</span>
+                <span style="color: ${isFromClient ? '#d1d5db' : '#6b7280'};">${attachment.original_filename}</span>
+                <span style="color: ${isFromClient ? '#9ca3af' : '#9ca3af'};">(${fileSize}) - Test</span>
+              </div>
+            `;
+          } else {
+            // Mode production - téléchargement possible
+            return `
+              <div style="display: flex; align-items: center; gap: 6px; margin: 4px 0; padding: 6px 8px; background: ${isFromClient ? 'rgba(255,255,255,0.1)' : '#f3f4f6'}; border-radius: 4px; font-size: 12px;">
+                <span>${fileIcon}</span>
+                <a href="javascript:void(0)" 
+                   onclick="window.ticketsApp.downloadAttachment(${attachment.id})"
+                   style="color: ${isFromClient ? '#93c5fd' : '#3b82f6'}; text-decoration: none; font-weight: 500; cursor: pointer;"
+                   onmouseover="this.style.textDecoration='underline'"
+                   onmouseout="this.style.textDecoration='none'">
+                  ${attachment.original_filename}
+                </a>
+                <span style="color: ${isFromClient ? '#9ca3af' : '#9ca3af'};">(${fileSize})</span>
+              </div>
+            `;
+          }
+        }).join('')}
+      </div>
+    `;
+  }
+
+  downloadAttachment(attachmentId) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Vous devez être connecté pour télécharger des fichiers');
+      return;
+    }
+
+    // Créer un lien temporaire avec le token dans les headers
+    const url = `/api/attachments/download/${attachmentId}`;
+    
+    // Utiliser fetch pour télécharger avec authentification
+    fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Erreur lors du téléchargement');
+      }
+      
+      // Récupérer le nom du fichier depuis les headers
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'fichier';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+      
+      return response.blob().then(blob => ({ blob, filename }));
+    })
+    .then(({ blob, filename }) => {
+      // Créer un lien de téléchargement temporaire
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    })
+    .catch(error => {
+      console.error('Erreur téléchargement:', error);
+      alert('Erreur lors du téléchargement du fichier');
+    });
+  }
+
+  formatFileSize(bytes) {
+    if (!bytes) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
   formatTimeAgo(dateString) {
     const now = new Date();
     const date = new Date(dateString);
@@ -1068,8 +1187,11 @@ class TicketsApp {
 
   async addCommentToTicket(ticketId, form) {
     const content = form.querySelector('#commentContent').value.trim();
-    if (!content) {
-      alert('Le commentaire ne peut pas être vide');
+    const fileInput = form.querySelector('#fileInput');
+    const files = fileInput ? fileInput.files : null;
+    
+    if (!content && (!files || files.length === 0)) {
+      alert('Veuillez saisir un commentaire ou ajouter un fichier');
       return;
     }
 
@@ -1082,20 +1204,42 @@ class TicketsApp {
 
       // Toujours utiliser l'API maintenant que nous avons un système complet
       try {
+        // 1. Créer le commentaire
         const commentResponse = await api.createComment(ticketId, { content });
         
         if (!commentResponse.success) {
           throw new Error(commentResponse.message || 'Erreur lors de la création du commentaire');
         }
 
-        // Success - refresh modal
+        // 2. Uploader les fichiers si présents
+        if (files && files.length > 0) {
+          const commentId = commentResponse.data.comment.id;
+          
+          for (let i = 0; i < files.length; i++) {
+            try {
+              await api.uploadAttachment(commentId, files[i]);
+            } catch (uploadError) {
+              console.warn(`Erreur upload fichier ${files[i].name}:`, uploadError);
+              alert(`Attention: Le fichier "${files[i].name}" n'a pas pu être uploadé`);
+            }
+          }
+        }
+
+        // Success - nettoyer le formulaire et refresh modal
+        form.querySelector('#commentContent').value = '';
+        if (fileInput) {
+          fileInput.value = '';
+          const fileList = form.querySelector('#fileList');
+          if (fileList) fileList.textContent = '';
+        }
+        
         this.closeModal();
         this.showTicketModal(ticketId);
       } catch (apiError) {
         console.warn('API comment creation failed, using fallback:', apiError);
         
         // Fallback: ajouter localement en cas d'échec API
-        this.addTestComment(ticketId, content);
+        this.addTestComment(ticketId, content, files);
         alert('Commentaire ajouté localement (problème de connexion API)');
         
         this.closeModal();
@@ -1371,6 +1515,22 @@ class TicketsApp {
         
         console.log(`Commentaires API extraits pour ticket ${ticketId}:`, apiComments);
         
+        // Charger les pièces jointes pour chaque commentaire API
+        for (let comment of apiComments) {
+          try {
+            const attachmentsResponse = await fetch(`/api/attachments/comment/${comment.id}`, { headers });
+            if (attachmentsResponse.ok) {
+              const attachmentsResult = await attachmentsResponse.json();
+              comment.attachments = attachmentsResult.success ? attachmentsResult.data.attachments : [];
+            } else {
+              comment.attachments = [];
+            }
+          } catch (error) {
+            console.warn(`Erreur chargement pièces jointes pour commentaire ${comment.id}:`, error);
+            comment.attachments = [];
+          }
+        }
+        
         // Ajouter les commentaires de test s'ils existent
         let allComments = [...apiComments];
         if (this.testComments[ticketId]) {
@@ -1441,7 +1601,7 @@ class TicketsApp {
     }
   }
 
-  addTestComment(ticketId, content) {
+  addTestComment(ticketId, content, files = null) {
     if (!this.testComments[ticketId]) {
       this.testComments[ticketId] = [];
     }
@@ -1454,8 +1614,22 @@ class TicketsApp {
       user_name: this.currentUser?.email || 'Client',
       role: 'client', // Important: indiquer que c'est un commentaire client
       first_name: 'Vous', // Nom à afficher
-      last_name: ''
+      last_name: '',
+      attachments: [] // Placeholder pour les pièces jointes en mode test
     };
+    
+    // En mode test, on simule les pièces jointes (pas d'upload réel)
+    if (files && files.length > 0) {
+      for (let i = 0; i < files.length; i++) {
+        comment.attachments.push({
+          id: Date.now() + i,
+          original_filename: files[i].name,
+          file_size: files[i].size,
+          mime_type: files[i].type,
+          isTestFile: true // Marquer comme fichier de test
+        });
+      }
+    }
     
     this.testComments[ticketId].push(comment);
     console.log(`Commentaire de test ajouté pour ticket ${ticketId}:`, comment);

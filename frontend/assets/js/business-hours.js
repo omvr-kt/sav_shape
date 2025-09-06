@@ -5,9 +5,46 @@
 
 class BusinessHours {
   constructor() {
-    this.START_HOUR = 9;  // 9h du matin
-    this.END_HOUR = 18;   // 18h (6h du soir)
-    this.WORK_DAYS = [1, 2, 3, 4, 5]; // Lundi à vendredi (0 = dimanche, 6 = samedi)
+    // Valeurs par défaut
+    this.START_HOUR = 9;
+    this.END_HOUR = 18;
+    this.WORK_DAYS = [1, 2, 3, 4, 5];
+    this.configLoaded = false;
+    
+    // Charger la configuration depuis l'API
+    this.loadConfiguration();
+  }
+
+  /**
+   * Charge la configuration des horaires depuis l'API
+   */
+  async loadConfiguration() {
+    try {
+      const response = await fetch('/api/settings/client-config');
+      if (response.ok) {
+        const config = await response.json();
+        if (config.businessHours) {
+          this.START_HOUR = config.businessHours.startHour || 9;
+          this.END_HOUR = config.businessHours.endHour || 18;
+          this.WORK_DAYS = config.businessHours.workDays || [1, 2, 3, 4, 5];
+          this.configLoaded = true;
+          console.log('Configuration des heures ouvrables chargée:', config.businessHours);
+        }
+      } else {
+        console.warn('Impossible de charger la configuration, utilisation des valeurs par défaut');
+      }
+    } catch (error) {
+      console.warn('Erreur lors du chargement de la configuration:', error);
+    }
+  }
+
+  /**
+   * Assure que la configuration est chargée avant utilisation
+   */
+  async ensureConfigLoaded() {
+    if (!this.configLoaded) {
+      await this.loadConfiguration();
+    }
   }
 
   /**

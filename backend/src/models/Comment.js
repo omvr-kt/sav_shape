@@ -5,7 +5,7 @@ class Comment {
     const { ticket_id, user_id, content, is_internal = false } = commentData;
     
     const result = await db.run(`
-      INSERT INTO comments (ticket_id, author_id, content, is_internal)
+      INSERT INTO ticket_comments (ticket_id, user_id, content, is_internal)
       VALUES (?, ?, ?, ?)
     `, [ticket_id, user_id, content, is_internal]);
     
@@ -19,8 +19,8 @@ class Comment {
         u.first_name,
         u.last_name,
         u.role
-      FROM comments c
-      LEFT JOIN users u ON c.author_id = u.id
+      FROM ticket_comments c
+      LEFT JOIN users u ON c.user_id = u.id
       WHERE c.id = ?
     `, [id]);
   }
@@ -32,8 +32,8 @@ class Comment {
         u.first_name,
         u.last_name,
         u.role
-      FROM comments c
-      LEFT JOIN users u ON c.author_id = u.id
+      FROM ticket_comments c
+      LEFT JOIN users u ON c.user_id = u.id
       WHERE c.ticket_id = ?
     `;
 
@@ -65,7 +65,7 @@ class Comment {
     values.push(id);
 
     await db.run(`
-      UPDATE comments 
+      UPDATE ticket_comments 
       SET ${fieldsToUpdate.join(', ')}
       WHERE id = ?
     `, values);
@@ -74,12 +74,12 @@ class Comment {
   }
 
   static async delete(id) {
-    const result = await db.run('DELETE FROM comments WHERE id = ?', [id]);
+    const result = await db.run('DELETE FROM ticket_comments WHERE id = ?', [id]);
     return result.changes > 0;
   }
 
   static async getCommentCount(ticket_id, includeInternal = false) {
-    let query = 'SELECT COUNT(*) as count FROM comments WHERE ticket_id = ?';
+    let query = 'SELECT COUNT(*) as count FROM ticket_comments WHERE ticket_id = ?';
     if (!includeInternal) {
       query += ' AND is_internal = 0';
     }

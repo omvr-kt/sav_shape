@@ -37,6 +37,7 @@ const commentRoutes = require('./routes/comments');
 const slaRoutes = require('./routes/sla');
 const attachmentRoutes = require('./routes/attachments');
 const { router: invoiceRoutes } = require('./routes/invoices');
+const settingsRoutes = require('./routes/settings');
 
 const slaService = require('./services/sla');
 
@@ -82,6 +83,7 @@ app.use('/api/comments', commentRoutes);
 app.use('/api/sla', slaRoutes);
 app.use('/api/attachments', attachmentRoutes);
 app.use('/api/invoices', invoiceRoutes);
+app.use('/api/settings', settingsRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });

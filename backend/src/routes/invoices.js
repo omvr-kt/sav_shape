@@ -4,6 +4,7 @@ const { verifyToken, requireAdmin } = require('../middleware/auth');
 const { body } = require('express-validator');
 const { handleValidationErrors } = require('../middleware/validation');
 const { db } = require('../utils/database');
+const SettingsService = require('../services/settingsService');
 
 // GET /api/invoices - Récupérer toutes les factures (admin) ou les factures du client
 router.get('/', verifyToken, async (req, res) => {
@@ -58,23 +59,30 @@ router.get('/', verifyToken, async (req, res) => {
 /**
  * Génère un numéro de facture unique
  */
-function generateInvoiceNumber() {
+async function generateInvoiceNumber() {
+  const config = await SettingsService.getInvoicingConfig();
   const date = new Date();
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const timestamp = Date.now().toString().slice(-6);
-  return `SHAPE-${year}${month}-${timestamp}`;
+  return `${config.prefix}-${year}${month}-${timestamp}`;
 }
 
 /**
  * Calcule les montants TVA
  */
-function calculateTVA(amountHT, tvaRate = 20.00) {
+async function calculateTVA(amountHT, tvaRate = null) {
+  if (tvaRate === null) {
+    const config = await SettingsService.getInvoicingConfig();
+    tvaRate = config.defaultTvaRate;
+  }
+  
   const amountTVA = Math.round(amountHT * (tvaRate / 100) * 100) / 100;
   const amountTTC = Math.round((amountHT + amountTVA) * 100) / 100;
   return { 
     amount_tva: amountTVA, 
-    amount_ttc: amountTTC 
+    amount_ttc: amountTTC,
+    tva_rate: tvaRate
   };
 }
 
@@ -89,16 +97,28 @@ function calculateTVA(amountHT, tvaRate = 20.00) {
  */
 async function createAutomaticInvoice(clientId, quoteFile = null, specificationsFile = null, amount = null, description = 'Facture automatique générée lors de l\'inscription') {
   try {
-    const invoiceNumber = generateInvoiceNumber();
+    const invoiceNumber = await generateInvoiceNumber();
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + 30); // Échéance à 30 jours
 
+    let finalAmount = amount;
+    let tvaAmount = null;
+    let ttcAmount = null;
+    let tvaRate = null;
+
+    if (amount) {
+      const tvaCalc = await calculateTVA(amount);
+      tvaAmount = tvaCalc.amount_tva;
+      ttcAmount = tvaCalc.amount_ttc;
+      tvaRate = tvaCalc.tva_rate;
+    }
+
     const sql = `
-      INSERT INTO invoices (invoice_number, client_id, quote_file, specifications_file, amount, description, status, due_date)
-      VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)
+      INSERT INTO invoices (invoice_number, client_id, quote_file, specifications_file, amount_ht, amount_tva, amount_ttc, tva_rate, description, status, due_date)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
     `;
 
-    const result = await db.run(sql, [invoiceNumber, clientId, quoteFile, specificationsFile, amount, description, dueDate.toISOString()]);
+    const result = await db.run(sql, [invoiceNumber, clientId, quoteFile, specificationsFile, finalAmount, tvaAmount, ttcAmount, tvaRate, description, dueDate.toISOString()]);
     console.log(`Facture automatique créée: ${invoiceNumber} pour le client ${clientId}`);
     
     // Récupérer la facture créée

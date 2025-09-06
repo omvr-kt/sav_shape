@@ -419,8 +419,6 @@ class ApiClient {
 // Fonction utilitaire globale pour mettre à jour le badge tickets dans la sidebar
 async function updateTicketBadge() {
   try {
-    // Récupérer le token et vérifier s'il y a un utilisateur connecté
-    const token = localStorage.getItem('token');
     const badge = document.getElementById('ticketCount');
     
     if (!badge) {
@@ -429,68 +427,56 @@ async function updateTicketBadge() {
     
     let totalTickets = 0;
     
-    // Si nous sommes en mode test (comme dans client-tickets.js), utiliser les données de test
-    if (!token || token === 'test' || window.location.hostname === 'localhost') {
-      // Vérifier si l'instance ticketsApp existe et utiliser ses données
-      if (window.ticketsApp && window.ticketsApp.tickets) {
-        // Utiliser la même logique que updateStatsDisplay() : compter seulement les tickets actifs
-        totalTickets = window.ticketsApp.tickets.filter(ticket => 
-          ticket.status !== 'resolved' && ticket.status !== 'closed'
-        ).length;
-      } else {
-        // Données de test par défaut - synchronisées avec client-tickets.js
-        const now = new Date();
-        const yesterday = new Date(now);
-        yesterday.setDate(now.getDate() - 1);
-        const twoDaysAgo = new Date(now);
-        twoDaysAgo.setDate(now.getDate() - 2);
-        const threeDaysAgo = new Date(now);
-        threeDaysAgo.setDate(now.getDate() - 3);
-        
-        const defaultTestTickets = [
-          {
-            id: 1,
-            title: "Problème de connexion sur l'espace admin",
-            status: 'in_progress',
-            priority: 'urgent',
-            project_id: 1,
-            created_at: yesterday.toISOString()
-          },
-          {
-            id: 2,
-            title: "Demande de modification du design de la page d'accueil",
-            status: 'waiting_client',
-            priority: 'normal',
-            project_id: 2,
-            created_at: twoDaysAgo.toISOString()
-          },
-          {
-            id: 3,
-            title: "Bug sur le processus de commande mobile",
-            status: 'resolved',
-            priority: 'high',
-            project_id: 3,
-            created_at: threeDaysAgo.toISOString()
-          }
-        ];
-        // Compter seulement les tickets actifs dans les données par défaut
-        totalTickets = defaultTestTickets.filter(ticket => 
-          ticket.status !== 'resolved' && ticket.status !== 'closed'
-        ).length;
-      }
+    // D'abord, vérifier si l'app tickets est chargée et utiliser ses données
+    if (window.ticketsApp && window.ticketsApp.tickets && Array.isArray(window.ticketsApp.tickets)) {
+      // Utiliser la même logique que updateStatsDisplay() : compter seulement les tickets actifs
+      totalTickets = window.ticketsApp.tickets.filter(ticket => 
+        ticket.status !== 'resolved' && ticket.status !== 'closed'
+      ).length;
+      console.log('Badge mis à jour depuis ticketsApp:', totalTickets);
     } else {
-      // Mode production - utiliser l'API réelle
+      // Sinon, utiliser l'API directement
       try {
-        const response = await api.getTickets();
-        if (response.success && response.data && response.data.tickets) {
-          // Compter seulement les tickets actifs (même logique que updateStatsDisplay)
-          totalTickets = response.data.tickets.filter(ticket => 
-            ticket.status !== 'resolved' && ticket.status !== 'closed'
-          ).length;
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.log('Pas de token, badge à 0');
+          totalTickets = 0;
+        } else {
+          const response = await fetch('/api/tickets', {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            let tickets = [];
+            
+            if (result.success && result.data) {
+              if (result.data.tickets) {
+                tickets = result.data.tickets;
+              } else if (Array.isArray(result.data)) {
+                tickets = result.data;
+              }
+            } else if (Array.isArray(result)) {
+              tickets = result;
+            }
+            
+            // Compter seulement les tickets actifs
+            totalTickets = tickets.filter(ticket => 
+              ticket.status !== 'resolved' && ticket.status !== 'closed'
+            ).length;
+            
+            console.log('Badge mis à jour depuis API:', totalTickets);
+          } else {
+            console.warn('Erreur API tickets pour badge:', response.status);
+            totalTickets = 0;
+          }
         }
       } catch (error) {
-        console.warn('Erreur API, utilisation des données de test:', error);
-        totalTickets = 2; // Valeur par défaut pour tickets actifs (in_progress + waiting_client)
+        console.warn('Erreur lors de la récupération des tickets pour badge:', error);
+        totalTickets = 0;
       }
     }
 
@@ -500,11 +486,11 @@ async function updateTicketBadge() {
     
   } catch (error) {
     console.warn('Erreur lors de la mise à jour du badge tickets:', error);
-    // En cas d'erreur, utiliser une valeur par défaut
+    // En cas d'erreur, mettre le badge à 0
     const badge = document.getElementById('ticketCount');
     if (badge) {
-      badge.textContent = '3';
-      badge.style.display = 'inline-flex';
+      badge.textContent = '0';
+      badge.style.display = 'none';
     }
   }
 }

@@ -277,7 +277,6 @@ class ClientInvoicesApp {
               <td>
                 <div class="action-buttons">
                   <button class="btn-action btn-view" data-invoice-id="${invoice.id}" data-action="view-invoice"> Voir</button>
-                  <button class="btn-action btn-edit" data-invoice-id="${invoice.id}" data-action="edit-invoice"> Éditer</button>
                 </div>
               </td>
             </tr>
@@ -293,13 +292,6 @@ class ClientInvoicesApp {
       btn.addEventListener('click', (e) => {
         const invoiceId = parseInt(e.target.dataset.invoiceId);
         this.viewInvoice(invoiceId);
-      });
-    });
-    
-    container.querySelectorAll('[data-action="edit-invoice"]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const invoiceId = parseInt(e.target.dataset.invoiceId);
-        this.editInvoice(invoiceId);
       });
     });
   }
@@ -359,10 +351,6 @@ class ClientInvoicesApp {
     return '<span class="sla-status sla-good">-</span>';
   }
 
-  editInvoice(invoiceId) {
-    // Placeholder for edit functionality
-    console.log('Edit invoice:', invoiceId);
-  }
 
   async viewInvoice(invoiceId) {
     try {

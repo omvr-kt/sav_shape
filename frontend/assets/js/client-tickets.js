@@ -23,39 +23,42 @@ class TicketsApp {
     const token = localStorage.getItem('token');
     
     if (!token) {
-      console.log('No token found, but bypassing auth for testing');
-      // Temporarily comment out redirect for debugging
-      // window.location.href = '/client/';
-      // return;
+      console.log('No token found, redirecting to login');
+      window.location.href = '/connexion.html';
+      return;
     }
 
-    if (token) {
-      try {
-        const tokenData = JSON.parse(atob(token.split('.')[1]));
-        this.currentUser = {
-          id: tokenData.userId,
-          email: tokenData.email,
-          role: tokenData.role
-        };
-        
-        // this.loadUserInfo();
-        // this.loadTickets();  
-        // this.loadProjects();
-      } catch (error) {
-        console.error('Token validation error:', error);
+    try {
+      const tokenData = JSON.parse(atob(token.split('.')[1]));
+      
+      // Vérifier si le token n'est pas expiré
+      const now = Math.floor(Date.now() / 1000);
+      if (tokenData.exp && tokenData.exp < now) {
+        console.log('Token expired, redirecting to login');
         localStorage.removeItem('token');
-        // Temporarily disable redirect for debugging
-        // window.location.href = '/client/';
-        console.log('Setting dummy user for testing');
-        this.currentUser = { id: 1, email: 'test@example.com', role: 'client' };
+        window.location.href = '/connexion.html';
+        return;
       }
-    } else {
-      console.log('Setting dummy user for testing (no token)');
-      this.currentUser = { id: 1, email: 'test@example.com', role: 'client' };
+      
+      this.currentUser = {
+        id: tokenData.id,  // Correction: utiliser 'id' au lieu de 'userId'
+        email: tokenData.email,
+        role: tokenData.role
+      };
+      
+      console.log('User authenticated:', this.currentUser);
+      
+      // Charger les données réelles depuis l'API
+      this.loadRealData();
+      
+      // Debug: expose this pour les tests en console
+      window.debugTicketsApp = this;
+      
+    } catch (error) {
+      console.error('Token validation error:', error);
+      localStorage.removeItem('token');
+      window.location.href = '/connexion.html';
     }
-    
-    // Charger des données de test pour démonstration
-    this.loadTestData();
   }
 
   loadUserInfo() {
@@ -344,25 +347,37 @@ class TicketsApp {
   }
 
   filterTickets() {
-    const searchInput = document.getElementById('ticketSearch');
-    const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
-    const statusFilter = document.getElementById('statusFilter');
-    const currentStatus = statusFilter ? statusFilter.value : this.currentStatusFilter;
+    console.log('🔍 Début filtrage des tickets...');
+    console.log('📊 Tickets bruts disponibles:', this.tickets?.length || 0);
+    
+    try {
+      const searchInput = document.getElementById('ticketSearch');
+      const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+      const statusFilter = document.getElementById('statusFilter');
+      const currentStatus = statusFilter ? statusFilter.value : this.currentStatusFilter;
 
-    this.filteredTickets = this.tickets.filter(ticket => {
-      const matchesSearch = !searchTerm || ticket.title.toLowerCase().includes(searchTerm) ||
-                           (ticket.description && ticket.description.toLowerCase().includes(searchTerm));
+      this.filteredTickets = this.tickets.filter(ticket => {
+        const matchesSearch = !searchTerm || ticket.title.toLowerCase().includes(searchTerm) ||
+                             (ticket.description && ticket.description.toLowerCase().includes(searchTerm));
+        
+        const matchesStatus = !currentStatus || ticket.status === currentStatus;
+        
+        // Filter by selected project
+        const matchesProject = !this.currentProjectId || ticket.project_id == this.currentProjectId;
+
+        return matchesSearch && matchesStatus && matchesProject;
+      });
+
+      console.log('📋 Tickets filtrés:', this.filteredTickets?.length || 0);
       
-      const matchesStatus = !currentStatus || ticket.status === currentStatus;
+      this.renderTickets();
+      this.updateStatsDisplay();
       
-      // Filter by selected project
-      const matchesProject = !this.currentProjectId || ticket.project_id == this.currentProjectId;
-
-      return matchesSearch && matchesStatus && matchesProject;
-    });
-
-    this.renderTickets();
-    this.updateStatsDisplay();
+      console.log('✅ Filtrage terminé avec succès');
+    } catch (error) {
+      console.error('❌ Erreur dans filterTickets:', error);
+      throw error;
+    }
   }
 
   updateStatsDisplay() {
@@ -401,82 +416,113 @@ class TicketsApp {
   }
 
   renderTickets() {
+    console.log('🎨 Début du rendu des tickets...');
     const container = document.getElementById('ticketsList');
     
     if (!container) {
-      console.error('Element ticketsList not found');
+      console.error('❌ Element ticketsList not found');
       return;
     }
     
+    console.log('📋 Rendu de', this.filteredTickets?.length || 0, 'tickets filtrés');
+    
     if (this.filteredTickets.length === 0) {
+      console.log('📝 Affichage du message "Aucun ticket"');
       container.innerHTML = '<div class="empty-state"><div class="empty-state-icon"></div><p>Aucun ticket trouvé</p></div>';
       return;
     }
-
-    container.innerHTML = this.filteredTickets.map(ticket => {
-      const statusText = {
-        'open': 'Ouvert',
-        'in_progress': 'En cours',
-        'waiting_client': 'En attente',
-        'resolved': 'Résolu',
-        'closed': 'Fermé'
-      }[ticket.status] || ticket.status;
-      
-      const priorityText = {
-        'low': 'Faible',
-        'normal': 'Normal',
-        'high': 'Élevé', 
-        'urgent': 'Urgent'
-      }[ticket.priority] || ticket.priority;
-      
-      const statusColor = {
-        'open': '#2563eb',
-        'in_progress': '#f59e0b', 
-        'waiting_client': '#06b6d4',
-        'resolved': '#10b981',
-        'closed': '#6b7280'
-      }[ticket.status] || '#6b7280';
-      
-      const formatDate = (dateStr) => {
-        try {
-          const date = new Date(dateStr);
-          return date.toLocaleDateString('fr-FR', {
-            day: '2-digit',
-            month: '2-digit', 
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-        } catch (e) {
-          return dateStr;
-        }
-      };
-      
-      return `
-        <div class="list-item" style="border-bottom: 1px solid #e5e7eb; padding: 20px; transition: background-color 0.2s;">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-            <div style="flex: 1;">
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                <span style="font-family: monospace; background: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #6b7280;">#${ticket.id}</span>
-                <span style="width: 8px; height: 8px; background: ${statusColor}; border-radius: 50%; display: inline-block;" title="${statusText}"></span>
-                <span style="font-size: 12px; color: #9ca3af;">${priorityText}</span>
-              </div>
-              <h4 style="font-size: 16px; font-weight: 600; color: #1f2937; margin: 0 0 8px 0; line-height: 1.4;">${ticket.title}</h4>
-              <p style="color: #4b5563; font-size: 14px; line-height: 1.4; margin: 0 0 8px 0;">${ticket.description}</p>
-              <div style="font-size: 12px; color: #9ca3af;">
-                ${this.getProjectName(ticket.project_id)} • ${formatDate(ticket.created_at)}
-              </div>
-            </div>
-            <div style="display: flex; gap: 8px; margin-left: 16px;">
-              <button class="btn btn-primary btn-sm view-ticket-btn" data-ticket-id="${ticket.id}" style="padding: 6px 12px; font-size: 13px; background: #0e2433; border: 1px solid #0e2433; color: white; border-radius: 6px;">💬 Conversation</button>
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
     
-    // Start countdown updates
-    this.startCountdownUpdates();
+    console.log('🎯 Construction HTML pour', this.filteredTickets.length, 'tickets');
+
+    try {
+      const htmlContent = this.filteredTickets.map((ticket, index) => {
+        console.log(`🎫 Rendu du ticket ${index + 1}/${this.filteredTickets.length}:`, ticket.id, ticket.title);
+        
+        try {
+          const statusText = {
+            'open': 'Ouvert',
+            'in_progress': 'En cours',
+            'waiting_client': 'En attente',
+            'resolved': 'Résolu',
+            'closed': 'Fermé'
+          }[ticket.status] || ticket.status;
+          
+          const priorityText = {
+            'low': 'Faible',
+            'normal': 'Normal',
+            'high': 'Élevé', 
+            'urgent': 'Urgent'
+          }[ticket.priority] || ticket.priority;
+          
+          const statusColor = {
+            'open': '#2563eb',
+            'in_progress': '#f59e0b', 
+            'waiting_client': '#06b6d4',
+            'resolved': '#10b981',
+            'closed': '#6b7280'
+          }[ticket.status] || '#6b7280';
+          
+          const formatDate = (dateStr) => {
+            try {
+              const date = new Date(dateStr);
+              return date.toLocaleDateString('fr-FR', {
+                day: '2-digit',
+                month: '2-digit', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              });
+            } catch (e) {
+              console.warn('Error formatting date:', dateStr, e);
+              return dateStr;
+            }
+          };
+          
+          const projectName = this.getProjectName(ticket.project_id);
+          const formattedDate = formatDate(ticket.created_at);
+          
+          console.log(`✅ Ticket ${ticket.id} rendu avec succès`);
+          
+          return `
+            <div class="list-item" style="border-bottom: 1px solid #e5e7eb; padding: 20px; transition: background-color 0.2s;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                <div style="flex: 1;">
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                    <span style="font-family: monospace; background: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #6b7280;">#${ticket.id}</span>
+                    <span style="width: 8px; height: 8px; background: ${statusColor}; border-radius: 50%; display: inline-block;" title="${statusText}"></span>
+                    <span style="font-size: 12px; color: #9ca3af;">${priorityText}</span>
+                  </div>
+                  <h4 style="font-size: 16px; font-weight: 600; color: #1f2937; margin: 0 0 8px 0; line-height: 1.4;">${ticket.title}</h4>
+                  <p style="color: #4b5563; font-size: 14px; line-height: 1.4; margin: 0 0 8px 0;">${ticket.description}</p>
+                  <div style="font-size: 12px; color: #9ca3af;">
+                    ${projectName} • ${formattedDate}
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px; margin-left: 16px;">
+                  <button class="btn btn-primary btn-sm view-ticket-btn" data-ticket-id="${ticket.id}" style="padding: 6px 12px; font-size: 13px; background: #0e2433; border: 1px solid #0e2433; color: white; border-radius: 6px;">💬 Conversation</button>
+                </div>
+              </div>
+            </div>
+          `;
+        } catch (ticketError) {
+          console.error(`❌ Erreur rendu ticket ${ticket.id}:`, ticketError);
+          return `<div class="error-ticket">Erreur affichage ticket #${ticket.id}</div>`;
+        }
+      }).join('');
+      
+      console.log('✅ HTML content généré, longueur:', htmlContent.length);
+      container.innerHTML = htmlContent;
+      
+      // Start countdown updates
+      this.startCountdownUpdates();
+      
+      console.log('🎉 Rendu des tickets terminé avec succès !');
+      
+    } catch (error) {
+      console.error('❌ Erreur fatale dans renderTickets:', error);
+      container.innerHTML = '<div class="error-state">Erreur lors de l\'affichage des tickets</div>';
+      throw error;
+    }
   }
 
   startCountdownUpdates() {
@@ -703,8 +749,19 @@ class TicketsApp {
   }
 
   getProjectName(projectId) {
-    const project = this.projects.find(p => p.id === projectId);
-    return project ? project.name : 'Projet inconnu';
+    if (!this.projects || !Array.isArray(this.projects)) {
+      console.warn('⚠️ Projects not loaded yet, returning default name');
+      return `Projet #${projectId}`;
+    }
+    
+    const project = this.projects.find(p => p.id == projectId); // == au lieu de === pour gérer string/number
+    const result = project ? project.name : `Projet inconnu #${projectId}`;
+    
+    if (!project) {
+      console.warn(`⚠️ Project not found for ID: ${projectId}, available:`, this.projects.map(p => p.id));
+    }
+    
+    return result;
   }
 
   getStatusLabel(status) {
@@ -814,18 +871,13 @@ class TicketsApp {
     }
 
     try {
-      // Charger les commentaires du ticket
-      let comments = [];
-      try {
-        const response = await api.getTicketComments(ticketId);
-        if (response.success) {
-          comments = response.data.comments || [];
-        }
-      } catch (error) {
-        console.warn('Could not load comments from API:', error);
-        // Utiliser des données de test pour les commentaires
-        comments = this.getTestComments(ticketId);
-      }
+      // Charger les commentaires du ticket (incluant les commentaires de test)
+      const comments = await this.loadComments(ticketId);
+      console.log('Comments loaded for modal:', comments);
+      
+      // Attendre les labels asynchrones
+      const statusLabel = await this.getStatusLabel(ticket.status);
+      const priorityLabel = await this.getPriorityLabel(ticket.priority);
 
       const modalHtml = `
         <div class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;">
@@ -849,8 +901,8 @@ class TicketsApp {
               <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
                 <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #333;">Informations du ticket</h3>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px;">
-                  <div><strong>Statut:</strong> <span class="status-badge status-${ticket.status}">${this.getStatusLabel(ticket.status)}</span></div>
-                  <div><strong>Priorité:</strong> <span class="priority-badge priority-${ticket.priority}">${this.getPriorityLabel(ticket.priority)}</span></div>
+                  <div><strong>Statut:</strong> <span class="status-badge status-${ticket.status}">${statusLabel}</span></div>
+                  <div><strong>Priorité:</strong> <span class="priority-badge priority-${ticket.priority}">${priorityLabel}</span></div>
                   <div><strong>Projet:</strong> ${this.getProjectName(ticket.project_id)}</div>
                   <div><strong>Créé le:</strong> ${new Date(ticket.created_at).toLocaleDateString('fr-FR')}</div>
                 </div>
@@ -926,6 +978,14 @@ class TicketsApp {
         e.preventDefault();
         await this.addCommentToTicket(ticketId, e.target);
       });
+      
+      // Scroller automatiquement vers le bas de la conversation
+      setTimeout(() => {
+        const commentsList = document.getElementById('commentsList');
+        if (commentsList) {
+          commentsList.scrollTop = commentsList.scrollHeight;
+        }
+      }, 100); // Petit délai pour s'assurer que le contenu est rendu
       
     } catch (error) {
       console.error('Error showing ticket modal:', error);
@@ -1020,25 +1080,8 @@ class TicketsApp {
       submitBtn.disabled = true;
       submitBtn.textContent = 'Envoi en cours...';
 
-      // En mode test, simuler l'ajout du commentaire
-      const token = localStorage.getItem('token');
-      const isTestMode = !token || token === 'test' || window.location.hostname === 'localhost';
-
-      if (isTestMode) {
-        // Simuler un délai d'envoi
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Ajouter le nouveau commentaire aux données de test
-        this.addTestComment(ticketId, content);
-        
-        // Afficher une notification de succès
-        alert('Commentaire ajouté avec succès !');
-        
-        // Success - refresh modal avec les nouvelles données
-        this.closeModal();
-        this.showTicketModal(ticketId);
-      } else {
-        // Mode production - utiliser l'API
+      // Toujours utiliser l'API maintenant que nous avons un système complet
+      try {
         const commentResponse = await api.createComment(ticketId, { content });
         
         if (!commentResponse.success) {
@@ -1046,6 +1089,15 @@ class TicketsApp {
         }
 
         // Success - refresh modal
+        this.closeModal();
+        this.showTicketModal(ticketId);
+      } catch (apiError) {
+        console.warn('API comment creation failed, using fallback:', apiError);
+        
+        // Fallback: ajouter localement en cas d'échec API
+        this.addTestComment(ticketId, content);
+        alert('Commentaire ajouté localement (problème de connexion API)');
+        
         this.closeModal();
         this.showTicketModal(ticketId);
       }
@@ -1059,79 +1111,208 @@ class TicketsApp {
     }
   }
 
-  getStatusLabel(status) {
-    const labels = {
-      'open': 'Nouveau',
-      'in_progress': 'En cours',
-      'waiting_client': 'En attente client',
-      'resolved': 'Résolu',
-      'closed': 'Fermé'
-    };
-    return labels[status] || status;
+  async getStatusLabel(status) {
+    try {
+      return await configService.getStatusLabel(status);
+    } catch (error) {
+      console.error('Erreur récupération label statut:', error);
+      return status;
+    }
   }
 
-  getPriorityLabel(priority) {
-    const labels = {
-      'low': 'Basse',
-      'normal': 'Normale',
-      'high': 'Élevée',
-      'urgent': 'Urgente'
-    };
-    return labels[priority] || priority;
+  async getPriorityLabel(priority) {
+    try {
+      return await configService.getPriorityLabel(priority);
+    } catch (error) {
+      console.error('Erreur récupération label priorité:', error);
+      return priority;
+    }
   }
 
-  loadTestData() {
-    // Charger des données de test pour la démonstration
-    this.projects = [
-      { id: 1, name: 'Site Web E-commerce' },
-      { id: 2, name: 'Application Mobile' },
-      { id: 3, name: 'Refonte Interface' }
-    ];
-    
-    this.tickets = [
-      {
-        id: 1,
-        title: 'Problème de connexion sur l\'espace admin',
-        description: 'Depuis hier soir, il m\'est impossible de me connecter à l\'interface d\'administration.',
-        status: 'in_progress',
-        priority: 'urgent',
-        project_id: 1,
-        created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() // Il y a 2h
-      },
-      {
-        id: 2, 
-        title: 'Nouvelle fonctionnalité de recherche',
-        description: 'Souhait d\'ajouter un filtre avancé dans la recherche de produits.',
-        status: 'open',
-        priority: 'normal',
-        project_id: 1,
-        created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() // Il y a 1 jour
-      },
-      {
-        id: 3,
-        title: 'Bug affichage mobile',
-        description: 'Le menu ne s\'affiche pas correctement sur les écrans de téléphone.',
-        status: 'resolved',
-        priority: 'high',
-        project_id: 2,
-        created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() // Il y a 3 jours
+  async loadRealData() {
+    try {
+      console.log('🔄 Chargement des données en cours...');
+      
+      // Afficher un indicateur de chargement
+      this.updateLoadingState(true);
+      
+      // Charger la configuration globale d'abord
+      await configService.load();
+      console.log('✅ Configuration chargée');
+      
+      // Charger les données de l'utilisateur
+      this.loadUserInfo();
+      console.log('✅ Informations utilisateur chargées');
+      
+      // Charger les projets et tickets depuis l'API
+      await Promise.all([
+        this.loadProjects(),
+        this.loadTickets()
+      ]);
+      
+      console.log('✅ Toutes les données réelles chargées avec succès');
+      
+      // Masquer l'indicateur de chargement
+      this.updateLoadingState(false);
+      
+    } catch (error) {
+      console.error('❌ Erreur lors du chargement des données réelles:', error);
+      this.updateLoadingState(false);
+      this.showError('Erreur de chargement des données. Veuillez rafraîchir la page.');
+    }
+  }
+
+  updateLoadingState(isLoading) {
+    const ticketsList = document.getElementById('ticketsList');
+    if (ticketsList) {
+      if (isLoading) {
+        ticketsList.innerHTML = '<div class="loading">🔄 Chargement des données...</div>';
+      } else if (!this.tickets || this.tickets.length === 0) {
+        ticketsList.innerHTML = '<div class="no-data">📋 Aucun ticket trouvé</div>';
       }
-    ];
-    
-    this.filterTickets();
-    this.updateStatsDisplay();
-    
-    // Populate project selector
+      // Sinon les tickets seront affichés par filterTickets()
+    }
+  }
+
+  async loadProjects() {
+    try {
+      const token = localStorage.getItem('token');
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch('/api/projects', { headers });
+      
+      if (response.ok) {
+        const result = await response.json();
+        // L'API retourne {success: true, data: {projects}}
+        this.projects = result.success ? (result.data?.projects || result.data || result) : [];
+        console.log('Projets chargés:', this.projects);
+        this.populateProjectSelector();
+      } else {
+        const errorText = await response.text();
+        console.warn('Erreur chargement projets:', response.status, errorText);
+        this.projects = [];
+        if (response.status === 401) {
+          // Token expiré ou invalide
+          localStorage.removeItem('token');
+          window.location.href = '/connexion.html';
+          return;
+        }
+        this.showError(`Erreur ${response.status}: Impossible de charger les projets`);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des projets:', error);
+      this.projects = [];
+      this.showError('Erreur de connexion lors du chargement des projets.');
+    }
+  }
+
+  async loadTickets() {
+    console.log('🎫 Début du chargement des tickets...');
+    try {
+      const token = localStorage.getItem('token');
+      console.log('🔑 Token présent:', !!token);
+      
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      let url = '/api/tickets';
+      if (this.currentProjectId) {
+        url += `?project_id=${this.currentProjectId}`;
+      }
+      console.log('📡 URL de requête:', url);
+      
+      const response = await fetch(url, { headers });
+      console.log('📨 Réponse reçue, status:', response.status, 'ok:', response.ok);
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('📋 Données brutes reçues:', result);
+        
+        // L'API retourne {success: true, data: {tickets: []}}
+        let tickets = [];
+        if (result.success && result.data) {
+          if (result.data.tickets) {
+            tickets = result.data.tickets;
+          } else if (Array.isArray(result.data)) {
+            tickets = result.data;
+          } else {
+            tickets = [];
+          }
+        } else if (Array.isArray(result)) {
+          tickets = result;
+        }
+        
+        this.tickets = tickets;
+        console.log('✅ Tickets finaux extraits:', this.tickets.length, 'tickets');
+        
+        this.filterTickets();
+        this.updateStatsDisplay();
+      } else {
+        const errorText = await response.text();
+        console.error('❌ Erreur HTTP chargement tickets:', response.status, errorText);
+        this.tickets = [];
+        if (response.status === 401) {
+          // Token expiré ou invalide
+          localStorage.removeItem('token');
+          window.location.href = '/connexion.html';
+          return;
+        }
+        this.showError(`Erreur ${response.status}: Impossible de charger les tickets`);
+      }
+    } catch (error) {
+      console.error('❌ Exception lors du chargement des tickets:', error);
+      console.error('Stack trace:', error.stack);
+      this.tickets = [];
+      this.showError('Erreur de connexion. Vérifiez votre connexion internet.');
+    }
+  }
+
+  populateProjectSelector() {
     const projectSelect = document.getElementById('projectSelect');
-    if (projectSelect) {
+    if (projectSelect && this.projects) {
       projectSelect.innerHTML = '<option value="">Tous les projets</option>';
       this.projects.forEach(project => {
         const option = document.createElement('option');
         option.value = project.id;
         option.textContent = project.name;
+        if (project.id == this.currentProjectId) {
+          option.selected = true;
+        }
         projectSelect.appendChild(option);
       });
     }
+  }
+
+  showError(message) {
+    // Afficher un message d'erreur à l'utilisateur
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message';
+    errorDiv.innerHTML = `
+      <div class="error-content">
+        <i class="error-icon">⚠️</i>
+        <span>${message}</span>
+        <button onclick="this.parentElement.parentElement.remove()">×</button>
+      </div>
+    `;
+    document.body.insertBefore(errorDiv, document.body.firstChild);
+    
+    // Auto-supprimer après 5 secondes
+    setTimeout(() => {
+      if (errorDiv.parentNode) {
+        errorDiv.parentNode.removeChild(errorDiv);
+      }
+    }, 5000);
   }
 
   async handleLogout() {
@@ -1159,124 +1340,125 @@ class TicketsApp {
     this.viewTicket(ticketId);
   }
 
-  initializeTestComments() {
-    // Initialiser les commentaires de test si pas déjà fait
-    if (Object.keys(this.testComments).length === 0) {
-      this.testComments = {
-        1: [
-          {
-            id: 1,
-            content: "Bonjour, j'ai bien reçu votre signalement. Je vais investiguer le problème de connexion immédiatement.",
-            role: 'admin',
-            first_name: 'Thomas',
-            last_name: 'Martin',
-            is_internal: false,
-            created_at: new Date(Date.now() - 1.5 * 60 * 60 * 1000).toISOString() // Il y a 1h30
-          },
-          {
-            id: 2,
-            content: "J'ai identifié le problème. Il s'agit d'un souci de cache côté serveur. Je procède à la correction.",
-            role: 'admin',
-            first_name: 'Thomas',
-            last_name: 'Martin',
-            is_internal: false,
-            created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString() // Il y a 1h
-          },
-          {
-            id: 3,
-            content: "Le client signale un problème critique sur l'admin. Priorité absolue.",
-            role: 'admin',
-            first_name: 'Sophie',
-            last_name: 'Durand',
-            is_internal: true, // Message interne entre admins
-            created_at: new Date(Date.now() - 45 * 60 * 1000).toISOString() // Il y a 45min
-          },
-          {
-            id: 4,
-            content: "Merci pour votre réactivité ! Le problème semble maintenant résolu de mon côté.",
-            role: 'client',
-            first_name: 'Marie',
-            last_name: 'Dubois',
-            is_internal: false,
-            created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString() // Il y a 30min
-          },
-          {
-            id: 5,
-            content: "Parfait ! Je marque le ticket comme résolu. N'hésitez pas si vous rencontrez d'autres difficultés.",
-            role: 'admin',
-            first_name: 'Thomas',
-            last_name: 'Martin',
-            is_internal: false,
-            created_at: new Date(Date.now() - 15 * 60 * 1000).toISOString() // Il y a 15min
-          }
-        ],
-        2: [
-          {
-            id: 6,
-            content: "Votre demande de nouvelle fonctionnalité a été reçue. Nous allons l'étudier avec l'équipe.",
-            role: 'admin',
-            first_name: 'Julie',
-            last_name: 'Bernard',
-            is_internal: false,
-            created_at: new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString() // Il y a 20h
-          },
-          {
-            id: 7,
-            content: "Cette fonctionnalité nécessite une analyse approfondie de l'UX. À prévoir pour la v2.1.",
-            role: 'admin',
-            first_name: 'Marc',
-            last_name: 'Lefort',
-            is_internal: true, // Message interne
-            created_at: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString() // Il y a 18h
-          }
-        ],
-        3: [
-          {
-            id: 8,
-            content: "Bug reproduit et corrigé ! La mise à jour sera déployée dans la journée.",
-            role: 'admin',
-            first_name: 'Alex',
-            last_name: 'Moreau',
-            is_internal: false,
-            created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() // Il y a 2 jours
-          }
-        ]
+  async loadComments(ticketId) {
+    try {
+      const token = localStorage.getItem('token');
+      const headers = {
+        'Content-Type': 'application/json'
       };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`/api/comments/ticket/${ticketId}`, { headers });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log(`Réponse API commentaires pour ticket ${ticketId}:`, result);
+        
+        // Extraire les commentaires selon le format de réponse de l'API
+        let apiComments = [];
+        if (result.success && result.data) {
+          if (Array.isArray(result.data)) {
+            apiComments = result.data;
+          } else if (result.data.comments && Array.isArray(result.data.comments)) {
+            apiComments = result.data.comments;
+          }
+        } else if (Array.isArray(result)) {
+          apiComments = result;
+        }
+        
+        console.log(`Commentaires API extraits pour ticket ${ticketId}:`, apiComments);
+        
+        // Ajouter les commentaires de test s'ils existent
+        let allComments = [...apiComments];
+        if (this.testComments[ticketId]) {
+          console.log(`Commentaires de test trouvés pour ticket ${ticketId}:`, this.testComments[ticketId]);
+          allComments = [...allComments, ...this.testComments[ticketId]];
+        }
+        
+        // Trier par date de création
+        allComments.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        
+        console.log(`Tous les commentaires pour ticket ${ticketId}:`, allComments);
+        return allComments;
+      } else {
+        console.warn('Erreur chargement commentaires:', response.status);
+        
+        // Retourner seulement les commentaires de test en cas d'erreur API
+        if (this.testComments[ticketId]) {
+          console.log(`Retour des commentaires de test seulement pour ticket ${ticketId}:`, this.testComments[ticketId]);
+          return this.testComments[ticketId];
+        }
+        
+        return [];
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des commentaires:', error);
+      
+      // Retourner seulement les commentaires de test en cas d'erreur
+      if (this.testComments[ticketId]) {
+        console.log(`Retour des commentaires de test en cas d'erreur pour ticket ${ticketId}:`, this.testComments[ticketId]);
+        return this.testComments[ticketId];
+      }
+      
+      return [];
     }
   }
 
-  getTestComments(ticketId) {
-    this.initializeTestComments();
-    return this.testComments[ticketId] || [];
+  async addComment(ticketId, content) {
+    try {
+      const token = localStorage.getItem('token');
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch('/api/comments', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          ticket_id: ticketId,
+          content: content
+        })
+      });
+      
+      if (response.ok) {
+        const newComment = await response.json();
+        console.log('Commentaire ajouté:', newComment);
+        return newComment;
+      } else {
+        console.error('Erreur ajout commentaire:', response.status);
+        return null;
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout du commentaire:', error);
+      return null;
+    }
   }
 
   addTestComment(ticketId, content) {
-    this.initializeTestComments();
-    
     if (!this.testComments[ticketId]) {
       this.testComments[ticketId] = [];
     }
     
-    // Générer un nouvel ID basé sur le nombre total de commentaires
-    let maxId = 0;
-    Object.values(this.testComments).forEach(comments => {
-      comments.forEach(comment => {
-        if (comment.id > maxId) maxId = comment.id;
-      });
-    });
-    
-    const newComment = {
-      id: maxId + 1,
+    const comment = {
+      id: Date.now(),
+      ticket_id: ticketId,
       content: content,
-      role: 'client',
-      first_name: 'Marie', // Client de test
-      last_name: 'Dubois',
-      is_internal: false,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      user_name: this.currentUser?.email || 'Client',
+      role: 'client', // Important: indiquer que c'est un commentaire client
+      first_name: 'Vous', // Nom à afficher
+      last_name: ''
     };
     
-    this.testComments[ticketId].push(newComment);
-    console.log(`Ajouté nouveau commentaire de test pour le ticket ${ticketId}:`, newComment);
+    this.testComments[ticketId].push(comment);
+    console.log(`Commentaire de test ajouté pour ticket ${ticketId}:`, comment);
   }
 }
 

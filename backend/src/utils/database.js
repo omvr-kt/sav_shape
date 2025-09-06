@@ -186,6 +186,19 @@ const initDatabase = async () => {
       )
     `);
 
+    // Table de configuration pour remplacer les données en dur
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS app_settings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        key TEXT UNIQUE NOT NULL,
+        value TEXT NOT NULL,
+        description TEXT,
+        category TEXT DEFAULT 'general',
+        created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+        updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
+      )
+    `);
+
     await createIndexes();
     await runMigrations();
     await createDefaultAdmin();
@@ -323,8 +336,54 @@ const runMigrations = async () => {
         console.log('Added client_company column to invoices table');
       }
     }
+
+    // Insérer les données de configuration par défaut
+    await insertDefaultSettings();
   } catch (error) {
     console.error('Migration error:', error);
+  }
+};
+
+const insertDefaultSettings = async () => {
+  try {
+    const settings = [
+      // Horaires de travail
+      { key: 'business_hours_start', value: '9', description: 'Heure de début (format 24h)', category: 'business_hours' },
+      { key: 'business_hours_end', value: '18', description: 'Heure de fin (format 24h)', category: 'business_hours' },
+      { key: 'business_days', value: '[1,2,3,4,5]', description: 'Jours ouvrés (0=dimanche, 1=lundi...)', category: 'business_hours' },
+      
+      // Labels de statut
+      { key: 'status_open_label', value: 'Ouvert', description: 'Label pour statut ouvert', category: 'labels' },
+      { key: 'status_in_progress_label', value: 'En cours', description: 'Label pour statut en cours', category: 'labels' },
+      { key: 'status_waiting_client_label', value: 'En attente', description: 'Label pour statut en attente client', category: 'labels' },
+      { key: 'status_resolved_label', value: 'Résolu', description: 'Label pour statut résolu', category: 'labels' },
+      { key: 'status_closed_label', value: 'Fermé', description: 'Label pour statut fermé', category: 'labels' },
+      
+      // Labels de priorité
+      { key: 'priority_low_label', value: 'Faible', description: 'Label pour priorité faible', category: 'labels' },
+      { key: 'priority_normal_label', value: 'Normal', description: 'Label pour priorité normale', category: 'labels' },
+      { key: 'priority_high_label', value: 'Élevé', description: 'Label pour priorité élevée', category: 'labels' },
+      { key: 'priority_urgent_label', value: 'Urgent', description: 'Label pour priorité urgente', category: 'labels' },
+      
+      // Configuration des factures
+      { key: 'invoice_prefix', value: 'SHAPE', description: 'Préfixe des numéros de facture', category: 'invoicing' },
+      { key: 'default_tva_rate', value: '20.00', description: 'Taux de TVA par défaut (%)', category: 'invoicing' },
+      
+      // Configuration générale
+      { key: 'app_name', value: 'SAV Shape', description: 'Nom de l\'application', category: 'general' },
+      { key: 'company_name', value: 'Shape Agency', description: 'Nom de l\'entreprise', category: 'general' }
+    ];
+
+    for (const setting of settings) {
+      await db.run(
+        'INSERT OR IGNORE INTO app_settings (key, value, description, category) VALUES (?, ?, ?, ?)',
+        [setting.key, setting.value, setting.description, setting.category]
+      );
+    }
+    
+    console.log('Default settings inserted');
+  } catch (error) {
+    console.error('Error inserting default settings:', error);
   }
 };
 

@@ -565,6 +565,98 @@ router.delete('/:id', verifyToken, requireAdmin, async (req, res) => {
   }
 });
 
+// GET /api/invoices/:id/files/:type - Télécharger les fichiers associés à une facture (devis ou cahier des charges)
+router.get('/:id/files/:type', verifyToken, async (req, res) => {
+  const invoiceId = parseInt(req.params.id);
+  const fileType = req.params.type;
+  
+  // Vérifier que le type de fichier est valide
+  if (!['quote', 'specifications'].includes(fileType)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Type de fichier invalide'
+    });
+  }
+  
+  const sql = `
+    SELECT i.*, u.id as user_id
+    FROM invoices i
+    LEFT JOIN users u ON i.client_id = u.id
+    WHERE i.id = ?
+  `;
+  
+  try {
+    const invoice = await db.get(sql, [invoiceId]);
+    
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        message: 'Facture non trouvée'
+      });
+    }
+    
+    // Vérifier les permissions
+    if (req.user.role !== 'admin' && req.user.id != invoice.client_id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Accès refusé'
+      });
+    }
+    
+    // Déterminer le champ à récupérer
+    const fileField = fileType === 'quote' ? 'quote_file' : 'specifications_file';
+    const filePath = invoice[fileField];
+    
+    if (!filePath) {
+      return res.status(404).json({
+        success: false,
+        message: `Aucun ${fileType === 'quote' ? 'devis' : 'cahier des charges'} associé à cette facture`
+      });
+    }
+    
+    // Construire le chemin complet du fichier
+    const path = require('path');
+    const fs = require('fs');
+    let fullPath;
+    
+    // Si le chemin commence par /uploads, c'est un chemin relatif
+    if (filePath.startsWith('/uploads/')) {
+      fullPath = path.join(__dirname, '../..', filePath);
+    } else if (filePath.startsWith('uploads/')) {
+      fullPath = path.join(__dirname, '../..', filePath);
+    } else {
+      // Chemin absolu ou autre format
+      fullPath = filePath;
+    }
+    
+    // Vérifier que le fichier existe
+    if (!fs.existsSync(fullPath)) {
+      console.error(`Fichier non trouvé: ${fullPath}`);
+      return res.status(404).json({
+        success: false,
+        message: 'Fichier non trouvé sur le serveur'
+      });
+    }
+    
+    // Obtenir le nom du fichier pour le téléchargement
+    const fileName = path.basename(filePath);
+    
+    // Configurer les headers pour le téléchargement
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Type', 'application/octet-stream');
+    
+    // Envoyer le fichier
+    res.sendFile(path.resolve(fullPath));
+    
+  } catch (err) {
+    console.error('Erreur téléchargement fichier facture:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Erreur serveur'
+    });
+  }
+});
+
 
 // GET /api/invoices/:id/pdf - Télécharger la facture en PDF
 router.get('/:id/pdf', verifyToken, async (req, res) => {

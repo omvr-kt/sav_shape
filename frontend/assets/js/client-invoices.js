@@ -417,6 +417,25 @@ class ClientInvoicesApp {
             </div>
           </div>
 
+          <!-- Documents associés -->
+          ${invoice.quote_file || invoice.specifications_file ? `
+          <div class="invoice-documents" style="margin-top: 20px; padding: 15px; background: #f9fafb; border-radius: 8px;">
+            <div class="section-title">Documents associés</div>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+              ${invoice.quote_file ? `
+                <button type="button" class="btn btn-sm btn-outline-primary download-file" data-invoice-id="${invoiceId}" data-file-type="quote">
+                  <span>📋</span> Télécharger le devis
+                </button>
+              ` : ''}
+              ${invoice.specifications_file ? `
+                <button type="button" class="btn btn-sm btn-outline-primary download-file" data-invoice-id="${invoiceId}" data-file-type="specifications">
+                  <span>📄</span> Télécharger le cahier des charges
+                </button>
+              ` : ''}
+            </div>
+          </div>
+          ` : ''}
+
           <div class="modal-actions">
             <button type="button" class="btn btn-secondary close-modal">Fermer</button>
             <button type="button" class="btn btn-primary download-pdf" data-invoice-id="${invoiceId}">
@@ -434,6 +453,15 @@ class ClientInvoicesApp {
       modal.querySelector('.download-pdf').addEventListener('click', (e) => {
         const id = parseInt(e.target.dataset.invoiceId);
         this.downloadInvoice(id);
+      });
+
+      // Event listeners pour les fichiers associés
+      modal.querySelectorAll('.download-file').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const invoiceId = parseInt(e.currentTarget.dataset.invoiceId);
+          const fileType = e.currentTarget.dataset.fileType;
+          await this.downloadInvoiceFile(invoiceId, fileType);
+        });
       });
 
     } catch (error) {
@@ -454,6 +482,51 @@ class ClientInvoicesApp {
     } catch (error) {
       this.showNotification('Erreur lors de la génération du PDF', 'error');
       console.error('PDF generation error:', error);
+    }
+  }
+
+  async downloadInvoiceFile(invoiceId, fileType) {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${api.baseURL}/invoices/${invoiceId}/files/${fileType}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Erreur lors du téléchargement');
+      }
+
+      // Récupérer le nom du fichier depuis les headers ou utiliser un nom par défaut
+      const contentDisposition = response.headers.get('content-disposition');
+      let filename = fileType === 'quote' ? 'devis.pdf' : 'cahier_des_charges.pdf';
+      
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      // Télécharger le fichier
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      this.showNotification('Fichier téléchargé avec succès', 'success');
+    } catch (error) {
+      this.showNotification(error.message || 'Erreur lors du téléchargement du fichier', 'error');
+      console.error('File download error:', error);
     }
   }
 

@@ -113,7 +113,6 @@ class AdminApp {
         <div class="header-filters">
           <select id="invoiceStatusFilter" class="filter-select">
             <option value="">Tous les statuts</option>
-            <option value="draft">Brouillon</option>
             <option value="sent">Envoyée</option>
             <option value="paid">Payée</option>
             <option value="overdue">En retard</option>
@@ -469,7 +468,6 @@ class AdminApp {
             <th>Statut</th>
             <th>Tickets</th>
             <th>Créé le</th>
-            <th>SLA</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -481,7 +479,6 @@ class AdminApp {
               <td><span class="status-badge status-${project.status}">${project.status}</span></td>
               <td>${project.ticket_count || 0} (${project.active_ticket_count || 0} actifs)</td>
               <td>${api.formatDate(project.created_at)}</td>
-              <td><span class="sla-status sla-good">Projet actif</span></td>
               <td>
                 <div class="action-buttons">
                   <button class="btn-action btn-view" data-project-id="${project.id}" data-action="view-project"> Voir</button>
@@ -545,7 +542,6 @@ class AdminApp {
             <th>Entreprise</th>
             <th>Projets</th>
             <th>Tickets</th>
-            <th>SLA</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -557,7 +553,6 @@ class AdminApp {
               <td>${client.company || '-'}</td>
               <td>${client.project_count || 0}</td>
               <td>${client.ticket_count || 0}</td>
-              <td><span class="sla-status sla-good">Configuré</span></td>
               <td>
                 <div class="action-buttons">
                   <button class="btn-action btn-view" data-client-id="${client.id}" data-action="view-client"> Voir</button>
@@ -1152,10 +1147,6 @@ class AdminApp {
                 <span class="meta-label">Créé le:</span>
                 <span class="meta-value">${api.formatDate(project.created_at)}</span>
               </div>
-              <div class="meta-row">
-                <span class="meta-label">Tickets:</span>
-                <span class="meta-value">${project.ticket_count || 0} total (${project.active_ticket_count || 0} actifs)</span>
-              </div>
             </div>
           </div>
           
@@ -1199,6 +1190,18 @@ class AdminApp {
                 <span class="meta-label">Entreprise:</span>
                 <span class="meta-value">${client.company || 'Aucune'}</span>
               </div>
+              ${client.address ? `<div class="meta-row">
+                <span class="meta-label">Adresse:</span>
+                <span class="meta-value">${client.address}</span>
+              </div>` : ''}
+              ${client.city ? `<div class="meta-row">
+                <span class="meta-label">Ville:</span>
+                <span class="meta-value">${client.city}</span>
+              </div>` : ''}
+              ${client.country ? `<div class="meta-row">
+                <span class="meta-label">Pays:</span>
+                <span class="meta-value">${client.country}</span>
+              </div>` : ''}
               <div class="meta-row">
                 <span class="meta-label">Inscrit le:</span>
                 <span class="meta-value">${api.formatDate(client.created_at)}</span>
@@ -1275,16 +1278,6 @@ class AdminApp {
             </select>
           </div>
           
-          <div class="form-info">
-            <div class="project-stats">
-              <h4>Statistiques du projet</h4>
-              <div class="stats-row">
-                <span> ${project.ticket_count || 0} tickets total</span>
-                <span>${project.active_ticket_count || 0} tickets actifs</span>
-              </div>
-              <p><small>Créé le ${api.formatDate(project.created_at)}</small></p>
-            </div>
-          </div>
           
           ${project.status !== 'archived' ? `
             <div class="form-warning">
@@ -1556,6 +1549,25 @@ class AdminApp {
             <label class="form-label" for="editClientCompany">Entreprise</label>
             <input type="text" id="editClientCompany" name="company" 
                    class="form-input" value="${client.company || ''}">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="editClientAddress">Adresse</label>
+            <input type="text" id="editClientAddress" name="address" 
+                   class="form-input" value="${client.address || ''}">
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="editClientCity">Ville</label>
+              <input type="text" id="editClientCity" name="city" 
+                     class="form-input" value="${client.city || ''}">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="editClientCountry">Pays</label>
+              <input type="text" id="editClientCountry" name="country" 
+                     class="form-input" value="${client.country || ''}">
+            </div>
           </div>
           
           <div class="form-group">
@@ -2251,9 +2263,22 @@ class AdminApp {
         </div>
         
         <div class="form-group">
-          <label class="form-label" for="clientAddress">Adresse de l'entreprise</label>
-          <input type="text" id="clientAddress" name="company_address" 
-                 class="form-input" placeholder="123 rue de la Paix, 75001 Paris">
+          <label class="form-label" for="clientAddress">Adresse</label>
+          <input type="text" id="clientAddress" name="address" 
+                 class="form-input" placeholder="123 rue de la Paix">
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="clientCity">Ville</label>
+            <input type="text" id="clientCity" name="city" 
+                   class="form-input" placeholder="Paris">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="clientCountry">Pays</label>
+            <input type="text" id="clientCountry" name="country" 
+                   class="form-input" placeholder="France">
+          </div>
         </div>
         
         <div class="form-group">
@@ -2637,7 +2662,7 @@ class AdminApp {
               <td>
                 <div class="action-buttons">
                   <button class="btn-action btn-view" data-invoice-id="${invoice.id}" data-action="view-invoice"> Voir</button>
-                  <button class="btn-action btn-edit" data-invoice-id="${invoice.id}" data-action="edit-invoice"> Éditer</button>
+                  <button class="btn-action btn-delete" data-invoice-id="${invoice.id}" data-action="delete-invoice"> Supprimer</button>
                 </div>
               </td>
             </tr>
@@ -2656,10 +2681,10 @@ class AdminApp {
       });
     });
     
-    container.querySelectorAll('[data-action="edit-invoice"]').forEach(btn => {
+    container.querySelectorAll('[data-action="delete-invoice"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const invoiceId = parseInt(e.target.dataset.invoiceId);
-        this.editInvoice(invoiceId);
+        this.deleteInvoice(invoiceId);
       });
     });
     
@@ -2671,10 +2696,29 @@ class AdminApp {
     });
   }
 
+  async deleteInvoice(invoiceId) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette facture ? Cette action est irréversible.')) {
+      return;
+    }
+
+    try {
+      const response = await api.deleteInvoice(invoiceId);
+      
+      if (response.success) {
+        this.showNotification('Facture supprimée avec succès', 'success');
+        // Recharger la liste des factures
+        this.loadInvoices();
+      } else {
+        this.showNotification(response.message || 'Erreur lors de la suppression', 'error');
+      }
+    } catch (error) {
+      console.error('Delete invoice error:', error);
+      this.showNotification('Erreur lors de la suppression de la facture', 'error');
+    }
+  }
 
   getInvoiceStatusLabel(status) {
     const labels = {
-      'draft': 'Brouillon',
       'sent': ' Envoyée', 
       'paid': ' Payée',
       'overdue': ' En retard',
@@ -2703,6 +2747,9 @@ class AdminApp {
                 <strong>Email:</strong> ${client.email}
               </div>
               ${client.company ? `<div class="info-item"><strong>Entreprise:</strong> ${client.company}</div>` : ''}
+              ${client.address ? `<div class="info-item"><strong>Adresse:</strong> ${client.address}</div>` : ''}
+              ${client.city ? `<div class="info-item"><strong>Ville:</strong> ${client.city}</div>` : ''}
+              ${client.country ? `<div class="info-item"><strong>Pays:</strong> ${client.country}</div>` : ''}
               <div class="info-item">
                 <strong>Projets:</strong> ${client.project_count || 0} projets
               </div>
@@ -3013,137 +3060,159 @@ class AdminApp {
   }
 
   showViewInvoiceModal(invoice) {
-    this.createModal(`
-      <h2> Détails de la facture</h2>
+    this.createModal(`Facture ${invoice.invoice_number}`, `
+      <div class="info-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <span class="status-badge status-${invoice.status}">${this.getInvoiceStatusLabel(invoice.status)}</span>
+        </div>
+      </div>
       
-      <div class="invoice-info-card">
-        <div class="card-header">
-          <div class="invoice-header-info">
-            <h3 class="invoice-number">${invoice.invoice_number}</h3>
-            <span class="status-badge status-${invoice.status}">${this.getInvoiceStatusLabel(invoice.status)}</span>
-          </div>
-          <div class="invoice-dates">
-            <p><strong>Créée le:</strong> ${api.formatDate(invoice.created_at)}</p>
-            ${invoice.due_date ? `<p><strong>Échéance:</strong> ${api.formatDate(invoice.due_date)}</p>` : ''}
-            ${invoice.paid_date ? `<p><strong> Payée le:</strong> ${api.formatDate(invoice.paid_date)}</p>` : ''}
-          </div>
-        </div>
-        
-        <div class="card-section">
-          <h4> Informations client</h4>
-          <div class="client-info-grid">
-            <div class="info-item">
-              <strong>Nom:</strong> ${invoice.first_name} ${invoice.last_name}
+      <div class="modal-content">
+        <div class="info-section">
+          <h3 class="section-title">Informations générales</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Créée le</label>
+              <div class="form-value">${api.formatDate(invoice.created_at)}</div>
             </div>
-            <div class="info-item">
-              <strong>Email:</strong> ${invoice.email}
-            </div>
-            ${invoice.company ? `<div class="info-item"><strong>Entreprise:</strong> ${invoice.company}</div>` : ''}
+            ${invoice.due_date ? `
+            <div class="form-group">
+              <label class="form-label">Échéance</label>
+              <div class="form-value">${api.formatDate(invoice.due_date)}</div>
+            </div>` : ''}
+            ${invoice.paid_date ? `
+            <div class="form-group">
+              <label class="form-label">Payée le</label>
+              <div class="form-value">${api.formatDate(invoice.paid_date)}</div>
+            </div>` : ''}
           </div>
         </div>
         
-        <div class="card-section">
-          <h4>Description</h4>
-          <div class="description-content">
-            ${invoice.description || 'Aucune description'}
+        <div class="info-section">
+          <h3 class="section-title">Client</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Nom</label>
+              <div class="form-value">${invoice.first_name} ${invoice.last_name}</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <div class="form-value">${invoice.email}</div>
+            </div>
+            ${invoice.company ? `
+            <div class="form-group">
+              <label class="form-label">Entreprise</label>
+              <div class="form-value">${invoice.company}</div>
+            </div>` : ''}
           </div>
         </div>
         
-        <div class="card-section">
-          <h4>Détails financiers</h4>
-          <div class="financial-details">
-            <div class="amount-line">
-              <span>Montant HT:</span>
-              <span class="amount">${parseFloat(invoice.amount_ht || 0).toFixed(2)}€</span>
+        <div class="info-section">
+          <h3 class="section-title">Description</h3>
+          <div class="form-group">
+            <div class="form-value">${invoice.description || 'Aucune description'}</div>
+          </div>
+        </div>
+        
+        <div class="info-section">
+          <h3 class="section-title">Détails financiers</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Montant HT</label>
+              <div class="form-value">${parseFloat(invoice.amount_ht || 0).toFixed(2)}€</div>
             </div>
-            <div class="amount-line">
-              <span>TVA (${parseFloat(invoice.tva_rate || 0).toFixed(0)}%):</span>
-              <span class="amount">${parseFloat(invoice.amount_tva || 0).toFixed(2)}€</span>
+            <div class="form-group">
+              <label class="form-label">TVA (${parseFloat(invoice.tva_rate || 0).toFixed(0)}%)</label>
+              <div class="form-value">${parseFloat(invoice.amount_tva || 0).toFixed(2)}€</div>
             </div>
-            <div class="amount-line total-line">
-              <span><strong>Total TTC:</strong></span>
-              <span class="amount-total"><strong>${parseFloat(invoice.amount_ttc || 0).toFixed(2)}€</strong></span>
+            <div class="form-group">
+              <label class="form-label">Total TTC</label>
+              <div class="form-value total-value">${parseFloat(invoice.amount_ttc || 0).toFixed(2)}€</div>
             </div>
           </div>
         </div>
       </div>
       
-      <div class="modal-actions">
+      <div class="modal-footer">
         <button type="button" class="btn btn-primary" onclick="adminApp.downloadInvoicePDF(${invoice.id}); adminApp.closeModal();">
-           Télécharger PDF
+          Télécharger PDF
         </button>
         <button type="button" class="btn btn-secondary" onclick="adminApp.editInvoice(${invoice.id}); adminApp.closeModal();">
-           Modifier
+          Modifier
         </button>
         <button type="button" class="btn btn-secondary cancel-btn">Fermer</button>
       </div>
-    `, 'large');
+    `);
   }
 
   showEditInvoiceModal(invoice) {
-    this.createModal(`
-      <form id="editInvoiceForm">
-        <h2> Modifier la facture ${invoice.invoice_number}</h2>
-        
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="editAmountHt">Montant HT (€) *</label>
-            <input type="number" id="editAmountHt" step="0.01" min="0" value="${invoice.amount_ht || 0}" required>
+    this.createModal(`Modifier la facture ${invoice.invoice_number}`, `
+      <form id="editInvoiceForm" class="modal-content">
+        <div class="info-section">
+          <h3 class="section-title">Montants</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="editAmountHt">Montant HT (€) *</label>
+              <input type="number" id="editAmountHt" class="form-input" step="0.01" min="0" 
+                     value="${parseFloat(invoice.amount_ht || 0).toFixed(2)}" required>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label" for="editTvaRate">Taux TVA (%)</label>
+              <input type="number" id="editTvaRate" class="form-input" step="0.01" min="0" max="100" 
+                     value="${parseFloat(invoice.tva_rate || 20).toFixed(2)}">
+            </div>
           </div>
           
           <div class="form-group">
-            <label for="editTvaRate">Taux TVA (%)</label>
-            <input type="number" id="editTvaRate" step="0.01" min="0" max="100" value="${invoice.tva_rate || 20}">
-          </div>
-          
-          <div class="form-group checkbox-group">
-            <label>
+            <label class="checkbox-label">
               <input type="checkbox" id="editNoTva" ${parseFloat(invoice.tva_rate || 0) === 0 ? 'checked' : ''}>
-              Pas de TVA
+              <span class="checkbox-text">Pas de TVA</span>
             </label>
           </div>
-          
+        </div>
+        
+        <div class="info-section">
+          <h3 class="section-title">Statut et description</h3>
           <div class="form-group">
-            <label for="editStatus">Statut</label>
-            <select id="editStatus">
-              <option value="draft" ${invoice.status === 'draft' ? 'selected' : ''}>Brouillon</option>
-              <option value="sent" ${invoice.status === 'sent' ? 'selected' : ''}> Envoyée</option>
-              <option value="paid" ${invoice.status === 'paid' ? 'selected' : ''}> Payée</option>
-              <option value="overdue" ${invoice.status === 'overdue' ? 'selected' : ''}> En retard</option>
-              <option value="cancelled" ${invoice.status === 'cancelled' ? 'selected' : ''}> Annulée</option>
+            <label class="form-label" for="editStatus">Statut</label>
+            <select id="editStatus" class="form-select">
+              <option value="sent" ${invoice.status === 'sent' ? 'selected' : ''}>Envoyée</option>
+              <option value="paid" ${invoice.status === 'paid' ? 'selected' : ''}>Payée</option>
+              <option value="overdue" ${invoice.status === 'overdue' ? 'selected' : ''}>En retard</option>
+              <option value="cancelled" ${invoice.status === 'cancelled' ? 'selected' : ''}>Annulée</option>
             </select>
           </div>
-        </div>
-        
-        <div class="form-group">
-          <label for="editDescription">Description *</label>
-          <textarea id="editDescription" rows="4" required>${invoice.description || ''}</textarea>
-        </div>
-        
-        <div class="invoice-preview-card">
-          <h4>Aperçu des montants</h4>
-          <div class="preview-amounts">
-            <div class="amount-row">
-              <span>Montant HT:</span>
-              <strong id="previewHt">${parseFloat(invoice.amount_ht || 0).toFixed(2)}€</strong>
-            </div>
-            <div class="amount-row">
-              <span>TVA (<span id="previewTvaRate">${parseFloat(invoice.tva_rate || 20)}</span>%):</span>
-              <strong id="previewTva">${parseFloat(invoice.amount_tva || 0).toFixed(2)}€</strong>
-            </div>
-            <div class="amount-row total-row">
-              <span>Total TTC:</span>
-              <strong id="previewTtc" class="total-amount">${parseFloat(invoice.amount_ttc || 0).toFixed(2)}€</strong>
-            </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="editDescription">Description *</label>
+            <textarea id="editDescription" class="form-textarea" rows="4" required>${invoice.description || ''}</textarea>
           </div>
         </div>
         
-        <div class="form-actions">
+        <div class="info-section">
+          <h3 class="section-title">Aperçu des montants</h3>
+          <div class="financial-summary">
+            <div class="amount-row">
+              <span class="amount-label">Montant HT</span>
+              <span id="previewHt" class="amount-value">${parseFloat(invoice.amount_ht || 0).toFixed(2)}€</span>
+            </div>
+            <div class="amount-row">
+              <span class="amount-label">TVA (<span id="previewTvaRate">${parseFloat(invoice.tva_rate || 0).toFixed(0)}</span>%)</span>
+              <span id="previewTva" class="amount-value">${parseFloat(invoice.amount_tva || 0).toFixed(2)}€</span>
+            </div>
+            <div class="amount-row total-row">
+              <span class="amount-label">Total TTC</span>
+              <span id="previewTtc" class="amount-value total">${parseFloat(invoice.amount_ttc || 0).toFixed(2)}€</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
           <button type="button" class="btn btn-secondary cancel-btn">Annuler</button>
-          <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+          <button type="submit" class="btn btn-primary">Enregistrer</button>
         </div>
       </form>
-    `, 'large');
+    `);
 
     // Configuration des event listeners après création de la modal
     this.setupInvoiceEditForm(invoice);
@@ -3188,19 +3257,26 @@ class AdminApp {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const submitBtn = e.target.querySelector('button[type="submit"]');
+      if (!submitBtn) return;
+      
       const originalText = submitBtn.textContent;
       submitBtn.disabled = true;
       submitBtn.textContent = 'Enregistrement...';
 
       try {
-        await this.updateInvoice(invoice.id, {
+        console.log('🔄 Tentative de mise à jour de la facture:', invoice.id);
+        const updateData = {
           amount_ht: parseFloat(amountHt.value),
           tva_rate: noTva.checked ? 0 : parseFloat(tvaRate.value),
           description: document.getElementById('editDescription').value,
           status: document.getElementById('editStatus').value
-        });
+        };
+        console.log('📝 Données à envoyer:', updateData);
+        
+        await this.updateInvoice(invoice.id, updateData);
         this.closeModal();
       } catch (error) {
+        console.error('❌ Erreur lors de la soumission du formulaire:', error);
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
       }
@@ -3209,16 +3285,24 @@ class AdminApp {
 
   async updateInvoice(id, data) {
     try {
+      console.log('📤 Envoi de la requête updateInvoice avec ID:', id, 'et données:', data);
       const response = await api.updateInvoice(id, data);
+      console.log('📥 Réponse reçue:', response);
+      
       if (response.success) {
+        console.log('✅ Mise à jour réussie');
         this.showNotification('Facture mise à jour avec succès', 'success');
         // Recharger la liste des factures
         if (this.currentTab === 'invoices') {
+          console.log('🔄 Rechargement de la liste des factures');
           this.loadInvoices();
         }
+      } else {
+        console.log('⚠️ Réponse non-success:', response);
+        this.showNotification('Erreur lors de la mise à jour de la facture', 'error');
       }
     } catch (error) {
-      console.error('Update invoice error:', error);
+      console.error('❌ Erreur dans updateInvoice:', error);
       this.showNotification(error.message || 'Erreur lors de la mise à jour', 'error');
       throw error;
     }

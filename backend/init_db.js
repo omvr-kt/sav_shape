@@ -110,13 +110,19 @@ db.serialize(() => {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       invoice_number TEXT UNIQUE NOT NULL,
       client_id INTEGER NOT NULL,
-      quote_file TEXT,
-      specifications_file TEXT,
-      amount DECIMAL(10,2),
+      amount_ht DECIMAL(10,2) NOT NULL,
+      tva_rate DECIMAL(5,2) DEFAULT 20.00,
+      amount_tva DECIMAL(10,2) DEFAULT 0,
+      amount_ttc DECIMAL(10,2) NOT NULL,
       description TEXT,
-      status TEXT DEFAULT 'pending',
+      status TEXT DEFAULT 'sent',
       due_date DATETIME,
       paid_date DATETIME,
+      no_tva INTEGER DEFAULT 0,
+      client_first_name TEXT,
+      client_last_name TEXT,
+      client_email TEXT,
+      client_company TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (client_id) REFERENCES users (id)
@@ -126,6 +132,50 @@ db.serialize(() => {
       console.error('Erreur création table invoices:', err);
     } else {
       console.log('Table invoices créée');
+    }
+  });
+
+  // Table app_settings (paramètres de l'application)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS app_settings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      key TEXT UNIQUE NOT NULL,
+      value TEXT,
+      category TEXT DEFAULT 'general',
+      description TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `, (err) => {
+    if (err) {
+      console.error('Erreur création table app_settings:', err);
+    } else {
+      console.log('Table app_settings créée');
+    }
+  });
+
+  // Insérer les paramètres par défaut pour la facturation
+  console.log('Insertion des paramètres de facturation...');
+  
+  db.run(`
+    INSERT OR IGNORE INTO app_settings (key, value, category, description) 
+    VALUES (?, ?, ?, ?)
+  `, ['invoice_prefix', 'SHAPE', 'invoicing', 'Préfixe des numéros de facture'], (err) => {
+    if (err) {
+      console.error('Erreur insertion invoice_prefix:', err);
+    } else {
+      console.log('Paramètre invoice_prefix créé');
+    }
+  });
+
+  db.run(`
+    INSERT OR IGNORE INTO app_settings (key, value, category, description) 
+    VALUES (?, ?, ?, ?)
+  `, ['default_tva_rate', '20.00', 'invoicing', 'Taux de TVA par défaut'], (err) => {
+    if (err) {
+      console.error('Erreur insertion default_tva_rate:', err);
+    } else {
+      console.log('Paramètre default_tva_rate créé');
     }
   });
 

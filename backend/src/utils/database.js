@@ -274,7 +274,7 @@ const runMigrations = async () => {
           amount_tva DECIMAL(10,2) NOT NULL,
           amount_ttc DECIMAL(10,2) NOT NULL,
           description TEXT NOT NULL,
-          status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'sent', 'paid', 'overdue', 'cancelled')),
+          status TEXT NOT NULL DEFAULT 'sent' CHECK (status IN ('sent', 'paid', 'overdue', 'cancelled')),
           due_date DATE,
           paid_date DATETIME,
           created_at DATETIME DEFAULT (datetime('now', 'localtime')),

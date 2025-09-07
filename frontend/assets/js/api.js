@@ -126,6 +126,23 @@ class ApiClient {
     return this.request('/auth/me');
   }
 
+  async updateProfile(profileData) {
+    return this.request('/auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify(profileData),
+    });
+  }
+
+  async changePassword(currentPassword, newPassword) {
+    return this.request('/auth/change-password', {
+      method: 'PUT',
+      body: JSON.stringify({ 
+        currentPassword, 
+        newPassword 
+      }),
+    });
+  }
+
   // User methods
   async getUsers(filters = {}) {
     const params = new URLSearchParams(filters);

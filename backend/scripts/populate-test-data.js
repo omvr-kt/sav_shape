@@ -3,11 +3,19 @@ const bcrypt = require('bcryptjs');
 
 /**
  * Script pour peupler la base de données avec des données de test réalistes
- * Remplace toutes les données en dur du frontend
+ * ⚠️  UNIQUEMENT POUR LE DÉVELOPPEMENT - Ne pas utiliser en production
  */
 
 async function populateTestData() {
-  console.log('🚀 Début du peuplement de la base avec des données de test...');
+  // Vérifier qu'on n'est pas en production
+  if (process.env.NODE_ENV === 'production') {
+    console.log('❌ Ce script ne peut pas être exécuté en production');
+    console.log('   Utilisez setup-production.js pour configurer la production');
+    process.exit(1);
+  }
+  
+  console.log('🧪 Début du peuplement de la base avec des données de test...');
+  console.log('   ⚠️  Mode développement uniquement');
   
   try {
     // S'assurer que la base est initialisée
@@ -339,7 +347,7 @@ async function createTestInvoices(clients) {
         'Intégration API tierce'
       ];
       
-      const statuses = ['draft', 'sent', 'paid', 'overdue'];
+      const statuses = ['sent', 'paid', 'overdue'];
       
       // Numéro de facture
       const date = new Date();
@@ -350,7 +358,7 @@ async function createTestInvoices(clients) {
       const invoiceNumber = `SHAPE-${year}${month}-${timestamp}-${i}`;
       
       const dueDate = new Date(date);
-      dueDate.setDate(dueDate.getDate() + 30);
+      dueDate.setDate(dueDate.getDate() + 7);
       
       const result = await db.run(
         `INSERT INTO invoices (

@@ -115,85 +115,20 @@ class ClientInvoicesApp {
 
     // Filter dropdown - utiliser la même logique que les tickets
     this.currentStatusFilter = '';
-    this.setupDropdownEventListeners();
+    this.setupFilterEventListeners();
   }
 
-  setupDropdownEventListeners() {
-    // Event delegation pour les dropdowns
-    document.addEventListener('click', (e) => {
-      const target = e.target;
-      
-      // Dropdown toggle
-      if (target.classList.contains('dropdown-toggle') || target.closest('.dropdown-toggle')) {
-        e.preventDefault();
-        const dropdown = target.closest('.dropdown');
-        if (dropdown) {
-          this.toggleDropdown(dropdown);
-        }
-        return;
-      }
-      
-      // Status filter items
-      if (target.classList.contains('status-filter-item')) {
-        e.preventDefault();
-        const status = target.dataset.status;
-        this.setStatusFilter(status);
-        return;
-      }
-      
-      // Handle elements inside status filter items
-      const statusFilterParent = target.closest('.status-filter-item');
-      if (statusFilterParent) {
-        e.preventDefault();
-        const status = statusFilterParent.dataset.status;
-        this.setStatusFilter(status);
-        return;
-      }
-      
-      // Close dropdowns when clicking outside
-      if (!target.closest('.dropdown')) {
-        document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('active'));
-      }
-    });
-  }
-
-  toggleDropdown(dropdown) {
-    // Close all other dropdowns first
-    document.querySelectorAll('.dropdown').forEach(d => {
-      if (d !== dropdown) {
-        d.classList.remove('active');
-      }
-    });
-    
-    // Toggle current dropdown
-    dropdown.classList.toggle('active');
-  }
-
-  setStatusFilter(status) {
-    this.currentStatusFilter = status;
-    
-    // Close dropdown
-    document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('active'));
-    
-    // Update dropdown button text
-    const dropdownToggle = document.querySelector('.dropdown-toggle span');
-    if (dropdownToggle) {
-      if (status === '') {
-        dropdownToggle.textContent = 'Filtrer par statut';
-      } else {
-        const statusText = {
-          'draft': 'Brouillon',
-          'sent': 'Envoyée', 
-          'paid': 'Payée',
-          'overdue': 'En retard'
-        }[status] || status;
-        dropdownToggle.textContent = `Statut: ${statusText}`;
-      }
+  setupFilterEventListeners() {
+    // Event listener pour le select de filtrage des statuts
+    const statusFilter = document.getElementById('invoiceStatusFilter');
+    if (statusFilter) {
+      statusFilter.addEventListener('change', (e) => {
+        this.currentStatusFilter = e.target.value;
+        this.renderInvoicesTable();
+      });
     }
-    
-    // Re-render with filter
-    this.renderInvoicesTable();
   }
+
 
   async loadInvoices() {
     console.log('=== loadInvoices called ===');
@@ -207,10 +142,6 @@ class ClientInvoicesApp {
 
     try {
       console.log('Current user:', this.currentUser);
-      
-      const filters = {};
-      const statusFilter = document.getElementById('invoiceStatusFilter')?.value;
-      if (statusFilter) filters.status = statusFilter;
       
       if (!this.currentUser || !this.currentUser.id) {
         container.innerHTML = '<div class="error-message">Utilisateur non connecté</div>';
@@ -238,6 +169,7 @@ class ClientInvoicesApp {
     console.log('=== loadInvoices finished ===');
   }
 
+
   renderInvoicesTable() {
     const container = document.getElementById('invoicesList');
     
@@ -252,45 +184,69 @@ class ClientInvoicesApp {
       filteredInvoices = this.invoices.filter(invoice => invoice.status === this.currentStatusFilter);
     }
 
-    const tableHTML = `
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Numéro</th>
-            <th>Client</th>
-            <th>Montant TTC</th>
-            <th>Statut</th>
-            <th>Échéance</th>
-            <th>SLA</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${filteredInvoices.map(invoice => `
-            <tr>
-              <td><strong>${invoice.invoice_number}</strong></td>
-              <td>${invoice.company || invoice.first_name + ' ' + invoice.last_name}</td>
-              <td><strong>${parseFloat(invoice.amount_ttc).toFixed(2)}€</strong></td>
-              <td><span class="status-badge status-${invoice.status}">${this.getInvoiceStatusLabel(invoice.status)}</span></td>
-              <td>${invoice.due_date ? api.formatDate(invoice.due_date) : '-'}</td>
-              <td>${this.formatInvoiceSLA(invoice)}</td>
-              <td>
-                <div class="action-buttons">
-                  <button class="btn-action btn-view" data-invoice-id="${invoice.id}" data-action="view-invoice"> Voir</button>
-                </div>
-              </td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
+    if (filteredInvoices.length === 0) {
+      container.innerHTML = '<div class="empty-state"><div class="empty-state-icon"></div><p>Aucune facture trouvée</p></div>';
+      return;
+    }
 
-    container.innerHTML = tableHTML;
+    const listHTML = filteredInvoices.map(invoice => {
+      const statusText = this.getInvoiceStatusLabel(invoice.status);
+      const statusColor = this.getInvoiceStatusColor(invoice.status);
+      const formatDate = (dateStr) => {
+        try {
+          const date = new Date(dateStr);
+          return date.toLocaleDateString('fr-FR', {
+            day: '2-digit',
+            month: '2-digit', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        } catch (e) {
+          return dateStr;
+        }
+      };
+
+      return `
+        <div class="list-item" style="border-bottom: 1px solid #e5e7eb; padding: 20px; transition: background-color 0.2s;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <span style="font-family: monospace; background: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #6b7280;">${invoice.invoice_number}</span>
+                <span style="width: 8px; height: 8px; background: ${statusColor}; border-radius: 50%; display: inline-block;" title="${statusText}"></span>
+                <span class="status-badge status-${invoice.status}" style="font-size: 12px;">${statusText}</span>
+              </div>
+              <h4 style="font-size: 16px; font-weight: 600; color: #1f2937; margin: 0 0 8px 0; line-height: 1.4;">
+                Facture ${invoice.invoice_number}
+              </h4>
+              <p style="color: #4b5563; font-size: 14px; line-height: 1.4; margin: 0 0 8px 0;">
+                <strong>Montant:</strong> ${parseFloat(invoice.amount_ttc).toFixed(2)}€
+              </p>
+              <div style="font-size: 12px; color: #9ca3af;">
+                ${invoice.due_date ? `Échéance: ${formatDate(invoice.due_date)}` : 'Pas d\'échéance'} • 
+                Créée le ${formatDate(invoice.created_at)}
+              </div>
+              <div style="margin-top: 8px;">
+                ${this.formatInvoiceSLA(invoice)}
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; margin-left: 16px;">
+              <button class="btn btn-primary btn-sm" data-invoice-id="${invoice.id}" data-action="view-invoice" style="padding: 6px 12px; font-size: 13px; background: #0e2433; border: 1px solid #0e2433; color: white; border-radius: 6px;">📄 Voir Facture</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    container.innerHTML = listHTML;
     
     // Ajouter les event listeners
     container.querySelectorAll('[data-action="view-invoice"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const invoiceId = parseInt(e.target.dataset.invoiceId);
+        console.log('Button clicked:', e.currentTarget);
+        console.log('Dataset:', e.currentTarget.dataset);
+        const invoiceId = parseInt(e.currentTarget.dataset.invoiceId);
+        console.log('Invoice ID:', invoiceId);
         this.viewInvoice(invoiceId);
       });
     });
@@ -299,7 +255,7 @@ class ClientInvoicesApp {
   updateSummary() {
     const totalCount = this.invoices.length;
     const paidAmount = this.invoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + parseFloat(i.amount_ttc), 0);
-    const pendingAmount = this.invoices.filter(i => ['draft', 'sent'].includes(i.status)).reduce((sum, i) => sum + parseFloat(i.amount_ttc), 0);
+    const pendingAmount = this.invoices.filter(i => i.status === 'sent').reduce((sum, i) => sum + parseFloat(i.amount_ttc), 0);
     const overdueAmount = this.invoices.filter(i => i.status === 'overdue').reduce((sum, i) => sum + parseFloat(i.amount_ttc), 0);
 
     document.getElementById('totalInvoicesCount').textContent = totalCount;
@@ -310,7 +266,6 @@ class ClientInvoicesApp {
 
   getStatusLabel(status) {
     const labels = {
-      'draft': 'Brouillon',
       'sent': 'Envoyée',
       'paid': 'Payée',
       'overdue': 'En retard',
@@ -321,13 +276,22 @@ class ClientInvoicesApp {
 
   getInvoiceStatusLabel(status) {
     const labels = {
-      'draft': 'Brouillon',
-      'sent': 'Envoyée',
+      'sent': 'Reçue',
       'paid': 'Payée',
       'overdue': 'En retard',
       'cancelled': 'Annulée'
     };
     return labels[status] || status;
+  }
+
+  getInvoiceStatusColor(status) {
+    const colors = {
+      'sent': '#2563eb',
+      'paid': '#10b981',
+      'overdue': '#dc2626',
+      'cancelled': '#ef4444'
+    };
+    return colors[status] || '#6b7280';
   }
 
   formatInvoiceSLA(invoice) {
@@ -353,46 +317,71 @@ class ClientInvoicesApp {
 
 
   async viewInvoice(invoiceId) {
+    console.log('viewInvoice called with ID:', invoiceId);
     try {
       const invoice = this.invoices.find(i => i.id === invoiceId);
-      if (!invoice) return;
+      console.log('Found invoice:', invoice);
+      if (!invoice) {
+        console.error('Invoice not found');
+        return;
+      }
 
+      console.log('Creating modal...');
       const modal = this.createModal(`Facture ${invoice.invoice_number}`, `
         <div class="invoice-view">
           <!-- En-tête de la facture -->
           <div class="invoice-header">
             <div class="company-info">
-              <h3>Shape</h3>
+              <div class="company-name">Shape</div>
               <div class="company-details">
-                <p><strong>SIREN:</strong> 990204588</p>
-                <p><strong>Adresse:</strong> 55 Avenue Marceau, 75016 Paris</p>
-                <p><strong>Contact:</strong> omar@shape-conseil.fr</p>
+                <div class="company-detail-item">
+                  <span class="label">SIREN:</span>
+                  <span class="value">990204588</span>
+                </div>
+                <div class="company-detail-item">
+                  <span class="label">Adresse:</span>
+                  <span class="value">55 Avenue Marceau, 75016 Paris</span>
+                </div>
+                <div class="company-detail-item">
+                  <span class="label">Contact:</span>
+                  <span class="value">omar@shape-conseil.fr</span>
+                </div>
               </div>
             </div>
             <div class="invoice-info">
-              <h2>${invoice.invoice_number}</h2>
-              <p><strong>Date d'émission:</strong> ${api.formatDate(invoice.created_at)}</p>
-              <p><strong>Échéance:</strong> ${invoice.due_date ? api.formatDate(invoice.due_date) : '-'}</p>
+              <div class="invoice-number">${invoice.invoice_number}</div>
+              <div class="invoice-dates">
+                <div class="date-item">
+                  <span class="label">Date d'émission:</span>
+                  <span class="value">${api.formatDate(invoice.created_at)}</span>
+                </div>
+                <div class="date-item">
+                  <span class="label">Échéance:</span>
+                  <span class="value">${invoice.due_date ? api.formatDate(invoice.due_date) : '-'}</span>
+                </div>
+              </div>
               <div class="status-badge status-${invoice.status}">
-                ${this.getStatusLabel(invoice.status)}
+                ${this.getInvoiceStatusLabel(invoice.status)}
               </div>
             </div>
           </div>
 
           <!-- Informations client -->
           <div class="client-info">
-            <h4>Facturé à</h4>
+            <div class="section-title">Facturé à</div>
             <div class="client-details">
-              <p><strong>${this.currentUser.first_name} ${this.currentUser.last_name}</strong></p>
-              <p>${this.currentUser.email}</p>
-              ${this.currentUser.company ? `<p>${this.currentUser.company}</p>` : ''}
+              <div class="client-name">${invoice.first_name} ${invoice.last_name}</div>
+              <div class="client-email">${invoice.email}</div>
+              ${invoice.company ? `<div class="client-company">${invoice.company}</div>` : ''}
+              ${invoice.address ? `<div class="client-address">${invoice.address}</div>` : ''}
+              ${invoice.city || invoice.country ? `<div class="client-location">${[invoice.city, invoice.country].filter(Boolean).join(', ')}</div>` : ''}
             </div>
           </div>
 
           <!-- Détails de la facture -->
           <div class="invoice-details">
-            <h4>Prestations</h4>
-            <table class="invoice-items">
+            <div class="section-title">Prestations</div>
+            <table class="invoice-items-table">
               <thead>
                 <tr>
                   <th>Description</th>
@@ -403,10 +392,10 @@ class ClientInvoicesApp {
               </thead>
               <tbody>
                 <tr>
-                  <td>${invoice.description}</td>
-                  <td>${parseFloat(invoice.amount_ht).toFixed(2)}€</td>
-                  <td>${parseFloat(invoice.tva_rate).toFixed(0)}% (${parseFloat(invoice.amount_tva).toFixed(2)}€)</td>
-                  <td><strong>${parseFloat(invoice.amount_ttc).toFixed(2)}€</strong></td>
+                  <td class="description">${invoice.description}</td>
+                  <td class="amount">${parseFloat(invoice.amount_ht).toFixed(2)}€</td>
+                  <td class="tax">${parseFloat(invoice.tva_rate).toFixed(0)}% <span class="tax-amount">(${parseFloat(invoice.amount_tva).toFixed(2)}€)</span></td>
+                  <td class="total-amount">${parseFloat(invoice.amount_ttc).toFixed(2)}€</td>
                 </tr>
               </tbody>
             </table>
@@ -415,22 +404,24 @@ class ClientInvoicesApp {
           <!-- Totaux -->
           <div class="invoice-totals">
             <div class="totals-row">
-              <span>Montant HT:</span>
-              <span>${parseFloat(invoice.amount_ht).toFixed(2)}€</span>
+              <span class="total-label">Montant HT</span>
+              <span class="total-value">${parseFloat(invoice.amount_ht).toFixed(2)}€</span>
             </div>
             <div class="totals-row">
-              <span>TVA (${parseFloat(invoice.tva_rate).toFixed(0)}%):</span>
-              <span>${parseFloat(invoice.amount_tva).toFixed(2)}€</span>
+              <span class="total-label">TVA (${parseFloat(invoice.tva_rate).toFixed(0)}%)</span>
+              <span class="total-value">${parseFloat(invoice.amount_tva).toFixed(2)}€</span>
             </div>
-            <div class="totals-row total">
-              <strong>Total TTC:</strong>
-              <strong>${parseFloat(invoice.amount_ttc).toFixed(2)}€</strong>
+            <div class="totals-row final-total">
+              <span class="total-label">Total TTC</span>
+              <span class="total-value">${parseFloat(invoice.amount_ttc).toFixed(2)}€</span>
             </div>
           </div>
 
           <div class="modal-actions">
             <button type="button" class="btn btn-secondary close-modal">Fermer</button>
-            <button type="button" class="btn btn-primary download-pdf" data-invoice-id="${invoiceId}">Télécharger PDF</button>
+            <button type="button" class="btn btn-primary download-pdf" data-invoice-id="${invoiceId}">
+              <span>📄</span> Télécharger PDF
+            </button>
           </div>
         </div>
       `, 'large');
@@ -511,6 +502,18 @@ class ClientInvoicesApp {
       clientY += 7;
       doc.text(invoice.company, 20, clientY);
     }
+    if (invoice.address) {
+      clientY += 7;
+      doc.text(invoice.address, 20, clientY);
+    }
+    if (invoice.city) {
+      clientY += 7;
+      const cityCountry = invoice.country ? `${invoice.city}, ${invoice.country}` : invoice.city;
+      doc.text(cityCountry, 20, clientY);
+    } else if (invoice.country) {
+      clientY += 7;
+      doc.text(invoice.country, 20, clientY);
+    }
     
     // Ligne de séparation
     doc.setDrawColor(...primaryColor);
@@ -587,9 +590,12 @@ class ClientInvoicesApp {
   }
 
   createModal(title, content, size = 'normal') {
+    console.log('createModal called with:', { title, size });
+    
     // Supprimer le modal existant s'il y en a un
     const existingModal = document.getElementById('modal');
     if (existingModal) {
+      console.log('Removing existing modal');
       existingModal.remove();
     }
 
@@ -598,6 +604,7 @@ class ClientInvoicesApp {
     const modal = document.createElement('div');
     modal.id = 'modal';
     modal.className = 'modal';
+    modal.style.cssText = 'display: flex !important; z-index: 10000 !important; position: fixed !important;';
     modal.innerHTML = `
       <div class="modal-overlay"></div>
       <div class="modal-content ${modalSizeClass}">
@@ -611,11 +618,29 @@ class ClientInvoicesApp {
       </div>
     `;
 
+    console.log('Appending modal to body');
     document.body.appendChild(modal);
+    console.log('Modal appended, element:', modal);
+    
+    // Force visibility immediately
+    modal.style.opacity = '1';
+    modal.style.visibility = 'visible';
+    modal.classList.add('active');
     
     // Event listeners pour fermer
     modal.querySelector('.modal-overlay').addEventListener('click', () => this.closeModal());
     modal.querySelector('.modal-close').addEventListener('click', () => this.closeModal());
+    
+    // Vérifier que le modal est visible
+    setTimeout(() => {
+      const modalInDOM = document.getElementById('modal');
+      console.log('Modal in DOM after timeout:', modalInDOM);
+      console.log('Modal computed style:', window.getComputedStyle(modalInDOM).display);
+      console.log('Modal z-index:', window.getComputedStyle(modalInDOM).zIndex);
+      console.log('Modal position:', window.getComputedStyle(modalInDOM).position);
+      console.log('Body children count:', document.body.children.length);
+      console.log('Modal is last child:', document.body.lastElementChild === modalInDOM);
+    }, 100);
     
     return modal;
   }

@@ -5,6 +5,8 @@
   "main": "src/server.js",
   "scripts": {
     "setup": "node setup.js",
+    "setup-prod": "node scripts/setup-production.js",
+    "dev-data": "node scripts/populate-test-data.js",
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "test": "jest"

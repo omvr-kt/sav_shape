@@ -18,12 +18,15 @@ window.generateSafeInvoicePDF = function(invoice) {
     last_name: invoice.last_name || 'Nom',
     email: invoice.email || 'email@example.com',
     company: invoice.company || '',
+    address: invoice.address || '',
+    city: invoice.city || '',
+    country: invoice.country || '',
     description: invoice.description || 'Prestation',
     amount_ht: parseFloat(invoice.amount_ht) || 0,
     amount_tva: parseFloat(invoice.amount_tva) || 0,
     amount_ttc: parseFloat(invoice.amount_ttc) || 0,
     tva_rate: parseFloat(invoice.tva_rate) || 0,
-    status: invoice.status || 'draft'
+    status: invoice.status || 'sent'
   };
   
   console.log('Safe invoice data:', safeInvoice);
@@ -65,11 +68,27 @@ window.generateSafeInvoicePDF = function(invoice) {
   let clientY = 95;
   doc.text(`${safeInvoice.first_name} ${safeInvoice.last_name}`, 20, clientY);
   clientY += 7;
-  doc.text(safeInvoice.email, 20, clientY);
+  
   if (safeInvoice.company) {
-    clientY += 7;
     doc.text(safeInvoice.company, 20, clientY);
+    clientY += 7;
   }
+  
+  if (safeInvoice.address) {
+    doc.text(safeInvoice.address, 20, clientY);
+    clientY += 7;
+  }
+  
+  if (safeInvoice.city || safeInvoice.country) {
+    let addressLine = '';
+    if (safeInvoice.city) addressLine += safeInvoice.city;
+    if (safeInvoice.city && safeInvoice.country) addressLine += ', ';
+    if (safeInvoice.country) addressLine += safeInvoice.country;
+    doc.text(addressLine, 20, clientY);
+    clientY += 7;
+  }
+  
+  doc.text(safeInvoice.email, 20, clientY);
   
   // Ligne de séparation
   doc.setDrawColor(...accentColor);
@@ -172,7 +191,6 @@ function formatDateSafe(dateString) {
 // Fonction utilitaire pour les labels de statut
 function getInvoiceStatusLabel(status) {
   const labels = {
-    'draft': 'Brouillon',
     'sent': 'Envoyée',
     'paid': 'Payée',
     'overdue': 'En retard',

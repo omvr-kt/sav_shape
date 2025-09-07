@@ -1590,3 +1590,116 @@ input[type="checkbox"] {
 .modal-actions .btn {
   min-width: 120px;
 }
+
+/* ===== ULTRA COMPACT INVOICE MODAL STYLES ===== */
+/* Tailles de police ultra-petites pour les modals de factures */
+
+.modal .modal-title {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  margin: 0 !important;
+}
+
+.modal .section-title {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  margin-bottom: 0.4rem !important;
+  color: var(--gray-800) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.025em !important;
+}
+
+.modal .form-label {
+  font-size: 9px !important;
+  color: var(--gray-600) !important;
+  font-weight: 500 !important;
+  margin-bottom: 0.2rem !important;
+  display: block !important;
+}
+
+.modal .form-input,
+.modal .form-value {
+  font-size: 9px !important;
+  padding: 0.3rem !important;
+  min-height: auto !important;
+  line-height: 1.2 !important;
+  border: 1px solid var(--gray-300) !important;
+  border-radius: 0.25rem !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.modal .form-value {
+  background-color: var(--gray-50) !important;
+  color: var(--gray-900) !important;
+}
+
+.modal .form-value.total-value {
+  font-weight: 600 !important;
+  color: var(--color-primary, #007bff) !important;
+  background-color: rgba(0, 123, 255, 0.1) !important;
+}
+
+.modal .status-badge {
+  font-size: 8px !important;
+  padding: 0.15rem 0.3rem !important;
+  border-radius: 0.2rem !important;
+  font-weight: 500 !important;
+}
+
+.modal .info-section {
+  margin-bottom: 0.8rem !important;
+  padding: 0 !important;
+}
+
+.modal .form-grid {
+  gap: 0.5rem !important;
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+}
+
+.modal .form-group {
+  margin-bottom: 0.5rem !important;
+}
+
+.modal .modal-content {
+  max-height: none !important;
+  overflow: visible !important;
+  padding: 1rem !important;
+  max-width: 500px !important;
+}
+
+.modal .modal-header {
+  padding: 0.75rem !important;
+  border-bottom: 1px solid var(--gray-200) !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+}
+
+.modal .modal-footer {
+  padding: 0.75rem !important;
+  border-top: 1px solid var(--gray-200) !important;
+  display: flex !important;
+  gap: 0.5rem !important;
+  justify-content: flex-end !important;
+}
+
+.modal .btn {
+  font-size: 9px !important;
+  padding: 0.3rem 0.6rem !important;
+  min-width: auto !important;
+  border-radius: 0.25rem !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .modal .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .modal .modal-content {
+    max-width: 90vw !important;
+    margin: 1rem !important;
+  }
+}

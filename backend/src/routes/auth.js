@@ -101,6 +101,126 @@ router.get('/me', verifyToken, async (req, res) => {
   }
 });
 
+// PUT /auth/profile - Mettre à jour le profil utilisateur
+router.put('/profile', verifyToken, async (req, res) => {
+  try {
+    const { first_name, last_name, company, address, city, country } = req.body;
+    const userId = req.user.id;
+
+    // Validation des données
+    if (first_name && first_name.length > 50) {
+      return res.status(400).json({
+        success: false,
+        message: 'Le prénom ne peut pas dépasser 50 caractères'
+      });
+    }
+
+    if (last_name && last_name.length > 50) {
+      return res.status(400).json({
+        success: false,
+        message: 'Le nom ne peut pas dépasser 50 caractères'
+      });
+    }
+
+    if (company && company.length > 100) {
+      return res.status(400).json({
+        success: false,
+        message: 'Le nom de l\'entreprise ne peut pas dépasser 100 caractères'
+      });
+    }
+
+    if (address && address.length > 200) {
+      return res.status(400).json({
+        success: false,
+        message: 'L\'adresse ne peut pas dépasser 200 caractères'
+      });
+    }
+
+    if (city && city.length > 100) {
+      return res.status(400).json({
+        success: false,
+        message: 'La ville ne peut pas dépasser 100 caractères'
+      });
+    }
+
+    if (country && country.length > 100) {
+      return res.status(400).json({
+        success: false,
+        message: 'Le pays ne peut pas dépasser 100 caractères'
+      });
+    }
+
+    // Mettre à jour le profil
+    await User.updateProfile(userId, {
+      first_name: first_name || null,
+      last_name: last_name || null,
+      company: company || null,
+      address: address || null,
+      city: city || null,
+      country: country || null
+    });
+
+    // Récupérer le profil mis à jour
+    const updatedUser = await User.findById(userId);
+
+    res.json({
+      success: true,
+      message: 'Profil mis à jour avec succès',
+      data: { user: updatedUser }
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la mise à jour du profil'
+    });
+  }
+});
+
+// PUT /auth/change-password - Changer le mot de passe
+router.put('/change-password', verifyToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mot de passe actuel et nouveau mot de passe requis'
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Le nouveau mot de passe doit contenir au moins 6 caractères'
+      });
+    }
+
+    const user = await User.findByEmail(req.user.email);
+    const isValidPassword = await User.validatePassword(user, currentPassword);
+    
+    if (!isValidPassword) {
+      return res.status(401).json({
+        success: false,
+        message: 'Mot de passe actuel incorrect'
+      });
+    }
+
+    await User.updatePassword(req.user.id, newPassword);
+
+    res.json({
+      success: true,
+      message: 'Mot de passe mis à jour avec succès'
+    });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la mise à jour du mot de passe'
+    });
+  }
+});
+
 router.post('/change-password', verifyToken, async (req, res) => {
   try {
     const { current_password, new_password } = req.body;

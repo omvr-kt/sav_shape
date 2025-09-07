@@ -738,11 +738,13 @@
 .profile-info-label {
   font-weight: 500;
   color: var(--gray-700);
+  font-size: 1rem;
 }
 
 .profile-info-value {
   color: var(--gray-900);
   font-weight: 400;
+  font-size: 1rem;
 }
 
 /* Empty states */
@@ -794,6 +796,278 @@
 
 .status-closed .status-indicator {
   background-color: var(--gray-600);
+}
+
+/* Invoice Modal Styles - UNIFIED SIZES */
+.invoice-view {
+  max-width: 700px;
+  margin: 0 auto;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.invoice-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-primary);
+}
+
+.company-info .company-name {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-bottom: 0.75rem;
+}
+
+.company-details .company-detail-item {
+  display: flex;
+  margin-bottom: 0.4rem;
+  font-size: 13px;
+}
+
+.company-detail-item .label {
+  font-weight: 500;
+  color: var(--gray-600);
+  min-width: 60px;
+  margin-right: 0.6rem;
+}
+
+.company-detail-item .value {
+  color: var(--gray-800);
+}
+
+.invoice-info {
+  text-align: right;
+}
+
+.invoice-number {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-bottom: 0.75rem;
+}
+
+.invoice-dates .date-item {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.4rem;
+  font-size: 13px;
+}
+
+.date-item .label {
+  font-weight: 500;
+  color: var(--gray-600);
+  margin-right: 0.6rem;
+}
+
+.date-item .value {
+  color: var(--gray-800);
+}
+
+.client-info {
+  margin-bottom: 1.2rem;
+  padding: 1rem;
+  background-color: var(--gray-50);
+  border-radius: 6px;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: 0.6rem;
+  border-bottom: 1px solid var(--gray-200);
+  padding-bottom: 0.3rem;
+}
+
+.client-details .client-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-900);
+  margin-bottom: 0.3rem;
+}
+
+.client-details .client-email {
+  font-size: 12px;
+  color: var(--gray-600);
+  margin-bottom: 0.3rem;
+}
+
+.client-details .client-company {
+  font-size: 12px;
+  color: var(--gray-700);
+  font-style: italic;
+}
+
+.invoice-details {
+  margin-bottom: 1.2rem;
+}
+
+.invoice-items-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.6rem;
+  font-size: 12px;
+}
+
+.invoice-items-table th {
+  background-color: var(--gray-100);
+  padding: 0.6rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--gray-800);
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.invoice-items-table td {
+  padding: 0.7rem 0.6rem;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.invoice-items-table .description {
+  color: var(--gray-800);
+}
+
+.invoice-items-table .amount,
+.invoice-items-table .tax {
+  color: var(--gray-700);
+  text-align: right;
+}
+
+.invoice-items-table .tax-amount {
+  color: var(--gray-500);
+  font-size: 11px;
+}
+
+.invoice-items-table .total-amount {
+  font-weight: 600;
+  color: var(--color-primary);
+  text-align: right;
+}
+
+.invoice-totals {
+  margin-left: auto;
+  width: 180px;
+  border-top: 1px solid var(--gray-300);
+  padding-top: 0.6rem;
+}
+
+.totals-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+  font-size: 12px;
+}
+
+.totals-row .total-label {
+  color: var(--gray-700);
+  font-weight: 500;
+}
+
+.totals-row .total-value {
+  color: var(--gray-800);
+  font-weight: 500;
+}
+
+.totals-row.final-total {
+  border-top: 1px solid var(--color-primary);
+  padding-top: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 13px;
+}
+
+.final-total .total-label {
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.final-total .total-value {
+  font-weight: 600;
+  color: var(--color-primary);
+  font-size: 14px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+  margin-top: 1.2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--gray-200);
+}
+
+/* Admin Invoice Modal Styles - Compact with smaller fonts */
+.modal .modal-title {
+  font-size: 14px !important;
+  font-weight: 600;
+}
+
+.modal .section-title {
+  font-size: 12px !important;
+  font-weight: 600;
+  margin-bottom: 0.5rem !important;
+}
+
+.modal .form-label {
+  font-size: 10px !important;
+  color: var(--gray-600);
+  font-weight: 500;
+  margin-bottom: 0.25rem !important;
+}
+
+.modal .form-input {
+  font-size: 11px !important;
+  padding: 0.4rem !important;
+  min-height: auto !important;
+  line-height: 1.3 !important;
+}
+
+.modal .form-value {
+  font-size: 11px !important;
+  padding: 0.4rem !important;
+  min-height: auto !important;
+  line-height: 1.3 !important;
+  color: var(--gray-900);
+  background-color: var(--gray-50);
+  border: 1px solid var(--gray-300);
+  border-radius: 0.375rem;
+}
+
+.modal .form-value.total-value {
+  font-weight: 600;
+  color: var(--color-primary);
+  background-color: var(--color-primary-light, #f0f9ff);
+}
+
+.modal .status-badge {
+  font-size: 10px !important;
+  padding: 0.2rem 0.4rem !important;
+}
+
+.modal .info-section {
+  margin-bottom: 1rem !important;
+}
+
+.modal .form-grid {
+  gap: 0.75rem !important;
+}
+
+.modal .form-group {
+  margin-bottom: 0.75rem !important;
+}
+
+.modal .modal-content {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.modal .btn {
+  font-size: 11px !important;
+  padding: 0.4rem 0.8rem !important;
 }
 
 /* Responsive design */
@@ -852,21 +1126,23 @@
   }
 }
 
-/* Modal styles (shared with admin) */
+/* UNIFIED MODAL SYSTEM - Based on perfect ticket conversation modal */
 .modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: rgba(0, 0, 0, 0.7) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 9999 !important;
+  padding: 20px !important;
 }
 
 .modal-overlay {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
@@ -874,53 +1150,73 @@
   background: rgba(0, 0, 0, 0.5);
 }
 
+/* UNIFIED MODAL CONTENT - Perfect proportions from ticket modal */
 .modal-content {
-  position: relative;
-  background: white;
-  border-radius: 0.5rem;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  max-height: 90vh;
-  overflow-y: auto;
-  width: 90%;
-  max-width: 600px;
+  background: white !important;
+  border-radius: 8px !important;
+  width: 100% !important;
+  max-width: 1000px !important;
+  max-height: 90% !important;
+  overflow-y: auto !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
+  position: relative !important;
 }
 
 .modal-content.modal-large {
-  max-width: 900px;
-  width: 95%;
+  max-width: 1200px !important;
+  width: 95% !important;
 }
 
+/* UNIFIED MODAL HEADER - Perfect styling from ticket modal */
 .modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--gray-200);
+  padding: 20px 20px 15px 20px !important;
+  border-bottom: 1px solid #eee !important;
+  background: #f8f9fa !important;
+  border-radius: 8px 8px 0 0 !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
 }
 
 .modal-title {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--gray-900);
+  margin: 0 0 5px 0 !important;
+  color: #333 !important;
+  font-size: 20px !important;
+  font-weight: 600 !important;
+}
+
+.modal-subtitle {
+  margin: 0 !important;
+  color: #666 !important;
+  font-size: 14px !important;
 }
 
 .modal-close {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  padding: 0.25rem;
-  color: var(--gray-400);
-  line-height: 1;
+  background: #f1f3f4 !important;
+  border: none !important;
+  font-size: 18px !important;
+  cursor: pointer !important;
+  color: #5f6368 !important;
+  padding: 8px !important;
+  line-height: 1 !important;
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s !important;
+  font-weight: bold !important;
 }
 
 .modal-close:hover {
-  color: var(--gray-600);
+  background: #e8eaed !important;
+  color: #3c4043 !important;
 }
 
+/* UNIFIED MODAL BODY - Perfect spacing from ticket modal */
 .modal-body {
-  padding: 1.5rem;
+  padding: 20px !important;
 }
 
 /* Multi-step form styles */

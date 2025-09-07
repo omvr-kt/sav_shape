@@ -47,7 +47,7 @@ class User {
   }
 
   static async update(id, updates) {
-    const allowedFields = ['first_name', 'last_name', 'company', 'is_active', 'confidential_file'];
+    const allowedFields = ['first_name', 'last_name', 'company', 'is_active', 'confidential_file', 'address', 'city', 'country'];
     const fieldsToUpdate = [];
     const values = [];
 
@@ -62,6 +62,34 @@ class User {
           fieldsToUpdate.push(`${key} = ?`);
           values.push(updates[key]);
         }
+      }
+    });
+
+    if (fieldsToUpdate.length === 0) {
+      throw new Error('No valid fields to update');
+    }
+
+    values.push(new Date().toISOString());
+    values.push(id);
+
+    await db.run(`
+      UPDATE users 
+      SET ${fieldsToUpdate.join(', ')}, updated_at = ?
+      WHERE id = ?
+    `, values);
+
+    return this.findById(id);
+  }
+
+  static async updateProfile(id, profileData) {
+    const allowedFields = ['first_name', 'last_name', 'company', 'address', 'city', 'country'];
+    const fieldsToUpdate = [];
+    const values = [];
+
+    Object.keys(profileData).forEach(key => {
+      if (allowedFields.includes(key) && profileData[key] !== undefined) {
+        fieldsToUpdate.push(`${key} = ?`);
+        values.push(profileData[key]);
       }
     });
 
@@ -111,13 +139,20 @@ class User {
         u.last_name,
         u.company,
         u.created_at,
-        COUNT(p.id) as project_count,
-        COUNT(t.id) as ticket_count
+        COALESCE(p.project_count, 0) as project_count,
+        COALESCE(t.ticket_count, 0) as ticket_count
       FROM users u
-      LEFT JOIN projects p ON u.id = p.client_id
-      LEFT JOIN tickets t ON u.id = t.client_id
+      LEFT JOIN (
+        SELECT client_id, COUNT(*) as project_count 
+        FROM projects 
+        GROUP BY client_id
+      ) p ON u.id = p.client_id
+      LEFT JOIN (
+        SELECT client_id, COUNT(*) as ticket_count 
+        FROM tickets 
+        GROUP BY client_id
+      ) t ON u.id = t.client_id
       WHERE u.role = 'client' AND u.is_active = 1
-      GROUP BY u.id
       ORDER BY u.created_at DESC
     `);
   }

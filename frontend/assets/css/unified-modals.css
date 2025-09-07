@@ -1,0 +1,647 @@
+/* UNIFIED MODAL SYSTEM - Based on perfect ticket conversation modal */
+/* FORCE FONT UNIFORMITY - Override all inline styles */
+
+/* Base Modal Structure */
+.modal {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: rgba(0, 0, 0, 0.7) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 9999 !important;
+  padding: 20px !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+.modal-content {
+  background: white !important;
+  border-radius: 8px !important;
+  width: 100% !important;
+  max-width: 1000px !important;
+  max-height: 90% !important;
+  overflow-y: auto !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
+  position: relative !important;
+}
+
+.modal-content.modal-large {
+  max-width: 1200px !important;
+  width: 95% !important;
+}
+
+/* Modal Header - Perfect styling from ticket modal */
+.modal-header {
+  padding: 20px 20px 15px 20px !important;
+  border-bottom: 1px solid #eee !important;
+  background: #f8f9fa !important;
+  border-radius: 8px 8px 0 0 !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+}
+
+.modal-title {
+  margin: 0 0 5px 0 !important;
+  color: #333 !important;
+  font-size: 20px !important;
+  font-weight: 600 !important;
+}
+
+.modal-subtitle {
+  margin: 0 !important;
+  color: #666 !important;
+  font-size: 14px !important;
+}
+
+.modal-close {
+  background: #f1f3f4 !important;
+  border: none !important;
+  font-size: 18px !important;
+  cursor: pointer !important;
+  color: #5f6368 !important;
+  padding: 8px !important;
+  line-height: 1 !important;
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s !important;
+  font-weight: bold !important;
+}
+
+.modal-close:hover {
+  background: #e8eaed !important;
+  color: #3c4043 !important;
+}
+
+/* Modal Body - Perfect spacing */
+.modal-body {
+  padding: 20px !important;
+}
+
+/* Information Sections */
+.info-section, .ticket-info-section {
+  background: #f8f9fa !important;
+  padding: 15px !important;
+  border-radius: 6px !important;
+  margin-bottom: 20px !important;
+}
+
+.section-title, .ticket-section-title {
+  margin: 0 0 15px 0 !important;
+  font-size: 16px !important;
+  color: #333 !important;
+  font-weight: 600 !important;
+}
+
+/* Form Elements */
+.form-grid, .ticket-info-grid {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 10px !important;
+  font-size: 14px !important;
+}
+
+.form-group, .ticket-info-item {
+  margin-bottom: 15px !important;
+}
+
+.form-label, .ticket-info-label {
+  font-weight: 600 !important;
+  color: #333 !important;
+  font-size: 14px !important;
+  margin-bottom: 5px !important;
+  display: block !important;
+}
+
+.form-value, .ticket-info-value {
+  color: #333 !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  background: white !important;
+  border: 1px solid #ddd !important;
+  padding: 15px !important;
+  border-radius: 6px !important;
+  min-height: auto !important;
+}
+
+/* Description Areas */
+.description-area, .ticket-description {
+  background: white !important;
+  border: 1px solid #ddd !important;
+  padding: 15px !important;
+  border-radius: 6px !important;
+  line-height: 1.5 !important;
+  color: #333 !important;
+  font-size: 14px !important;
+  margin-bottom: 20px !important;
+}
+
+/* Badges */
+.status-badge, .priority-badge {
+  padding: 4px 8px !important;
+  border-radius: 4px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+}
+
+/* Buttons */
+.modal .btn {
+  padding: 10px 20px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+  border: none !important;
+}
+
+.modal .btn-primary {
+  background: #0e2433 !important;
+  color: white !important;
+}
+
+.modal .btn-primary:hover {
+  background: #1e3a8a !important;
+}
+
+.modal .btn-secondary {
+  background: #6b7280 !important;
+  color: white !important;
+}
+
+.modal .btn-secondary:hover {
+  background: #374151 !important;
+  color: white !important;
+}
+
+/* Fix hover for secondary buttons outside modals - profile page */
+.btn-secondary:hover {
+  background-color: #e5e7eb !important;
+  color: #374151 !important;
+  border-color: #d1d5db !important;
+}
+
+/* Modal Footer */
+.modal-footer, .modal-actions {
+  display: flex !important;
+  gap: 12px !important;
+  justify-content: flex-end !important;
+  margin-top: 20px !important;
+  padding-top: 15px !important;
+  border-top: 1px solid #eee !important;
+}
+
+/* Invoice Specific Styles - Unified with perfect proportions */
+.invoice-view {
+  max-width: 100% !important;
+  margin: 0 auto !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+.invoice-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+  margin-bottom: 20px !important;
+  padding-bottom: 15px !important;
+  border-bottom: 1px solid #0e2433 !important;
+}
+
+.company-info .company-name {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  color: #0e2433 !important;
+  margin-bottom: 10px !important;
+}
+
+.company-details .company-detail-item {
+  display: flex !important;
+  margin-bottom: 6px !important;
+  font-size: 14px !important;
+}
+
+.company-detail-item .label {
+  font-weight: 600 !important;
+  color: #666 !important;
+  min-width: 70px !important;
+  margin-right: 10px !important;
+}
+
+.company-detail-item .value {
+  color: #333 !important;
+}
+
+.invoice-number {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  color: #0e2433 !important;
+  margin-bottom: 10px !important;
+}
+
+.invoice-dates .date-item {
+  display: flex !important;
+  justify-content: flex-end !important;
+  margin-bottom: 6px !important;
+  font-size: 14px !important;
+}
+
+.date-item .label {
+  font-weight: 600 !important;
+  color: #666 !important;
+  margin-right: 10px !important;
+}
+
+.date-item .value {
+  color: #333 !important;
+}
+
+.client-info {
+  margin-bottom: 20px !important;
+  padding: 15px !important;
+  background-color: #f8f9fa !important;
+  border-radius: 6px !important;
+}
+
+.client-details .client-name {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #333 !important;
+  margin-bottom: 6px !important;
+}
+
+.client-details .client-email {
+  font-size: 14px !important;
+  color: #666 !important;
+  margin-bottom: 6px !important;
+}
+
+.client-details .client-company {
+  font-size: 14px !important;
+  color: #666 !important;
+  font-style: italic !important;
+}
+
+.invoice-items-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  margin-top: 10px !important;
+  font-size: 14px !important;
+}
+
+.invoice-items-table th {
+  background-color: #f8f9fa !important;
+  padding: 12px !important;
+  text-align: left !important;
+  font-weight: 600 !important;
+  color: #333 !important;
+  border-bottom: 1px solid #ddd !important;
+}
+
+.invoice-items-table td {
+  padding: 12px !important;
+  border-bottom: 1px solid #eee !important;
+}
+
+.invoice-items-table .total-amount {
+  font-weight: 600 !important;
+  color: #0e2433 !important;
+  text-align: right !important;
+}
+
+.invoice-totals {
+  margin-left: auto !important;
+  width: 200px !important;
+  border-top: 1px solid #ddd !important;
+  padding-top: 15px !important;
+}
+
+.totals-row {
+  display: flex !important;
+  justify-content: space-between !important;
+  margin-bottom: 8px !important;
+  font-size: 14px !important;
+}
+
+.totals-row .total-label {
+  color: #666 !important;
+  font-weight: 600 !important;
+}
+
+.totals-row .total-value {
+  color: #333 !important;
+  font-weight: 600 !important;
+}
+
+.totals-row.final-total {
+  border-top: 1px solid #0e2433 !important;
+  padding-top: 10px !important;
+  margin-top: 10px !important;
+  font-size: 16px !important;
+}
+
+.final-total .total-label {
+  font-weight: 700 !important;
+  color: #333 !important;
+}
+
+.final-total .total-value {
+  font-weight: 700 !important;
+  color: #0e2433 !important;
+}
+
+/* FORCE FONT UNIFORMITY - Override ALL inline font styles in modals */
+.modal *, .modal *::before, .modal *::after {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* Force standard font sizes for all modal content */
+.modal h1, .modal h1 * {
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+}
+
+.modal h2, .modal h2 * {
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+}
+
+.modal h3, .modal h3 * {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+}
+
+.modal h4, .modal h4 * {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+}
+
+.modal h5, .modal h5 * {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+}
+
+.modal h6, .modal h6 * {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+}
+
+/* Force standard body text */
+.modal p, .modal div, .modal span, .modal td, .modal th, .modal li, .modal label {
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+/* Force small text elements */
+.modal small, .modal .small-text {
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+}
+
+/* Force form elements */
+.modal input, .modal textarea, .modal select, .modal button {
+  font-size: 14px !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  line-height: 1.5 !important;
+}
+
+/* Force button text */
+.modal button, .modal .btn {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+}
+
+/* Force badge text */
+.modal .badge, .modal .status-badge, .modal .priority-badge {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+}
+
+/* Force conversation/comment text */
+.modal .comment-content, .modal .message-content {
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+}
+
+/* Force metadata text (dates, IDs, etc.) */
+.modal .meta-text, .modal .date-text, .modal .id-text {
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+}
+
+/* Force table content */
+.modal table {
+  font-size: 14px !important;
+}
+
+.modal table th {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+}
+
+.modal table td {
+  font-size: 14px !important;
+}
+
+/* Force specific modal elements that use inline styles */
+.modal [style*="font-size"] {
+  font-size: 14px !important;
+}
+
+/* ULTRA FORCE - Override conflicting CSS from admin.css and client.css */
+.modal .form-label,
+.modal .form-label *,
+.modal label,
+.modal label * {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #333 !important;
+  margin-bottom: 5px !important;
+  display: block !important;
+}
+
+.modal .form-input,
+.modal .form-input *,
+.modal input,
+.modal textarea,
+.modal select {
+  font-size: 14px !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  line-height: 1.5 !important;
+  padding: 12px !important;
+  border: 1px solid #ddd !important;
+  border-radius: 6px !important;
+}
+
+.modal .form-text,
+.modal .form-text *,
+.modal small,
+.modal small * {
+  font-size: 12px !important;
+  color: #666 !important;
+  line-height: 1.4 !important;
+}
+
+.modal .form-section h3,
+.modal .form-section h3 *,
+.modal .sla-priority-group h4,
+.modal .sla-priority-group h4 * {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: #333 !important;
+  margin: 20px 0 15px 0 !important;
+}
+
+.modal .form-section p,
+.modal .form-section p * {
+  font-size: 14px !important;
+  color: #666 !important;
+  margin-bottom: 15px !important;
+}
+
+.modal [style*="font-size: 11px"] {
+  font-size: 12px !important;
+}
+
+.modal [style*="font-size: 12px"] {
+  font-size: 12px !important;
+}
+
+.modal [style*="font-size: 13px"] {
+  font-size: 14px !important;
+}
+
+.modal [style*="font-size: 15px"] {
+  font-size: 14px !important;
+}
+
+.modal [style*="font-size: 16px"] {
+  font-size: 16px !important;
+}
+
+.modal [style*="font-size: 18px"] {
+  font-size: 20px !important;
+}
+
+.modal [style*="font-size: 20px"] {
+  font-size: 20px !important;
+}
+
+.modal [style*="font-size: 24px"] {
+  font-size: 20px !important;
+}
+
+/* Force titles in new ticket modal */
+.modal .new-ticket-header h2 {
+  font-size: 20px !important;
+  font-weight: 600 !important;
+}
+
+.modal .new-ticket-header p {
+  font-size: 14px !important;
+}
+
+/* Force conversation headers */
+.modal .conversation-header {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+}
+
+/* Force attachment text */
+.modal .attachment-text, .modal .file-text {
+  font-size: 12px !important;
+}
+
+/* Force invoice specific elements */
+.modal .invoice-view .company-name {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+}
+
+.modal .invoice-view .invoice-number {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+}
+
+.modal .invoice-view .client-name {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+}
+
+.modal .invoice-view .totals-row.final-total {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+}
+
+/* FORCE UNIFORMITY FOR INVOICE DETAILS - Override all small text */
+.modal .invoice-view,
+.modal .invoice-view * {
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+.modal .invoice-view .company-detail-item,
+.modal .invoice-view .company-detail-item *,
+.modal .invoice-view .date-item,
+.modal .invoice-view .date-item *,
+.modal .invoice-view .client-details,
+.modal .invoice-view .client-details *,
+.modal .invoice-view .invoice-items-table,
+.modal .invoice-view .invoice-items-table *,
+.modal .invoice-view .totals-row,
+.modal .invoice-view .totals-row * {
+  font-size: 14px !important;
+}
+
+.modal .invoice-view .company-name,
+.modal .invoice-view .invoice-number {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+}
+
+.modal .invoice-view .totals-row.final-total,
+.modal .invoice-view .totals-row.final-total * {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+}
+
+/* FORCE UNIFORMITY FOR ADMIN INVOICE VIEW MODAL - Target admin modal structure */
+.modal .info-section,
+.modal .info-section *,
+.modal .form-grid,
+.modal .form-grid *,
+.modal .form-group,
+.modal .form-group *,
+.modal .form-value,
+.modal .form-value * {
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+.modal .section-title,
+.modal .section-title * {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+}
+
+.modal .total-value,
+.modal .total-value * {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+}

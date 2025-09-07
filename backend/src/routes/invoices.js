@@ -6,12 +6,64 @@ const { handleValidationErrors } = require('../middleware/validation');
 const { db } = require('../utils/database');
 const SettingsService = require('../services/settingsService');
 
+// Démarrer le scheduler automatique pour les factures en retard
+let overdueScheduler = null;
+
+/**
+ * Démarre le scheduler automatique des factures en retard
+ */
+function startOverdueScheduler() {
+  if (overdueScheduler) {
+    clearInterval(overdueScheduler);
+  }
+  
+  // Vérifier toutes les heures (3600000 ms = 1 heure)
+  overdueScheduler = setInterval(async () => {
+    console.log('Vérification automatique des factures en retard...');
+    await updateOverdueInvoices();
+  }, 3600000); // 1 heure
+  
+  console.log('Scheduler des factures en retard démarré (vérification toutes les heures)');
+}
+
+/**
+ * Met à jour automatiquement les factures en retard
+ */
+async function updateOverdueInvoices() {
+  try {
+    const now = new Date();
+    const today = now.toISOString().split('T')[0]; // Format YYYY-MM-DD
+    
+    const sql = `
+      UPDATE invoices 
+      SET status = 'overdue', updated_at = datetime('now', 'localtime')
+      WHERE status = 'sent' 
+      AND due_date < ?
+      AND due_date IS NOT NULL
+    `;
+    
+    const result = await db.run(sql, [today]);
+    
+    if (result.changes > 0) {
+      console.log(`${result.changes} facture(s) mise(s) à jour en retard`);
+    }
+    
+    return result.changes;
+  } catch (error) {
+    console.error('Erreur mise à jour factures en retard:', error);
+    return 0;
+  }
+}
+
 // GET /api/invoices - Récupérer toutes les factures (admin) ou les factures du client
 router.get('/', verifyToken, async (req, res) => {
   const { status, client_id } = req.query;
   
+  // Mettre à jour les factures en retard automatiquement
+  await updateOverdueInvoices();
+  
   let sql = `
-    SELECT i.*, u.first_name, u.last_name, u.email, u.company
+    SELECT i.*, u.first_name, u.last_name, u.email, u.company, u.address, u.city, u.country
     FROM invoices i
     LEFT JOIN users u ON i.client_id = u.id
   `;
@@ -22,7 +74,8 @@ router.get('/', verifyToken, async (req, res) => {
   // Si c'est un client, il ne peut voir que ses factures
   if (req.user.role === 'client') {
     conditions.push('i.client_id = ?');
-    params.push(req.user.userId);
+    params.push(req.user.id);
+    console.log('Client filter applied:', { userId: req.user.id, userIdType: typeof req.user.id });
   } else if (client_id) {
     // Admin peut filtrer par client_id
     conditions.push('i.client_id = ?');
@@ -99,7 +152,7 @@ async function createAutomaticInvoice(clientId, quoteFile = null, specifications
   try {
     const invoiceNumber = await generateInvoiceNumber();
     const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 30); // Échéance à 30 jours
+    dueDate.setDate(dueDate.getDate() + 7); // Échéance à 7 jours
 
     let finalAmount = amount;
     let tvaAmount = null;
@@ -135,6 +188,9 @@ async function createAutomaticInvoice(clientId, quoteFile = null, specifications
 router.get('/client/:clientId', verifyToken, async (req, res) => {
   const clientId = parseInt(req.params.clientId);
   
+  // Mettre à jour les factures en retard automatiquement
+  await updateOverdueInvoices();
+  
   console.log('Invoice access attempt:', {
     requestedClientId: clientId,
     userRole: req.user.role,
@@ -142,7 +198,17 @@ router.get('/client/:clientId', verifyToken, async (req, res) => {
   });
 
   // Vérifier les permissions
-  if (req.user.role !== 'admin' && req.user.id !== clientId) {
+  console.log('Client invoices access check:', {
+    userRole: req.user.role,
+    userId: req.user.id,
+    userIdType: typeof req.user.id,
+    requestedClientId: clientId,
+    clientIdType: typeof clientId,
+    comparison: req.user.id == clientId
+  });
+  
+  if (req.user.role !== 'admin' && req.user.id != clientId) {
+    console.log('Permission denied for client invoices access');
     return res.status(403).json({
       success: false,
       message: 'Accès refusé'
@@ -150,7 +216,7 @@ router.get('/client/:clientId', verifyToken, async (req, res) => {
   }
 
   const sql = `
-    SELECT i.*, u.first_name, u.last_name, u.email, u.company
+    SELECT i.*, u.first_name, u.last_name, u.email, u.company, u.address, u.city, u.country
     FROM invoices i
     LEFT JOIN users u ON i.client_id = u.id
     WHERE i.client_id = ?
@@ -177,6 +243,9 @@ router.get('/client/:clientId', verifyToken, async (req, res) => {
 // GET /api/invoices/:id - Récupérer une facture spécifique
 router.get('/:id', verifyToken, async (req, res) => {
   const invoiceId = parseInt(req.params.id);
+
+  // Mettre à jour les factures en retard automatiquement
+  await updateOverdueInvoices();
 
   const sql = `
     SELECT i.*, 
@@ -216,7 +285,17 @@ router.get('/:id', verifyToken, async (req, res) => {
     }
 
     // Vérifier les permissions
-    if (req.user.role !== 'admin' && req.user.userId !== invoice.client_id) {
+    console.log('GET Invoice Permission check:', {
+      userRole: req.user.role,
+      userId: req.user.id,
+      userIdType: typeof req.user.id,
+      invoiceClientId: invoice.client_id,
+      invoiceClientIdType: typeof invoice.client_id,
+      comparison: req.user.id == invoice.client_id
+    });
+    
+    if (req.user.role !== 'admin' && req.user.id != invoice.client_id) {
+      console.log('Permission denied for GET invoice access');
       return res.status(403).json({
         success: false,
         message: 'Accès refusé'
@@ -266,18 +345,19 @@ router.post('/', [
 
     // Calculer la TVA
     const finalTvaRate = no_tva ? 0 : tva_rate;
-    const { amount_tva, amount_ttc } = calculateTVA(amount_ht, finalTvaRate);
+    const { amount_tva, amount_ttc } = await calculateTVA(amount_ht, finalTvaRate);
     
-    const invoiceNumber = generateInvoiceNumber();
+    const invoiceNumber = await generateInvoiceNumber();
     const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 30);
+    dueDate.setDate(dueDate.getDate() + 7);
 
     const sql = `
       INSERT INTO invoices (
         invoice_number, client_id, amount_ht, tva_rate, amount_tva, amount_ttc, 
-        description, status, due_date, client_first_name, client_last_name, client_email, client_company
+        description, status, due_date, client_first_name, client_last_name, client_email, client_company,
+        client_address, client_city, client_country
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'sent', ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const result = await db.run(sql, [
@@ -288,16 +368,19 @@ router.post('/', [
       amount_tva, 
       amount_ttc, 
       description, 
-      dueDate.toISOString(),
-      client.first_name,
-      client.last_name,
-      client.email,
-      client.company
+      dueDate.toISOString().split('T')[0], // Format date only (YYYY-MM-DD)
+      client.first_name || '',
+      client.last_name || '',
+      client.email || '',
+      client.company || '',
+      client.address || '',
+      client.city || '',
+      client.country || ''
     ]);
 
     // Récupérer la facture créée avec les infos client
     const getInvoiceSQL = `
-      SELECT i.*, u.first_name, u.last_name, u.email, u.company
+      SELECT i.*, u.first_name, u.last_name, u.email, u.company, u.address, u.city, u.country
       FROM invoices i
       LEFT JOIN users u ON i.client_id = u.id
       WHERE i.id = ?
@@ -371,7 +454,7 @@ router.put('/:id', [
   body('amount_ht').optional().isFloat({ min: 0 }).withMessage('Montant HT invalide'),
   body('tva_rate').optional().isFloat({ min: 0, max: 100 }).withMessage('Taux TVA invalide'),
   body('description').optional().trim().isLength({ min: 1, max: 1000 }).withMessage('Description invalide (max 1000 caractères)'),
-  body('status').optional().isIn(['draft', 'sent', 'paid', 'overdue', 'cancelled']).withMessage('Statut invalide'),
+  body('status').optional().isIn(['sent', 'paid', 'overdue', 'cancelled']).withMessage('Statut invalide'),
   handleValidationErrors
 ], async (req, res) => {
 
@@ -400,7 +483,7 @@ router.put('/:id', [
     const newStatus = status !== undefined ? status : currentInvoice.status;
 
     // Recalculer la TVA avec les nouveaux montants
-    const { amount_tva, amount_ttc } = calculateTVA(newAmountHt, newTvaRate);
+    const { amount_tva, amount_ttc } = await calculateTVA(newAmountHt, newTvaRate);
 
     // Construire la requête de mise à jour
     let updateSql = `
@@ -429,7 +512,7 @@ router.put('/:id', [
 
     // Récupérer la facture mise à jour avec les infos client
     const getUpdatedInvoiceSQL = `
-      SELECT i.*, u.first_name, u.last_name, u.email, u.company
+      SELECT i.*, u.first_name, u.last_name, u.email, u.company, u.address, u.city, u.country
       FROM invoices i
       LEFT JOIN users u ON i.client_id = u.id
       WHERE i.id = ?
@@ -444,9 +527,12 @@ router.put('/:id', [
     });
   } catch (error) {
     console.error('Erreur mise à jour facture:', error);
+    console.error('Error details:', error.message);
+    console.error('Stack:', error.stack);
     res.status(500).json({
       success: false,
-      message: 'Erreur lors de la mise à jour de la facture'
+      message: 'Erreur lors de la mise à jour de la facture',
+      error: error.message
     });
   }
 });
@@ -484,6 +570,9 @@ router.delete('/:id', verifyToken, requireAdmin, async (req, res) => {
 router.get('/:id/pdf', verifyToken, async (req, res) => {
   const invoiceId = parseInt(req.params.id);
 
+  // Mettre à jour les factures en retard automatiquement
+  await updateOverdueInvoices();
+
   const sql = `
     SELECT i.*, 
            CASE 
@@ -505,7 +594,22 @@ router.get('/:id/pdf', verifyToken, async (req, res) => {
              WHEN i.client_company IS NOT NULL 
              THEN i.client_company 
              ELSE u.company 
-           END as company
+           END as company,
+           CASE 
+             WHEN i.client_address IS NOT NULL 
+             THEN i.client_address 
+             ELSE u.address 
+           END as address,
+           CASE 
+             WHEN i.client_city IS NOT NULL 
+             THEN i.client_city 
+             ELSE u.city 
+           END as city,
+           CASE 
+             WHEN i.client_country IS NOT NULL 
+             THEN i.client_country 
+             ELSE u.country 
+           END as country
     FROM invoices i
     LEFT JOIN users u ON i.client_id = u.id
     WHERE i.id = ?
@@ -522,7 +626,20 @@ router.get('/:id/pdf', verifyToken, async (req, res) => {
     }
 
     // Vérifier les permissions
-    if (req.user.role !== 'admin' && req.user.userId !== invoice.client_id) {
+    console.log('PDF Permission check:', {
+      userRole: req.user.role,
+      userId: req.user.id,
+      userIdType: typeof req.user.id,
+      invoiceClientId: invoice.client_id,
+      invoiceClientIdType: typeof invoice.client_id,
+      userObject: req.user,
+      comparison: req.user.id === invoice.client_id,
+      strictComparison: req.user.id === invoice.client_id,
+      looseComparison: req.user.id == invoice.client_id
+    });
+    
+    if (req.user.role !== 'admin' && req.user.id != invoice.client_id) {
+      console.log('Permission denied for PDF access');
       return res.status(403).json({
         success: false,
         message: 'Accès refusé'
@@ -543,4 +660,18 @@ router.get('/:id/pdf', verifyToken, async (req, res) => {
   }
 });
 
-module.exports = { router, createAutomaticInvoice };
+// Démarrer le scheduler automatiquement
+startOverdueScheduler();
+
+// Exécuter une première vérification immédiatement après l'initialisation de la DB
+setTimeout(() => {
+  updateOverdueInvoices().then(count => {
+    if (count > 0) {
+      console.log(`${count} facture(s) mise(s) à jour en retard au démarrage`);
+    }
+  }).catch(err => {
+    console.error('Erreur lors de la vérification initiale des factures en retard:', err);
+  });
+}, 1000);
+
+module.exports = { router, createAutomaticInvoice, startOverdueScheduler, updateOverdueInvoices };

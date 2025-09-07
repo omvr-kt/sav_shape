@@ -7,9 +7,14 @@
     <!-- Theme Shape Design System -->
     <link rel="stylesheet" href="/styles/theme-shape.css">
     <link rel="stylesheet" href="/src/components/ui/index.css">
-    <link rel="stylesheet" href="/assets/css/main.css?v=1756818165">
-    <link rel="stylesheet" href="/assets/css/client.css?v=1756818165">
-    <script src="/assets/js/timezone-utils.js"></script>
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <link rel="stylesheet" href="/assets/css/sidebar.css">
+    <link rel="stylesheet" href="/assets/css/components.css">
+    <link rel="stylesheet" href="/assets/css/client.css">
+    <link rel="stylesheet" href="/assets/css/unified-modals.css">
+    <link rel="stylesheet" href="/assets/css/error-message.css">
+    <!-- Icônes Heroicons -->
+    <script src="https://unpkg.com/heroicons@1.0.6/outline/index.js"></script>
 </head>
 <body>
     <div class="app-layout">
@@ -54,8 +59,7 @@
                     <div class="header-filters">
                         <select id="invoiceStatusFilter" class="filter-select">
                             <option value="">Tous les statuts</option>
-                            <option value="draft">Brouillon</option>
-                            <option value="sent">Envoyée</option>
+                            <option value="sent">Reçue</option>
                             <option value="paid">Payée</option>
                             <option value="overdue">En retard</option>
                         </select>
@@ -126,12 +130,31 @@
     <!-- Modals will be injected here -->
     <div id="modalContainer"></div>
 
+    <script src="/assets/js/timezone-utils.js"></script>
+    <script src="/assets/js/business-hours.js"></script>
+    <script src="/assets/js/config-service.js"></script>
+    <script src="/assets/js/api.js?v=1756818386"></script>
+    <script src="/assets/js/timezone-simple.js"></script>
+    <script src="/assets/js/sidebar-user.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="/assets/js/pdf-generator.js?v=1756979841"></script>
-    <script src="/assets/js/api.js?v=1756979841"></script>
     <script src="/assets/js/client-invoices.js?v=1756979841"></script>
     
     <script>
+        // Initialiser l'application
+        let clientInvoicesApp;
+        document.addEventListener('DOMContentLoaded', function() {
+            clientInvoicesApp = new ClientInvoicesApp();
+        });
+
+        // Logout functionality
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function() {
+                localStorage.removeItem('token');
+                window.location.href = '/connexion.html';
+            });
+        }
     </script>
 </body>
 </html>

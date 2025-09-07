@@ -121,8 +121,7 @@ class ProfileApp {
         role: this.currentUser.role,
         first_name: '',
         last_name: '',
-        company: '',
-        phone: ''
+        company: ''
       };
       this.renderProfile();
     }
@@ -151,8 +150,16 @@ class ProfileApp {
           <span class="profile-info-value">${user.company || 'Non spécifiée'}</span>
         </div>
         <div class="profile-info-item">
-          <span class="profile-info-label">Téléphone</span>
-          <span class="profile-info-value">${user.phone || 'Non spécifié'}</span>
+          <span class="profile-info-label">Adresse</span>
+          <span class="profile-info-value">${user.address || 'Non spécifiée'}</span>
+        </div>
+        <div class="profile-info-item">
+          <span class="profile-info-label">Ville</span>
+          <span class="profile-info-value">${user.city || 'Non spécifiée'}</span>
+        </div>
+        <div class="profile-info-item">
+          <span class="profile-info-label">Pays</span>
+          <span class="profile-info-value">${user.country || 'Non spécifié'}</span>
         </div>
         ${user.created_at ? `
         <div class="profile-info-item">
@@ -194,9 +201,22 @@ class ProfileApp {
           </div>
           
           <div class="form-group">
-            <label class="form-label" for="editPhone">Téléphone</label>
-            <input type="tel" id="editPhone" name="phone" class="form-input" 
-                   value="${user.phone || ''}" maxlength="20">
+            <label class="form-label" for="editAddress">Adresse</label>
+            <input type="text" id="editAddress" name="address" class="form-input" 
+                   value="${user.address || ''}" maxlength="200">
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="editCity">Ville</label>
+              <input type="text" id="editCity" name="city" class="form-input" 
+                     value="${user.city || ''}" maxlength="100">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="editCountry">Pays</label>
+              <input type="text" id="editCountry" name="country" class="form-input" 
+                     value="${user.country || ''}" maxlength="100">
+            </div>
           </div>
           
           <div class="form-actions">
@@ -244,7 +264,9 @@ class ProfileApp {
       first_name: formData.get('first_name').trim(),
       last_name: formData.get('last_name').trim(),
       company: formData.get('company').trim(),
-      phone: formData.get('phone').trim()
+      address: formData.get('address').trim(),
+      city: formData.get('city').trim(),
+      country: formData.get('country').trim()
     };
 
     try {

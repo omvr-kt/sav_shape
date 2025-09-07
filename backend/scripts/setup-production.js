@@ -67,6 +67,9 @@ async function createAdminAccount() {
   const { db } = require('../src/utils/database');
   
   try {
+    // Connecter à la base de données d'abord
+    await db.connect();
+    
     // Vérifier si un admin existe déjà
     const existingAdmin = await db.get('SELECT id FROM users WHERE role = "admin" LIMIT 1');
     
@@ -103,6 +106,9 @@ async function createAdminAccount() {
   } catch (error) {
     console.error('❌ Erreur lors de la création du compte admin:', error.message);
     throw error;
+  } finally {
+    // Fermer la connexion à la base de données
+    await db.close();
   }
 }
 
@@ -116,7 +122,10 @@ async function main() {
     
     // 2. Initialiser la base de données
     console.log('\n📊 Initialisation de la base de données...');
-    const initDb = require('../init_db');
+    
+    // Import et utiliser le système de base de données moderne
+    const { initDatabase } = require('../src/utils/database');
+    await initDatabase();
     
     // 3. Créer le compte admin
     console.log('\n👤 Création du compte administrateur...');

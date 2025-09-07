@@ -19,8 +19,8 @@ class AdminApp {
     const token = localStorage.getItem('token');
     
     if (!token) {
-      // Rediriger vers la page de connexion principale
-      window.location.href = '/';
+      // Rediriger vers la page de connexion
+      window.location.href = '/connexion.html';
       return;
     }
 
@@ -34,7 +34,7 @@ class AdminApp {
       
       if (this.currentUser.role !== 'admin' && this.currentUser.role !== 'team') {
         alert('Accès non autorisé - Vous n\'êtes pas administrateur');
-        window.location.href = '/';
+        window.location.href = '/connexion.html';
         return;
       }
 
@@ -43,7 +43,7 @@ class AdminApp {
       console.error('Profile load error:', error);
       // Token invalide, rediriger vers la connexion
       localStorage.removeItem('token');
-      window.location.href = '/';
+      window.location.href = '/connexion.html';
     }
   }
 
@@ -225,7 +225,7 @@ class AdminApp {
   async logout() {
     await api.logout();
     this.currentUser = null;
-    window.location.href = '/';
+    window.location.href = '/connexion.html';
   }
 
   switchTab(tabName) {

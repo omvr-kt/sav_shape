@@ -1,0 +1,65 @@
+RewriteEngine On
+Options +FollowSymLinks -Indexes
+
+# Prévention des erreurs 403 - Permettre l'accès aux fichiers et dossiers
+<Files "*">
+    Require all granted
+</Files>
+
+<Directory "*">
+    Require all granted
+    Options +Indexes +FollowSymLinks
+    AllowOverride All
+</Directory>
+
+# Redirection du répertoire racine vers la page de connexion
+DirectoryIndex frontend/connexion.html
+
+# Redirection des ressources statiques frontend
+RewriteRule ^assets/(.*)$ frontend/assets/$1 [L]
+RewriteRule ^src/(.*)$ frontend/src/$1 [L]
+RewriteRule ^styles/(.*)$ frontend/styles/$1 [L]
+
+# Redirection des pages HTML
+RewriteRule ^admin/?$ frontend/admin/index.html [L]
+RewriteRule ^admin/(.*)$ frontend/admin/$1 [L]
+RewriteRule ^client/(.*)$ frontend/client/$1 [L]
+RewriteRule ^admin-login\.html$ frontend/connexion.html [L]
+RewriteRule ^(connexion|tickets|projects|invoices|formulaires)\.html$ frontend/$1.html [L]
+
+# API Backend - redirection vers le serveur Node.js (port 3000)
+RewriteRule ^api/(.*)$ http://localhost:3000/api/$1 [P,L]
+
+# Pour les autres fichiers qui n'existent pas, rediriger vers frontend
+# Éviter les erreurs 403 en vérifiant l'existence des fichiers
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/backend/
+RewriteCond %{REQUEST_URI} !^/api/
+RewriteRule ^(.*)$ frontend/$1 [L,QSA]
+
+# Gestion des erreurs pour éviter les 403
+ErrorDocument 403 /frontend/connexion.html
+ErrorDocument 404 /frontend/connexion.html
+
+# Configuration CORS pour l'API
+Header always set Access-Control-Allow-Origin "*"
+Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+Header always set Access-Control-Allow-Headers "Content-Type, Authorization"
+
+# Configuration de cache pour les ressources statiques
+<IfModule mod_expires.c>
+    ExpiresActive on
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+</IfModule>
+
+# Configuration de sécurité
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options nosniff
+    Header always set X-Frame-Options DENY
+    Header always set X-XSS-Protection "1; mode=block"
+</IfModule>

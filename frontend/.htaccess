@@ -1,0 +1,39 @@
+Options +FollowSymLinks -Indexes
+
+# Prévention des erreurs 403 pour le frontend
+<Files "*">
+    Require all granted
+</Files>
+
+<Directory "*">
+    Require all granted
+    Options +FollowSymLinks
+    AllowOverride All
+</Directory>
+
+# Types MIME pour éviter les erreurs 403 sur les ressources
+<IfModule mod_mime.c>
+    AddType text/css .css
+    AddType application/javascript .js
+    AddType text/html .html
+    AddType application/json .json
+    AddType image/png .png
+    AddType image/jpeg .jpg .jpeg
+    AddType image/gif .gif
+    AddType application/pdf .pdf
+</IfModule>
+
+# Cache et compression
+<IfModule mod_expires.c>
+    ExpiresActive on
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType text/html "access plus 1 hour"
+</IfModule>
+
+# Sécurité sans bloquer l'accès
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options nosniff
+    Header always set X-XSS-Protection "1; mode=block"
+    Header set Cache-Control "public, max-age=3600"
+</IfModule>

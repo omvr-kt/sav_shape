@@ -31,6 +31,7 @@ class ProfileApp {
       
       this.loadUserInfo();
       this.loadProfile();
+      this.loadDocuments();
     } catch (error) {
       console.error('Token validation error:', error);
       localStorage.removeItem('token');
@@ -363,6 +364,152 @@ class ProfileApp {
     setTimeout(() => {
       resultDiv.style.display = 'none';
     }, 5000);
+  }
+
+  async loadDocuments() {
+    const documentsSection = document.getElementById('documentsSection');
+    
+    try {
+      // Récupérer les factures du client pour trouver les documents
+      const response = await api.getClientInvoices(this.currentUser.id);
+      
+      if (response.data && response.data.invoices) {
+        const invoicesWithFiles = response.data.invoices.filter(invoice => 
+          invoice.quote_file || invoice.specifications_file
+        );
+        
+        if (invoicesWithFiles.length === 0) {
+          documentsSection.innerHTML = `
+            <div style="text-align: center; padding: var(--space-4); color: var(--color-muted);">
+              <p>Aucun document disponible</p>
+              <small>Vos documents contractuels apparaîtront ici une fois qu'ils seront associés à vos factures.</small>
+            </div>
+          `;
+          return;
+        }
+        
+        // Grouper les fichiers uniques
+        const documents = [];
+        const seenFiles = new Set();
+        
+        invoicesWithFiles.forEach(invoice => {
+          if (invoice.quote_file && !seenFiles.has(invoice.quote_file)) {
+            documents.push({
+              type: 'quote',
+              file: invoice.quote_file,
+              invoiceId: invoice.id,
+              invoiceNumber: invoice.invoice_number,
+              label: 'Devis',
+              icon: '📋'
+            });
+            seenFiles.add(invoice.quote_file);
+          }
+          
+          if (invoice.specifications_file && !seenFiles.has(invoice.specifications_file)) {
+            documents.push({
+              type: 'specifications', 
+              file: invoice.specifications_file,
+              invoiceId: invoice.id,
+              invoiceNumber: invoice.invoice_number,
+              label: 'Cahier des charges',
+              icon: '📄'
+            });
+            seenFiles.add(invoice.specifications_file);
+          }
+        });
+        
+        documentsSection.innerHTML = `
+          <div class="documents-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-3);">
+            ${documents.map(doc => `
+              <div class="document-item" style="border: 1px solid var(--color-border); border-radius: 8px; padding: var(--space-3); background: var(--color-white);">
+                <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2);">
+                  <span style="font-size: 24px;">${doc.icon}</span>
+                  <div>
+                    <h4 style="margin: 0; font-size: 14px; font-weight: 600; color: var(--color-text);">${doc.label}</h4>
+                    <p style="margin: 0; font-size: 12px; color: var(--color-muted);">Facture ${doc.invoiceNumber}</p>
+                  </div>
+                </div>
+                <button type="button" 
+                        class="btn btn-sm btn--primary download-document-btn" 
+                        data-invoice-id="${doc.invoiceId}" 
+                        data-file-type="${doc.type}"
+                        style="width: 100%;">
+                  Télécharger
+                </button>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        
+        // Ajouter les event listeners pour les boutons de téléchargement
+        documentsSection.querySelectorAll('.download-document-btn').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const invoiceId = parseInt(e.target.dataset.invoiceId);
+            const fileType = e.target.dataset.fileType;
+            await this.downloadDocument(invoiceId, fileType);
+          });
+        });
+        
+      } else {
+        documentsSection.innerHTML = `
+          <div style="text-align: center; padding: var(--space-4); color: var(--color-muted);">
+            <p>Erreur lors du chargement des documents</p>
+          </div>
+        `;
+      }
+    } catch (error) {
+      console.error('Error loading documents:', error);
+      documentsSection.innerHTML = `
+        <div style="text-align: center; padding: var(--space-4); color: var(--color-muted);">
+          <p>Erreur lors du chargement des documents</p>
+        </div>
+      `;
+    }
+  }
+
+  async downloadDocument(invoiceId, fileType) {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${api.baseURL}/invoices/${invoiceId}/files/${fileType}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Erreur lors du téléchargement');
+      }
+
+      // Récupérer le nom du fichier depuis les headers
+      const contentDisposition = response.headers.get('content-disposition');
+      let filename = fileType === 'quote' ? 'devis.pdf' : 'cahier_des_charges.pdf';
+      
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      // Télécharger le fichier
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      this.showResult('Fichier téléchargé avec succès', 'success');
+    } catch (error) {
+      console.error('Download error:', error);
+      this.showResult(error.message || 'Erreur lors du téléchargement du fichier', 'error');
+    }
   }
 
   formatDate(dateString) {

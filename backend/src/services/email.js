@@ -8,10 +8,13 @@ class EmailService {
   }
 
   init() {
+    const port = parseInt(process.env.SMTP_PORT) || 587;
+    const isSecure = port === 465 || process.env.SMTP_SECURE === 'true';
+    
     this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.ethereal.email',
-      port: parseInt(process.env.SMTP_PORT) || 587,
-      secure: false,
+      port: port,
+      secure: isSecure,
       auth: {
         user: process.env.SMTP_USER || 'demo@ethereal.email',
         pass: process.env.SMTP_PASS || 'demo_password'
@@ -46,7 +49,7 @@ class EmailService {
     const html = this.getTicketEmailTemplate(ticket, user, type, extraData);
 
     return this.sendMail({
-      from: '"Équipe Support" <support@agency.local>',
+      from: process.env.SMTP_FROM || '"Équipe Support" <support@agency.local>',
       to: user.email,
       subject,
       html
@@ -257,7 +260,7 @@ class EmailService {
     `;
 
     return this.sendMail({
-      from: '"Équipe Support" <support@agency.local>',
+      from: process.env.SMTP_FROM || '"Équipe Support" <support@agency.local>',
       to: user.email,
       subject,
       html

@@ -5,6 +5,8 @@ const { body } = require('express-validator');
 const { handleValidationErrors } = require('../middleware/validation');
 const { db } = require('../utils/database');
 const SettingsService = require('../services/settingsService');
+const emailService = require('../services/email');
+const { templates } = require('../config/email-templates');
 
 // Démarrer le scheduler automatique pour les factures en retard
 let overdueScheduler = null;
@@ -387,6 +389,34 @@ router.post('/', [
     `;
     
     const invoice = await db.get(getInvoiceSQL, [result.id]);
+
+    // Envoyer notification au client pour la nouvelle facture
+    try {
+      const invoiceData = {
+        id: invoice.id,
+        invoice_number: invoice.invoice_number,
+        issue_date: new Date().toISOString(),
+        due_date: invoice.due_date,
+        subtotal: parseFloat(invoice.amount_ht),
+        tax_rate: parseFloat(invoice.tva_rate),
+        tax_amount: parseFloat(invoice.amount_tva),
+        total: parseFloat(invoice.amount_ttc),
+        status: invoice.status,
+        description: invoice.description
+      };
+
+      const emailHtml = templates.newInvoiceForClient(invoiceData, client);
+      
+      await emailService.sendMail({
+        from: process.env.SMTP_FROM,
+        to: client.email,
+        subject: `Nouvelle facture ${invoice.invoice_number} - Shape Conseil`,
+        html: emailHtml
+      });
+      console.log('Notification facture envoyée au client:', client.email);
+    } catch (emailError) {
+      console.error('Erreur envoi notification facture:', emailError);
+    }
 
     res.status(201).json({
       success: true,

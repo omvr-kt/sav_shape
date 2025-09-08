@@ -2,6 +2,9 @@ const express = require('express');
 const Ticket = require('../models/Ticket');
 const Comment = require('../models/Comment');
 const Project = require('../models/Project');
+const User = require('../models/User');
+const emailService = require('../services/email');
+const { templates } = require('../config/email-templates');
 const { verifyToken, requireTeamOrAdmin } = require('../middleware/auth');
 const { validateTicketCreation, validateTicketUpdate, validateId } = require('../middleware/validation');
 
@@ -154,6 +157,24 @@ router.post('/', verifyToken, validateTicketCreation, async (req, res) => {
     const ticket = await Ticket.create(ticketData);
     console.log('Ticket créé avec succès:', ticket);
 
+    // Notification pour Omar si le ticket est créé par un client
+    if (req.user.role === 'client' && process.env.ADMIN_NOTIFICATION_EMAIL) {
+      try {
+        const client = await User.findById(req.user.id);
+        const emailHtml = templates.newTicketForOmar(ticket, client, project);
+        
+        await emailService.sendMail({
+          from: process.env.SMTP_FROM,
+          to: process.env.ADMIN_NOTIFICATION_EMAIL,
+          subject: `[URGENT] Nouveau ticket #${ticket.id} - ${ticket.title}`,
+          html: emailHtml
+        });
+        console.log('Notification envoyée à Omar pour le nouveau ticket');
+      } catch (emailError) {
+        console.error('Erreur envoi notification Omar:', emailError);
+      }
+    }
+
     res.status(201).json({
       success: true,
       message: 'Ticket créé avec succès',
@@ -193,7 +214,36 @@ router.put('/:id', verifyToken, validateId, validateTicketUpdate, async (req, re
       delete updates.assigned_to;
     }
 
+    // Vérifier si le statut a changé pour envoyer une notification au client
+    const statusChanged = updates.status && updates.status !== ticket.status;
+    const oldStatus = ticket.status;
+    
     const updatedTicket = await Ticket.update(ticketId, updates);
+
+    // Notification au client si le statut a changé
+    if (statusChanged && req.user.role !== 'client') {
+      try {
+        const client = await User.findById(ticket.client_id);
+        const project = await Project.findById(ticket.project_id);
+        const emailHtml = templates.statusChangeForClient(
+          updatedTicket, 
+          oldStatus, 
+          updates.status, 
+          client, 
+          project
+        );
+        
+        await emailService.sendMail({
+          from: process.env.SMTP_FROM,
+          to: client.email,
+          subject: `Ticket #${ticket.id} - Changement de statut`,
+          html: emailHtml
+        });
+        console.log('Notification de changement de statut envoyée au client');
+      } catch (emailError) {
+        console.error('Erreur envoi notification client:', emailError);
+      }
+    }
 
     res.json({
       success: true,

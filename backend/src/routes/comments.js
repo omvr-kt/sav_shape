@@ -1,6 +1,10 @@
 const express = require('express');
 const Comment = require('../models/Comment');
 const Ticket = require('../models/Ticket');
+const User = require('../models/User');
+const Project = require('../models/Project');
+const emailService = require('../services/email');
+const { templates } = require('../config/email-templates');
 const { verifyToken, requireTeamOrAdmin } = require('../middleware/auth');
 const { validateCommentCreation, validateId, validateTicketId } = require('../middleware/validation');
 
@@ -80,6 +84,42 @@ router.post('/ticket/:ticket_id', verifyToken, validateTicketId, validateComment
         status: req.user.role === 'client' ? 'open' : ticket.status,
         updated_at: new Date().toISOString()
       });
+    }
+
+    // Notifications selon le type d'utilisateur
+    try {
+      const project = await Project.findById(ticket.project_id);
+      
+      if (req.user.role === 'client' && !isInternal) {
+        // Notification pour Omar quand un client ajoute un commentaire
+        if (process.env.ADMIN_NOTIFICATION_EMAIL) {
+          const client = await User.findById(req.user.id);
+          const emailHtml = templates.newCommentForOmar(comment, ticket, client, project);
+          
+          await emailService.sendMail({
+            from: process.env.SMTP_FROM,
+            to: process.env.ADMIN_NOTIFICATION_EMAIL,
+            subject: `Nouveau commentaire client - Ticket #${ticket.id}`,
+            html: emailHtml
+          });
+          console.log('Notification commentaire client envoyée à Omar');
+        }
+      } else if ((req.user.role === 'admin' || req.user.role === 'team') && !isInternal) {
+        // Notification pour le client quand la team/admin ajoute un commentaire non interne
+        const client = await User.findById(ticket.client_id);
+        const author = await User.findById(req.user.id);
+        const emailHtml = templates.newCommentForClient(comment, ticket, author, client, project);
+        
+        await emailService.sendMail({
+          from: process.env.SMTP_FROM,
+          to: client.email,
+          subject: `Nouvelle réponse sur votre ticket #${ticket.id}`,
+          html: emailHtml
+        });
+        console.log('Notification commentaire envoyée au client');
+      }
+    } catch (emailError) {
+      console.error('Erreur envoi notification commentaire:', emailError);
     }
 
     res.status(201).json({

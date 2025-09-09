@@ -119,8 +119,38 @@ async function generateInvoiceNumber() {
   const date = new Date();
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
-  const timestamp = Date.now().toString().slice(-6);
-  return `${config.prefix}-${year}${month}-${timestamp}`;
+  
+  try {
+    // Récupérer le compteur global des factures
+    let counter = await db.get(
+      "SELECT counter_value FROM counters WHERE counter_type = 'invoice' AND counter_key = 'global'",
+      []
+    );
+    
+    let nextNumber = 50; // Commence à 50 par défaut
+    
+    if (counter) {
+      nextNumber = counter.counter_value + 1;
+      // Mettre à jour le compteur
+      await db.run(
+        "UPDATE counters SET counter_value = ?, updated_at = datetime('now', 'localtime') WHERE counter_type = 'invoice' AND counter_key = 'global'",
+        [nextNumber]
+      );
+    } else {
+      // Créer le compteur s'il n'existe pas
+      await db.run(
+        "INSERT INTO counters (counter_type, counter_key, counter_value) VALUES ('invoice', 'global', ?)",
+        [nextNumber]
+      );
+    }
+    
+    return `${config.prefix}-${year}${month}-${nextNumber}`;
+  } catch (error) {
+    console.error('Erreur génération numéro facture:', error);
+    // Fallback avec timestamp si erreur
+    const timestamp = Date.now().toString().slice(-6);
+    return `${config.prefix}-${year}${month}-${timestamp}`;
+  }
 }
 
 /**

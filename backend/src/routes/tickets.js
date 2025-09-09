@@ -166,7 +166,7 @@ router.post('/', verifyToken, validateTicketCreation, async (req, res) => {
         await emailService.sendMail({
           from: process.env.SMTP_FROM,
           to: process.env.ADMIN_NOTIFICATION_EMAIL,
-          subject: `[URGENT] Nouveau ticket #${ticket.id} - ${ticket.title}`,
+          subject: `[URGENT] Nouveau ticket #${ticket.ticket_number || ticket.id} - ${ticket.title}`,
           html: emailHtml
         });
         console.log('Notification envoyée à Omar pour le nouveau ticket');

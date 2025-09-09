@@ -57,7 +57,7 @@ class EmailService {
   }
 
   getTicketSubject(ticket, type) {
-    const baseSubject = `[Ticket #${ticket.id}] ${ticket.title}`;
+    const baseSubject = `[Ticket #${ticket.ticket_number || ticket.id}] ${ticket.title}`;
     
     switch (type) {
       case 'created':
@@ -116,7 +116,7 @@ class EmailService {
               
               <div class="ticket-info">
                 <h3>Informations du ticket</h3>
-                <p><strong>Ticket #${ticket.id}:</strong> ${ticket.title}</p>
+                <p><strong>Ticket #${ticket.ticket_number || ticket.id}:</strong> ${ticket.title}</p>
                 <p><strong>Projet:</strong> ${ticket.project_name}</p>
                 <p><strong>Description:</strong> ${ticket.description}</p>
                 <p>

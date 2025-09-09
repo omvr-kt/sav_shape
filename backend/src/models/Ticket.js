@@ -7,14 +7,43 @@ class Ticket {
     
     console.log('Ticket.create() - Données reçues:', { title, description, priority, client_id, project_id });
     
+    // Générer le numéro de ticket incrémental pour ce projet
+    let ticketNumber = 1;
+    try {
+      // Récupérer le compteur pour ce projet
+      const counterKey = `project_${project_id}`;
+      let counter = await db.get(
+        "SELECT counter_value FROM counters WHERE counter_type = 'ticket' AND counter_key = ?",
+        [counterKey]
+      );
+      
+      if (counter) {
+        ticketNumber = counter.counter_value + 1;
+        // Mettre à jour le compteur
+        await db.run(
+          "UPDATE counters SET counter_value = ?, updated_at = datetime('now', 'localtime') WHERE counter_type = 'ticket' AND counter_key = ?",
+          [ticketNumber, counterKey]
+        );
+      } else {
+        // Créer le compteur s'il n'existe pas (commence à 1)
+        await db.run(
+          "INSERT INTO counters (counter_type, counter_key, counter_value) VALUES ('ticket', ?, 1)",
+          [counterKey]
+        );
+      }
+    } catch (error) {
+      console.error('Erreur génération numéro ticket:', error);
+      // Fallback: utiliser l'ID auto-incrémenté
+    }
+    
     const slaDeadline = await this.calculateSLADeadline(client_id, priority);
     console.log('Ticket.create() - SLA deadline calculée:', slaDeadline);
     
-    console.log('Ticket.create() - Exécution INSERT...');
+    console.log('Ticket.create() - Exécution INSERT avec ticket_number:', ticketNumber);
     const result = await db.run(`
-      INSERT INTO tickets (title, description, priority, client_id, project_id, sla_deadline)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `, [title, description, priority, client_id, project_id, slaDeadline]);
+      INSERT INTO tickets (ticket_number, title, description, priority, client_id, project_id, sla_deadline)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, [ticketNumber, title, description, priority, client_id, project_id, slaDeadline]);
     
     console.log('Ticket.create() - Résultat INSERT:', result);
     
@@ -28,6 +57,7 @@ class Ticket {
     return await db.get(`
       SELECT 
         t.*,
+        t.ticket_number,
         u.first_name as client_first_name,
         u.last_name as client_last_name,
         u.email as client_email,
@@ -47,6 +77,7 @@ class Ticket {
     let query = `
       SELECT 
         t.*,
+        t.ticket_number,
         u.first_name as client_first_name,
         u.last_name as client_last_name,
         u.company as client_company,

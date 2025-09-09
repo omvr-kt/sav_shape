@@ -60,6 +60,7 @@ db.serialize(() => {
   db.run(`
     CREATE TABLE IF NOT EXISTS tickets (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ticket_number INTEGER NOT NULL,
       title TEXT NOT NULL,
       description TEXT NOT NULL,
       project_id INTEGER NOT NULL,
@@ -74,7 +75,8 @@ db.serialize(() => {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (project_id) REFERENCES projects (id),
       FOREIGN KEY (client_id) REFERENCES users (id),
-      FOREIGN KEY (assigned_to) REFERENCES users (id)
+      FOREIGN KEY (assigned_to) REFERENCES users (id),
+      UNIQUE(project_id, ticket_number)
     )
   `, (err) => {
     if (err) {
@@ -101,6 +103,25 @@ db.serialize(() => {
       console.error('Erreur création table comments:', err);
     } else {
       console.log('Table comments créée');
+    }
+  });
+
+  // Table counters pour les numéros incrémentaux
+  db.run(`
+    CREATE TABLE IF NOT EXISTS counters (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      counter_type TEXT NOT NULL,
+      counter_key TEXT NOT NULL,
+      counter_value INTEGER NOT NULL DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(counter_type, counter_key)
+    )
+  `, (err) => {
+    if (err) {
+      console.error('Erreur création table counters:', err);
+    } else {
+      console.log('Table counters créée');
     }
   });
 
@@ -236,11 +257,20 @@ db.serialize(() => {
             // Créer des tickets pour ce projet
             const projetId = this.lastID;
             
+            // Initialiser le compteur pour ce projet
+            db.run(`
+              INSERT INTO counters (counter_type, counter_key, counter_value) 
+              VALUES ('ticket', ?, 2)
+            `, [`project_${projetId}`], (err) => {
+              if (err) console.error('Erreur création compteur:', err);
+            });
+            
             // Ticket 1
             db.run(`
-              INSERT INTO tickets (title, description, project_id, client_id, status, priority, category) 
-              VALUES (?, ?, ?, ?, ?, ?, ?)
+              INSERT INTO tickets (ticket_number, title, description, project_id, client_id, status, priority, category) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `, [
+              1,
               'Problème de connexion au paiement',
               'Les utilisateurs n\'arrivent pas à finaliser leurs commandes. Le module de paiement semble ne pas répondre.',
               projetId,
@@ -258,9 +288,10 @@ db.serialize(() => {
 
             // Ticket 2
             db.run(`
-              INSERT INTO tickets (title, description, project_id, client_id, status, priority, category) 
-              VALUES (?, ?, ?, ?, ?, ?, ?)
+              INSERT INTO tickets (ticket_number, title, description, project_id, client_id, status, priority, category) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `, [
+              2,
               'Amélioration de l\'interface panier',
               'Demande d\'ajout d\'un bouton "Sauvegarder pour plus tard" dans le panier d\'achat.',
               projetId,
@@ -295,11 +326,20 @@ db.serialize(() => {
             
             const projetId = this.lastID;
             
+            // Initialiser le compteur pour ce projet
+            db.run(`
+              INSERT INTO counters (counter_type, counter_key, counter_value) 
+              VALUES ('ticket', ?, 1)
+            `, [`project_${projetId}`], (err) => {
+              if (err) console.error('Erreur création compteur:', err);
+            });
+            
             // Ticket pour app mobile
             db.run(`
-              INSERT INTO tickets (title, description, project_id, client_id, status, priority, category) 
-              VALUES (?, ?, ?, ?, ?, ?, ?)
+              INSERT INTO tickets (ticket_number, title, description, project_id, client_id, status, priority, category) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `, [
+              1,
               'Notification push ne fonctionne pas',
               'Les notifications push ne sont pas reçues sur iOS. Elles fonctionnent correctement sur Android.',
               projetId,
@@ -334,11 +374,20 @@ db.serialize(() => {
             
             const projetId = this.lastID;
             
+            // Initialiser le compteur pour ce projet
+            db.run(`
+              INSERT INTO counters (counter_type, counter_key, counter_value) 
+              VALUES ('ticket', ?, 1)
+            `, [`project_${projetId}`], (err) => {
+              if (err) console.error('Erreur création compteur:', err);
+            });
+            
             // Ticket résolu
             db.run(`
-              INSERT INTO tickets (title, description, project_id, client_id, status, priority, category) 
-              VALUES (?, ?, ?, ?, ?, ?, ?)
+              INSERT INTO tickets (ticket_number, title, description, project_id, client_id, status, priority, category) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `, [
+              1,
               'Demande de formation',
               'Demande de formation pour l\'équipe sur l\'utilisation du dashboard analytics.',
               projetId,

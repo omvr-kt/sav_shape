@@ -2,11 +2,12 @@ const Ticket = require('../models/Ticket');
 const User = require('../models/User');
 const emailService = require('./email');
 const businessHours = require('../utils/business-hours');
+const config = require('../config/config');
 
 class SLAService {
   constructor() {
-    this.checkInterval = 15 * 60 * 1000; // Check every 15 minutes
-    this.warningThreshold = 2 * 60 * 60 * 1000; // Warn 2 hours before deadline
+    this.checkInterval = config.sla.checkIntervalMs; // default 15min
+    this.warningThreshold = config.sla.warningThresholdMs; // default 2h
     this.isRunning = false;
   }
 
@@ -238,7 +239,7 @@ class SLAService {
                 <p><strong>Créé le:</strong> ${emailService.formatDate(ticket.created_at)}</p>
               </div>
               
-              <a href="http://localhost:3000/admin#tickets" class="btn">Traiter le ticket</a>
+              <a href="${config.frontend.baseUrl}/admin#tickets" class="btn">Traiter le ticket</a>
             </div>
             <div class="footer">
               <p>Notification automatique du système SLA</p>

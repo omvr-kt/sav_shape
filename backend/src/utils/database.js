@@ -1,8 +1,8 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
-const { getSQLiteParisDateTime } = require('./timezone');
+const config = require('../config/config');
 
-const DB_PATH = path.join(__dirname, '../../database.sqlite');
+const DB_PATH = process.env.SQLITE_DB_PATH || config.db.sqlitePath;
 
 class Database {
   constructor() {

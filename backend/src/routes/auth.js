@@ -177,41 +177,47 @@ router.put('/profile', verifyToken, async (req, res) => {
   }
 });
 
+// Internal helper to handle password change supporting both body styles
+const handlePasswordChange = async (req, res) => {
+  const current = req.body.currentPassword || req.body.current_password;
+  const next = req.body.newPassword || req.body.new_password;
+
+  if (!current || !next) {
+    return res.status(400).json({
+      success: false,
+      message: 'Mot de passe actuel et nouveau mot de passe requis'
+    });
+  }
+
+  if (next.length < 6) {
+    return res.status(400).json({
+      success: false,
+      message: 'Le nouveau mot de passe doit contenir au moins 6 caractères'
+    });
+  }
+
+  const user = await User.findByEmail(req.user.email);
+  const isValidPassword = await User.validatePassword(user, current);
+
+  if (!isValidPassword) {
+    return res.status(401).json({
+      success: false,
+      message: 'Mot de passe actuel incorrect'
+    });
+  }
+
+  await User.updatePassword(req.user.id, next);
+
+  return res.json({
+    success: true,
+    message: 'Mot de passe mis à jour avec succès'
+  });
+};
+
 // PUT /auth/change-password - Changer le mot de passe
 router.put('/change-password', verifyToken, async (req, res) => {
   try {
-    const { currentPassword, newPassword } = req.body;
-
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({
-        success: false,
-        message: 'Mot de passe actuel et nouveau mot de passe requis'
-      });
-    }
-
-    if (newPassword.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: 'Le nouveau mot de passe doit contenir au moins 6 caractères'
-      });
-    }
-
-    const user = await User.findByEmail(req.user.email);
-    const isValidPassword = await User.validatePassword(user, currentPassword);
-    
-    if (!isValidPassword) {
-      return res.status(401).json({
-        success: false,
-        message: 'Mot de passe actuel incorrect'
-      });
-    }
-
-    await User.updatePassword(req.user.id, newPassword);
-
-    res.json({
-      success: true,
-      message: 'Mot de passe mis à jour avec succès'
-    });
+    await handlePasswordChange(req, res);
   } catch (error) {
     console.error('Change password error:', error);
     res.status(500).json({
@@ -223,38 +229,7 @@ router.put('/change-password', verifyToken, async (req, res) => {
 
 router.post('/change-password', verifyToken, async (req, res) => {
   try {
-    const { current_password, new_password } = req.body;
-
-    if (!current_password || !new_password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Mot de passe actuel et nouveau mot de passe requis'
-      });
-    }
-
-    if (new_password.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: 'Le nouveau mot de passe doit contenir au moins 6 caractères'
-      });
-    }
-
-    const user = await User.findByEmail(req.user.email);
-    const isValidPassword = await User.validatePassword(user, current_password);
-    
-    if (!isValidPassword) {
-      return res.status(401).json({
-        success: false,
-        message: 'Mot de passe actuel incorrect'
-      });
-    }
-
-    await User.updatePassword(req.user.id, new_password);
-
-    res.json({
-      success: true,
-      message: 'Mot de passe mis à jour avec succès'
-    });
+    await handlePasswordChange(req, res);
   } catch (error) {
     console.error('Change password error:', error);
     res.status(500).json({

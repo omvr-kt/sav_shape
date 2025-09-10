@@ -27,6 +27,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const config = require('./config/config');
 const { initDatabase } = require('./utils/database');
 
 const authRoutes = require('./routes/auth');
@@ -42,7 +43,7 @@ const settingsRoutes = require('./routes/settings');
 const slaService = require('./services/sla');
 
 const app = express();
-const PORT = process.env.SERVER_PORT || 3000;
+const PORT = config.server.port;
 
 // Rate limiter - Activé automatiquement en production
 const limiter = rateLimit({
@@ -54,11 +55,11 @@ const limiter = rateLimit({
 });
 
 app.use(helmet({
-  contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false
+  contentSecurityPolicy: config.security.useCsp ? undefined : false
 }));
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? process.env.ALLOWED_ORIGINS?.split(',') || false 
+  origin: process.env.NODE_ENV === 'production'
+    ? (config.cors.origins.length ? config.cors.origins : false)
     : true
 }));
 
@@ -180,6 +181,14 @@ process.on('SIGINT', () => {
   console.log('SIGINT received, shutting down gracefully...');
   slaService.stop();
   process.exit(0);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Rejection:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
 });
 
 startServer();

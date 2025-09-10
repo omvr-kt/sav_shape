@@ -1,5 +1,6 @@
 const nodemailer = require('nodemailer');
 const { formatParisDate } = require('../utils/timezone');
+const config = require('../config/config');
 
 class EmailService {
   constructor() {
@@ -8,21 +9,7 @@ class EmailService {
   }
 
   init() {
-    const port = parseInt(process.env.SMTP_PORT) || 587;
-    const isSecure = port === 465 || process.env.SMTP_SECURE === 'true';
-    
-    this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.ethereal.email',
-      port: port,
-      secure: isSecure,
-      auth: {
-        user: process.env.SMTP_USER || 'demo@ethereal.email',
-        pass: process.env.SMTP_PASS || 'demo_password'
-      },
-      tls: {
-        rejectUnauthorized: false
-      }
-    });
+    this.transporter = nodemailer.createTransport(config.smtp);
   }
 
   async sendMail(mailOptions) {
@@ -49,7 +36,7 @@ class EmailService {
     const html = this.getTicketEmailTemplate(ticket, user, type, extraData);
 
     return this.sendMail({
-      from: process.env.SMTP_FROM || '"Équipe Support" <support@agency.local>',
+      from: config.smtp.from,
       to: user.email,
       subject,
       html
@@ -127,7 +114,7 @@ class EmailService {
                 ${ticket.sla_deadline ? `<p><strong>SLA:</strong> ${this.formatDate(ticket.sla_deadline)}</p>` : ''}
               </div>
               
-              <a href="http://localhost:3000/client#tickets" class="btn">Voir le ticket</a>
+              <a href="${config.frontend.baseUrl}/client#tickets" class="btn">Voir le ticket</a>
             </div>
             <div class="footer">
               <p>Cet email a été envoyé automatiquement par notre système de support.</p>
@@ -249,7 +236,7 @@ class EmailService {
                 <li>Joindre des fichiers à vos demandes</li>
               </ul>
               
-              <a href="http://localhost:3000/client" class="btn">Accéder à mon espace client</a>
+              <a href="${config.frontend.baseUrl}/client" class="btn">Accéder à mon espace client</a>
             </div>
             <div class="footer">
               <p>Si vous avez des questions, n'hésitez pas à contacter notre équipe support.</p>
@@ -260,7 +247,7 @@ class EmailService {
     `;
 
     return this.sendMail({
-      from: process.env.SMTP_FROM || '"Équipe Support" <support@agency.local>',
+      from: config.smtp.from,
       to: user.email,
       subject,
       html

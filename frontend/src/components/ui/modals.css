@@ -17,6 +17,8 @@
   padding: 20px;
   z-index: 1001;
   overflow-y: auto;
+  background: rgba(0,0,0,.32);
+  backdrop-filter: blur(2px);
 }
 
 /* Afficher la modale quand active ou aria-hidden explicite */
@@ -182,6 +184,13 @@
   .modal {
     padding: 0;
   }
+}
+
+/* Empêcher le défilement du body quand modal ouvert */
+body.modal-open {
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100% !important;
 }
 
 /* Side panel (alternative à la modale) */

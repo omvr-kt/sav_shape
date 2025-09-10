@@ -2495,6 +2495,17 @@ class AdminApp {
 
     document.body.appendChild(modal);
     
+    // ULTRA FIX - Capturer la position du scroll et bloquer le défilement
+    const scrollY = window.scrollY || window.pageYOffset;
+    modal.dataset.scrollPosition = scrollY;
+    
+    // Ajouter la classe modal-open au html ET body pour empêcher le défilement
+    document.documentElement.classList.add('modal-open');
+    document.body.classList.add('modal-open');
+    
+    // Forcer le body à rester à la position actuelle
+    document.body.style.top = `-${scrollY}px`;
+    
     // Mettre à jour les dates avec le bon fuseau horaire après injection DOM
     // Utiliser setTimeout pour s'assurer que le DOM est complètement rendu
     setTimeout(() => {
@@ -2517,6 +2528,13 @@ class AdminApp {
     
     if (overlay) overlay.addEventListener('click', () => this.closeModal());
     if (closeBtn) closeBtn.addEventListener('click', () => this.closeModal());
+    
+    // Fermer en cliquant en dehors du contenu de la modal (sur le fond)
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        this.closeModal();
+      }
+    });
     
     // Ajouter event listeners pour tous les boutons d'annulation et de fermeture
     cancelBtns.forEach(btn => {
@@ -2549,7 +2567,23 @@ class AdminApp {
   closeModal() {
     const modal = document.getElementById('modal');
     if (modal) {
+      // ULTRA FIX - Récupérer la position du scroll stockée
+      const scrollY = parseInt(modal.dataset.scrollPosition || 0);
+      
       modal.remove();
+      
+      // Retirer la classe modal-open du html ET body pour réactiver le défilement
+      document.documentElement.classList.remove('modal-open');
+      document.body.classList.remove('modal-open');
+      
+      // Réinitialiser le style et restaurer la position du scroll
+      document.body.style.top = '';
+      window.scrollTo(0, scrollY);
+    } else {
+      // Au cas où le modal n'existe pas, nettoyer quand même
+      document.documentElement.classList.remove('modal-open');
+      document.body.classList.remove('modal-open');
+      document.body.style.top = '';
     }
   }
 

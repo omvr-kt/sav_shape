@@ -122,7 +122,7 @@ async function handleLogin(e) {
                 roleLabel = 'Client';
             }
             
-            successDiv.textContent = `Connexion réussie en tant que ${roleLabel} ! Redirection...`;
+            successDiv.textContent = `Redirection en cours...`;
             successDiv.style.display = 'block';
             
             console.log(`Redirection vers ${redirectUrl} pour le rôle ${userRole}`);

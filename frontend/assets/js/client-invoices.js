@@ -695,6 +695,17 @@ class ClientInvoicesApp {
     document.body.appendChild(modal);
     console.log('Modal appended, element:', modal);
     
+    // ULTRA FIX - Capturer la position du scroll et bloquer le défilement
+    const scrollY = window.scrollY || window.pageYOffset;
+    modal.dataset.scrollPosition = scrollY;
+    
+    // Ajouter la classe modal-open au html ET body pour empêcher le défilement
+    document.documentElement.classList.add('modal-open');
+    document.body.classList.add('modal-open');
+    
+    // Forcer le body à rester à la position actuelle
+    document.body.style.top = `-${scrollY}px`;
+    
     // Force visibility immediately
     modal.style.opacity = '1';
     modal.style.visibility = 'visible';
@@ -721,7 +732,23 @@ class ClientInvoicesApp {
   closeModal() {
     const modal = document.getElementById('modal');
     if (modal) {
+      // ULTRA FIX - Récupérer la position du scroll stockée
+      const scrollY = parseInt(modal.dataset.scrollPosition || 0);
+      
       modal.remove();
+      
+      // Retirer la classe modal-open du html ET body pour réactiver le défilement
+      document.documentElement.classList.remove('modal-open');
+      document.body.classList.remove('modal-open');
+      
+      // Réinitialiser le style et restaurer la position du scroll
+      document.body.style.top = '';
+      window.scrollTo(0, scrollY);
+    } else {
+      // Au cas où le modal n'existe pas, nettoyer quand même
+      document.documentElement.classList.remove('modal-open');
+      document.body.classList.remove('modal-open');
+      document.body.style.top = '';
     }
   }
 

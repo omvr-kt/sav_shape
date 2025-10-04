@@ -199,6 +199,18 @@ const initDatabase = async () => {
       )
     `);
 
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS refresh_tokens (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        token TEXT UNIQUE NOT NULL,
+        expires_at DATETIME NOT NULL,
+        created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+        revoked_at DATETIME,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+
     await createIndexes();
     await runMigrations();
     await createDefaultAdmin();
@@ -222,7 +234,10 @@ const createIndexes = async () => {
     'CREATE INDEX IF NOT EXISTS idx_tickets_priority ON tickets(priority)',
     'CREATE INDEX IF NOT EXISTS idx_tickets_sla_deadline ON tickets(sla_deadline)',
     'CREATE INDEX IF NOT EXISTS idx_ticket_comments_ticket ON ticket_comments(ticket_id)',
-    'CREATE INDEX IF NOT EXISTS idx_ticket_attachments_ticket ON ticket_attachments(ticket_id)'
+    'CREATE INDEX IF NOT EXISTS idx_ticket_attachments_ticket ON ticket_attachments(ticket_id)',
+    'CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id)',
+    'CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token)',
+    'CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires ON refresh_tokens(expires_at)'
   ];
 
   for (const index of indexes) {

@@ -65,16 +65,45 @@ router.get('/:id', verifyToken, validateId, async (req, res) => {
       });
     }
 
-    // Déchiffrer le fichier confidentiel si autorisé
-    if (user.confidential_file && (req.user.role === 'admin' || req.user.id === user.id)) {
-      try {
-        const encryptionService = require('../services/encryptionService');
-        const parts = user.confidential_file.split(':');
-        if (parts.length === 2) {
-          user.confidential_file_decrypted = encryptionService.decrypt(parts[0], parts[1]);
+    // Ajouter les compteurs de projets et tickets pour les clients
+    if (user.role === 'client') {
+      const { db } = require('../utils/database');
+      const counts = await db.get(`
+        SELECT
+          (SELECT COUNT(*) FROM projects WHERE client_id = ?) as project_count,
+          (SELECT COUNT(*) FROM tickets WHERE client_id = ?) as ticket_count
+      `, [user.id, user.id]);
+
+      user.project_count = counts.project_count;
+      user.ticket_count = counts.ticket_count;
+    }
+
+    // Déchiffrer les fichiers si autorisé
+    if (req.user.role === 'admin' || req.user.id === user.id) {
+      const encryptionService = require('../services/encryptionService');
+
+      // Déchiffrer le fichier confidentiel
+      if (user.confidential_file) {
+        try {
+          const parts = user.confidential_file.split(':');
+          if (parts.length === 2) {
+            user.confidential_file_decrypted = encryptionService.decrypt(parts[0], parts[1]);
+          }
+        } catch (decryptError) {
+          console.error('Error decrypting confidential file:', decryptError);
         }
-      } catch (decryptError) {
-        console.error('Error decrypting confidential file:', decryptError);
+      }
+
+      // Déchiffrer le fichier de devis
+      if (user.quote_file) {
+        try {
+          const parts = user.quote_file.split(':');
+          if (parts.length === 2) {
+            user.quote_file_decrypted = encryptionService.decrypt(parts[0], parts[1]);
+          }
+        } catch (decryptError) {
+          console.error('Error decrypting quote file:', decryptError);
+        }
       }
     }
 

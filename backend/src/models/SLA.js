@@ -96,9 +96,9 @@ class SLA {
   static getDefaultSLA(priority) {
     const defaults = {
       'urgent': { response_time_hours: 2, resolution_time_hours: 8 },
-      'high': { response_time_hours: 8, resolution_time_hours: 24 },
-      'normal': { response_time_hours: 24, resolution_time_hours: 72 },
-      'low': { response_time_hours: 72, resolution_time_hours: 168 }
+      'high': { response_time_hours: 4, resolution_time_hours: 16 },
+      'normal': { response_time_hours: 8, resolution_time_hours: 32 },
+      'low': { response_time_hours: 8, resolution_time_hours: 48 }
     };
 
     return defaults[priority] || defaults['normal'];

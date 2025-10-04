@@ -79,6 +79,7 @@ async function handleLogin(e) {
         
         const response = await fetch('/api/auth/login', {
             method: 'POST',
+            credentials: 'include', // Activer les cookies
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -104,7 +105,46 @@ async function handleLogin(e) {
         if (data.success) {
             // Connexion réussie
             localStorage.setItem('token', data.data.token);
-            localStorage.setItem('user', JSON.stringify(data.data.user));
+
+            // Stocker les données utilisateur sans les fichiers volumineux
+            const userForStorage = { ...data.data.user };
+
+            // Supprimer tous les champs de fichiers potentiellement volumineux
+            const fileFields = ['quote_file_decrypted', 'confidential_file_decrypted', 'quote_file', 'confidential_file'];
+            fileFields.forEach(field => delete userForStorage[field]);
+
+            // Supprimer aussi tout champ qui pourrait contenir des données base64 ou JSON volumineux
+            Object.keys(userForStorage).forEach(key => {
+                const value = userForStorage[key];
+                if (typeof value === 'string' && (
+                    value.length > 10000 || // Plus de 10KB
+                    value.startsWith('data:') || // Data URL (base64)
+                    (value.startsWith('{') && value.includes('"data":"data:')) // JSON avec base64
+                )) {
+                    console.log(`Removing large field: ${key} (${value.length} chars)`);
+                    delete userForStorage[key];
+                }
+            });
+
+            // Log pour déboguer la taille
+            const userJson = JSON.stringify(userForStorage);
+            console.log('User data size after filtering:', userJson.length, 'chars');
+            console.log('User fields after filtering:', Object.keys(userForStorage));
+
+            try {
+                localStorage.setItem('user', userJson);
+            } catch (error) {
+                console.error('Still too large, storing minimal user data');
+                // En dernier recours, ne stocker que les données essentielles
+                const minimalUser = {
+                    id: userForStorage.id,
+                    email: userForStorage.email,
+                    role: userForStorage.role,
+                    first_name: userForStorage.first_name,
+                    last_name: userForStorage.last_name
+                };
+                localStorage.setItem('user', JSON.stringify(minimalUser));
+            }
             
             const userRole = data.data.user.role;
             let redirectUrl = '/client/tickets.html'; // Par défaut

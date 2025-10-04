@@ -27,8 +27,8 @@ RewriteRule ^client/(.*)$ frontend/client/$1 [L]
 RewriteRule ^admin-login\.html$ frontend/connexion.html [L]
 RewriteRule ^(connexion|tickets|projects|invoices|formulaires)\.html$ frontend/$1.html [L]
 
-# API Backend - redirection vers le serveur Node.js (port 3000)
-RewriteRule ^api/(.*)$ http://localhost:3000/api/$1 [P,L]
+# API Backend - redirection vers le serveur Node.js (port 5000)
+RewriteRule ^api/(.*)$ http://localhost:5000/api/$1 [P,L]
 
 # Pour les autres fichiers qui n'existent pas, rediriger vers frontend
 # Éviter les erreurs 403 en vérifiant l'existence des fichiers

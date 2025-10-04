@@ -9,17 +9,28 @@ class EncryptionService {
 
   encrypt(text) {
     if (!text) return { encrypted: '', iv: '' };
-    
-    const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv(this.algorithm, this.secretKey, iv);
-    
-    let encrypted = cipher.update(text, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-    
-    return {
-      encrypted,
-      iv: iv.toString('hex')
-    };
+
+    // Vérifier le type de données
+    if (typeof text !== 'string') {
+      console.error('EncryptionService.encrypt: text must be a string, got', typeof text);
+      throw new TypeError('Encryption requires a string, received ' + typeof text);
+    }
+
+    try {
+      const iv = crypto.randomBytes(16);
+      const cipher = crypto.createCipheriv(this.algorithm, this.secretKey, iv);
+
+      let encrypted = cipher.update(text, 'utf8', 'hex');
+      encrypted += cipher.final('hex');
+
+      return {
+        encrypted,
+        iv: iv.toString('hex')
+      };
+    } catch (err) {
+      console.error('EncryptionService.encrypt error:', err);
+      throw err;
+    }
   }
 
   decrypt(encryptedText, ivHex) {

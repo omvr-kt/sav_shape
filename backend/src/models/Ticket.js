@@ -270,15 +270,15 @@ class Ticket {
       WHERE client_id = ? AND priority = ?
     `, [client_id, priority]);
 
-    let hours = 24;
+    let hours = 8;
     if (slaRule) {
       hours = slaRule.response_time_hours;
     } else {
       switch (priority) {
         case 'urgent': hours = 2; break;
-        case 'high': hours = 8; break;
-        case 'normal': hours = 24; break;
-        case 'low': hours = 72; break;
+        case 'high': hours = 4; break;
+        case 'normal': hours = 8; break;
+        case 'low': hours = 8; break;
       }
     }
 

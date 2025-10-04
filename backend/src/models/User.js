@@ -3,15 +3,15 @@ const bcrypt = require('bcryptjs');
 
 class User {
   static async create(userData) {
-    const { email, password, role, first_name, last_name, company, phone } = userData;
-    
+    const { email, password, role, first_name, last_name, company, phone, address, city, country } = userData;
+
     const hashedPassword = await bcrypt.hash(password, 12);
-    
+
     const result = await db.run(`
-      INSERT INTO users (email, password_hash, role, first_name, last_name, company, phone)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `, [email, hashedPassword, role, first_name, last_name, company, phone]);
-    
+      INSERT INTO users (email, password_hash, role, first_name, last_name, company, phone, address, city, country)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [email, hashedPassword, role, first_name, last_name, company, phone, address || null, city || null, country || null]);
+
     return this.findById(result.id);
   }
 
@@ -47,15 +47,23 @@ class User {
   }
 
   static async update(id, updates) {
-    const allowedFields = ['first_name', 'last_name', 'company', 'is_active', 'confidential_file', 'address', 'city', 'country'];
+    const allowedFields = ['first_name', 'last_name', 'company', 'is_active', 'confidential_file', 'quote_file', 'address', 'city', 'country'];
     const fieldsToUpdate = [];
     const values = [];
 
     Object.keys(updates).forEach(key => {
       if (allowedFields.includes(key)) {
-        if (key === 'confidential_file') {
+        if (key === 'confidential_file' || key === 'quote_file') {
           const encryptionService = require('../services/encryptionService');
-          const { encrypted, iv } = encryptionService.encrypt(updates[key]);
+          // Skip if value is null or undefined
+          if (updates[key] == null) {
+            return;
+          }
+          // Convertir en string si c'est un objet
+          const dataToEncrypt = typeof updates[key] === 'object'
+            ? JSON.stringify(updates[key])
+            : String(updates[key]);
+          const { encrypted, iv } = encryptionService.encrypt(dataToEncrypt);
           fieldsToUpdate.push(`${key} = ?`);
           values.push(`${encrypted}:${iv}`);
         } else {

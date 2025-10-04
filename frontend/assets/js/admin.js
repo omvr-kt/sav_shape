@@ -1504,12 +1504,12 @@ class AdminApp {
 
   getDefaultSLATime(priority, type) {
     const defaults = {
-      'low': { response: 48, resolution: 168 },     // 2 jours / 1 semaine
-      'normal': { response: 24, resolution: 72 },   // 1 jour / 3 jours  
-      'high': { response: 8, resolution: 24 },      // 8h / 1 jour
+      'low': { response: 8, resolution: 48 },       // 8h / 2 jours
+      'normal': { response: 8, resolution: 32 },    // 8h / 1.3 jours
+      'high': { response: 4, resolution: 16 },      // 4h / 16h
       'urgent': { response: 2, resolution: 8 }      // 2h / 8h
     };
-    return defaults[priority]?.[type] || 24;
+    return defaults[priority]?.[type] || 8;
   }
 
   async editClient(id) {
@@ -1571,25 +1571,97 @@ class AdminApp {
           </div>
           
           <div class="form-group">
-            <label class="form-label" for="editClientConfidentialFile">Fichier Confidentiel</label>
-            <textarea id="editClientConfidentialFile" name="confidential_file" 
-                     class="form-input" rows="6" 
-                     placeholder="Informations confidentielles (identifiants serveur, mots de passe, etc.)">${client.confidential_file_decrypted || ''}</textarea>
+            <label class="form-label" for="editClientQuote">Devis</label>
+            ${(() => {
+              // Si c'est un fichier uploadé (JSON)
+              if (this.hasValidFile(client.quote_file_decrypted)) {
+                try {
+                  const fileData = JSON.parse(client.quote_file_decrypted);
+                  return `
+                    <div class="file-display" style="padding: 10px; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-background);">
+                      <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                          <span style="font-weight: 500;">📋 ${fileData.name || 'Devis'}</span>
+                          <small style="display: block; color: var(--color-muted); margin-top: 4px;">Devis uploadé</small>
+                        </div>
+                        <button type="button" class="btn btn-sm btn--primary" onclick="adminApp.downloadQuoteFile('${encodeURIComponent(client.quote_file_decrypted)}')">
+                          Télécharger
+                        </button>
+                      </div>
+                    </div>
+                    <div style="margin-top: 10px;">
+                      <label for="editClientQuote">Remplacer le fichier :</label>
+                      <input type="file" id="editClientQuote" name="quote_file" class="form-input">
+                    </div>
+                  `;
+                } catch {
+                  // Ancien format texte
+                  return `
+                    <input type="file" id="editClientQuote" name="quote_file" class="form-input">
+                    <small class="form-text text-muted">Aucun devis uploadé</small>
+                  `;
+                }
+              } else {
+                return `
+                  <input type="file" id="editClientQuote" name="quote_file" class="form-input">
+                  <small class="form-text text-muted">Aucun devis uploadé</small>
+                `;
+              }
+            })()}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="editClientSpecifications">Cahier des charges</label>
+            ${(() => {
+              // Si c'est un fichier uploadé (JSON)
+              if (this.hasValidFile(client.confidential_file_decrypted)) {
+                try {
+                  const fileData = JSON.parse(client.confidential_file_decrypted);
+                  return `
+                    <div class="file-display" style="padding: 10px; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-background);">
+                      <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                          <span style="font-weight: 500;">📄 ${fileData.name || 'Fichier'}</span>
+                          <small style="display: block; color: var(--color-muted); margin-top: 4px;">Cahier des charges uploadé</small>
+                        </div>
+                        <button type="button" class="btn btn-sm btn--primary" onclick="adminApp.downloadConfidentialFile('${encodeURIComponent(client.confidential_file_decrypted)}')">
+                          Télécharger
+                        </button>
+                      </div>
+                    </div>
+                    <div style="margin-top: 10px;">
+                      <label for="editClientSpecifications">Remplacer le fichier :</label>
+                      <input type="file" id="editClientSpecifications" name="confidential_file" class="form-input">
+                    </div>
+                  `;
+                } catch {
+                  // Ancien format texte - ne pas afficher comme fichier
+                  return `
+                    <input type="file" id="editClientSpecifications" name="confidential_file" class="form-input">
+                    <small class="form-text text-muted">Aucun cahier des charges uploadé</small>
+                  `;
+                }
+              } else {
+                return `
+                  <input type="file" id="editClientSpecifications" name="confidential_file" class="form-input">
+                  <small class="form-text text-muted">Aucun cahier des charges uploadé</small>
+                `;
+              }
+            })()}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="editClientNotes">Notes internes / Informations confidentielles</label>
+            <textarea id="editClientNotes" name="internal_notes"
+                     class="form-input" rows="4"
+                     placeholder="Notes internes, identifiants, informations sensibles...">${(() => {
+                       // Si confidential_file contient du texte simple (pas un fichier JSON)
+                       if (client.confidential_file_decrypted && !this.hasValidFile(client.confidential_file_decrypted)) {
+                         return client.confidential_file_decrypted;
+                       }
+                       return '';
+                     })()}</textarea>
             <small class="form-text">Ces informations seront chiffrées et stockées de manière sécurisée.</small>
-          </div>
-          
-          <div class="form-group">
-            <label class="form-label" for="editClientQuote">Devis *</label>
-            <input type="file" id="editClientQuote" name="quote_file" 
-                   class="form-input" accept=".pdf,.doc,.docx" required>
-            ${client.quote_file ? `<small>Fichier actuel: <a href="${client.quote_file}" target="_blank">${client.quote_file.split('/').pop()}</a></small>` : '<small class="text-warning"> Devis obligatoire - aucun fichier téléchargé</small>'}
-          </div>
-          
-          <div class="form-group">
-            <label class="form-label" for="editClientSpecifications">Cahier des charges *</label>
-            <input type="file" id="editClientSpecifications" name="specifications_file" 
-                   class="form-input" accept=".pdf,.doc,.docx" required>
-            ${client.specifications_file ? `<small>Fichier actuel: <a href="${client.specifications_file}" target="_blank">${client.specifications_file.split('/').pop()}</a></small>` : '<small class="text-warning"> Cahier des charges obligatoire - aucun fichier téléchargé</small>'}
           </div>
           
           
@@ -1665,14 +1737,57 @@ class AdminApp {
   async handleEditClient(form) {
     const formData = new FormData(form);
     const clientId = formData.get('id');
-    
+
     const updateData = {
       first_name: formData.get('first_name'),
       last_name: formData.get('last_name'),
       email: formData.get('email'),
       company: formData.get('company'),
+      address: formData.get('address'),
+      city: formData.get('city'),
+      country: formData.get('country'),
       confidential_file: formData.get('confidential_file')
     };
+
+    // Nettoyer les valeurs vides
+    Object.keys(updateData).forEach(key => {
+      if (updateData[key] === '' || updateData[key] === null) {
+        updateData[key] = null;
+      }
+    });
+
+    // Gérer les fichiers uploadés
+    const quoteFile = formData.get('quote_file');
+    const specificationsFile = formData.get('specifications_file');
+
+    // Convertir les fichiers en base64 si fournis
+    if (quoteFile && quoteFile instanceof File && quoteFile.size > 0) {
+      try {
+        const quoteBase64 = await this.readFileAsBase64(quoteFile);
+        updateData.quote_file = this.createFileMetadata(quoteFile, quoteBase64);
+      } catch (error) {
+        console.error('Erreur lecture fichier devis:', error);
+        this.showNotification(`Erreur lors de la lecture du fichier devis: ${error.message}`, 'error');
+        return;
+      }
+    }
+
+    if (specificationsFile && specificationsFile instanceof File && specificationsFile.size > 0) {
+      try {
+        const specsBase64 = await this.readFileAsBase64(specificationsFile);
+        const specsMetadata = this.createFileMetadata(specificationsFile, specsBase64);
+
+        // Stocker le cahier des charges dans confidential_file avec un marqueur
+        const currentConfidential = updateData.confidential_file || '';
+        updateData.confidential_file = currentConfidential +
+          (currentConfidential ? '\n\n--- CAHIER DES CHARGES ---\n\n' : '') +
+          specsMetadata;
+      } catch (error) {
+        console.error('Erreur lecture cahier des charges:', error);
+        this.showNotification(`Erreur lors de la lecture du cahier des charges: ${error.message}`, 'error');
+        return;
+      }
+    }
 
     // Collecter les données SLA
     const slaData = [];
@@ -1709,11 +1824,10 @@ class AdminApp {
       for (const slaRule of slaData) {
         try {
           // Vérifier si une règle existe déjà pour ce client et cette priorité
-          const existingRulesResponse = await api.getSLARules({ 
-            client_id: clientId, 
-            priority: slaRule.priority 
-          });
-          const existingRule = existingRulesResponse.data.sla_rules?.[0];
+          const existingRulesResponse = await api.getClientSLARules(clientId);
+          const existingRule = existingRulesResponse.data.sla_rules?.find(
+            r => r.priority === slaRule.priority
+          );
           
           if (existingRule) {
             // Mettre à jour la règle existante
@@ -1740,6 +1854,107 @@ class AdminApp {
       const submitBtn = form.querySelector('button[type="submit"]');
       submitBtn.disabled = false;
       submitBtn.textContent = 'Enregistrer les modifications';
+    }
+  }
+
+  readFileAsBase64(file) {
+    return new Promise((resolve, reject) => {
+      // Vérifier la taille du fichier (limite à 20MB)
+      if (file.size > 20 * 1024 * 1024) {
+        reject(new Error('Le fichier est trop volumineux (maximum 20MB)'));
+        return;
+      }
+
+      // Si c'est une image, essayer de la compresser
+      if (file.type.startsWith('image/')) {
+        this.compressImage(file, 0.7).then(compressedFile => {
+          const reader = new FileReader();
+          reader.onload = event => resolve(event.target.result);
+          reader.onerror = error => reject(new Error(`Erreur lors de la lecture du fichier: ${error.message}`));
+          reader.readAsDataURL(compressedFile);
+        }).catch(() => {
+          // Si la compression échoue, utiliser le fichier original
+          const reader = new FileReader();
+          reader.onload = event => resolve(event.target.result);
+          reader.onerror = error => reject(new Error(`Erreur lors de la lecture du fichier: ${error.message}`));
+          reader.readAsDataURL(file);
+        });
+      } else {
+        const reader = new FileReader();
+        reader.onload = event => resolve(event.target.result);
+        reader.onerror = error => reject(new Error(`Erreur lors de la lecture du fichier: ${error.message}`));
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  compressImage(file, quality = 0.7) {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+
+      img.onload = () => {
+        // Calculer les nouvelles dimensions (max 1024px)
+        const maxSize = 1024;
+        let { width, height } = img;
+
+        if (width > height && width > maxSize) {
+          height = (height * maxSize) / width;
+          width = maxSize;
+        } else if (height > maxSize) {
+          width = (width * maxSize) / height;
+          height = maxSize;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        // Dessiner l'image redimensionnée
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convertir en blob avec compression
+        canvas.toBlob(resolve, file.type, quality);
+      };
+
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  createFileMetadata(file, base64Data) {
+    // Calculer la taille des données base64 (approximation)
+    const base64Size = base64Data.length * 0.75;
+
+    return JSON.stringify({
+      name: file.name,
+      type: file.type,
+      originalSize: file.size,
+      compressedSize: base64Size,
+      lastModified: file.lastModified,
+      data: base64Data
+    });
+  }
+
+  downloadFileFromMetadata(metadataString, fallbackName = 'fichier') {
+    try {
+      const metadata = JSON.parse(metadataString);
+
+      // Créer un lien de téléchargement
+      const link = document.createElement('a');
+      link.href = metadata.data;
+      link.download = metadata.name || fallbackName;
+
+      // Déclencher le téléchargement
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      return true;
+    } catch (error) {
+      console.error('Erreur lors du téléchargement:', error);
+      this.showNotification('Erreur lors du téléchargement du fichier', 'error');
+      return false;
     }
   }
 
@@ -2290,16 +2505,16 @@ class AdminApp {
         
         <div class="form-group">
           <label class="form-label" for="clientQuote">Devis *</label>
-          <input type="file" id="clientQuote" name="quote_file" 
-                 class="form-input" accept=".pdf,.doc,.docx" required>
-          <small>Document de devis obligatoire</small>
+          <input type="file" id="clientQuote" name="quote_file"
+                 class="form-input" required>
+          <small>Tous formats acceptés (max 2MB, images compressées automatiquement)</small>
         </div>
         
         <div class="form-group">
-          <label class="form-label" for="clientSpecifications">Cahier des charges *</label>
-          <input type="file" id="clientSpecifications" name="specifications_file" 
-                 class="form-input" accept=".pdf,.doc,.docx" required>
-          <small>Document de cahier des charges obligatoire</small>
+          <label class="form-label" for="clientSpecifications">Cahier des charges</label>
+          <input type="file" id="clientSpecifications" name="confidential_file"
+                 class="form-input">
+          <small>Tous formats acceptés (max 2MB, images compressées automatiquement)</small>
         </div>
         
         
@@ -2419,35 +2634,36 @@ class AdminApp {
       if (response.success) {
         const clientId = response.data.user.id;
         
-        // Upload des fichiers si présents
+        // Traitement des fichiers si présents
         const quoteFile = formData.get('quote_file');
         const specificationsFile = formData.get('specifications_file');
-        
+
+        const fileUpdateData = {};
+
         try {
           if (quoteFile && quoteFile.size > 0) {
-            submitBtn.textContent = 'Upload du devis...';
-            const quoteFormData = new FormData();
-            quoteFormData.append('quote', quoteFile);
-            await api.request(`/users/${clientId}/upload-quote`, {
-              method: 'POST',
-              body: quoteFormData
-            });
+            submitBtn.textContent = 'Traitement du devis...';
+            const quoteBase64 = await this.readFileAsBase64(quoteFile);
+            fileUpdateData.quote_file = this.createFileMetadata(quoteFile, quoteBase64);
           }
-          
+
           if (specificationsFile && specificationsFile.size > 0) {
-            submitBtn.textContent = 'Upload du cahier des charges...';
-            const specsFormData = new FormData();
-            specsFormData.append('specifications', specificationsFile);
-            await api.request(`/users/${clientId}/upload-specifications`, {
-              method: 'POST',
-              body: specsFormData
-            });
+            submitBtn.textContent = 'Traitement du cahier des charges...';
+            const specsBase64 = await this.readFileAsBase64(specificationsFile);
+            const specsMetadata = this.createFileMetadata(specificationsFile, specsBase64);
+            fileUpdateData.confidential_file = specsMetadata;
           }
-          
-          this.showNotification('Client créé avec succès (fichiers uploadés)', 'success');
-        } catch (uploadError) {
-          console.error('File upload error:', uploadError);
-          this.showNotification('Client créé mais erreur lors de l\'upload des fichiers', 'warning');
+
+          // Mettre à jour le client avec les fichiers
+          if (Object.keys(fileUpdateData).length > 0) {
+            submitBtn.textContent = 'Sauvegarde des fichiers...';
+            await api.updateUser(clientId, fileUpdateData);
+          }
+
+          this.showNotification('Client créé avec succès (fichiers traités)', 'success');
+        } catch (fileError) {
+          console.error('File processing error:', fileError);
+          this.showNotification('Client créé mais erreur lors du traitement des fichiers', 'warning');
         }
         
         this.closeModal();
@@ -3534,6 +3750,62 @@ class AdminApp {
     }
     
     return `<span style="color: ${color}; font-weight: 500;">⏱️ Reste ${slaInfo.hours}h${slaInfo.minutes > 0 ? ` ${slaInfo.minutes}min` : ''}</span>`;
+  }
+
+  hasValidFile(fileContent) {
+    // Vérifier si le contenu est un fichier valide (JSON avec métadonnées)
+    if (!fileContent || fileContent.trim() === '') {
+      return false;
+    }
+
+    try {
+      const parsed = JSON.parse(fileContent);
+      // Vérifier que c'est bien un fichier avec les bonnes propriétés
+      return parsed.name && parsed.type && parsed.data && parsed.data.startsWith('data:');
+    } catch {
+      // Si ce n'est pas du JSON valide, vérifier si c'est du texte non vide
+      return fileContent.length > 10; // Au moins 10 caractères pour être considéré comme valide
+    }
+  }
+
+  downloadConfidentialFile(encodedData) {
+    try {
+      const jsonData = decodeURIComponent(encodedData);
+      const fileData = JSON.parse(jsonData);
+
+      // Cr\u00e9er un lien de t\u00e9l\u00e9chargement
+      const link = document.createElement('a');
+      link.href = fileData.data;
+      link.download = fileData.name || 'document';
+
+      // D\u00e9clencher le t\u00e9l\u00e9chargement
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Erreur lors du t\u00e9l\u00e9chargement:', error);
+      this.showNotification('Erreur lors du t\u00e9l\u00e9chargement du fichier', 'error');
+    }
+  }
+
+  downloadQuoteFile(encodedData) {
+    try {
+      const jsonData = decodeURIComponent(encodedData);
+      const fileData = JSON.parse(jsonData);
+
+      // Cr\u00e9er un lien de t\u00e9l\u00e9chargement
+      const link = document.createElement('a');
+      link.href = fileData.data;
+      link.download = fileData.name || 'devis';
+
+      // D\u00e9clencher le t\u00e9l\u00e9chargement
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Erreur lors du t\u00e9l\u00e9chargement:', error);
+      this.showNotification('Erreur lors du t\u00e9l\u00e9chargement du devis', 'error');
+    }
   }
 
   sortTicketsForAdmin(tickets) {

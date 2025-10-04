@@ -26,6 +26,7 @@ if (missing.length > 0) {
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const config = require('./config/config');
 const { initDatabase } = require('./utils/database');
@@ -45,13 +46,20 @@ const slaService = require('./services/sla');
 const app = express();
 const PORT = config.server.port;
 
-// Rate limiter - Activé automatiquement en production
+// Configuration trust proxy pour Hostinger (IP spécifique pour sécurité)
+app.set('trust proxy', 1);
+
+// Rate limiter - Configuré pour le développement
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 100 : 1000, // Plus strict en production
+  max: process.env.NODE_ENV === 'production' ? 500 : 2000, // Limites plus élevées
   message: 'Trop de requêtes, réessayez dans 15 minutes',
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  skip: (req) => {
+    // Skip rate limiting for local requests et admin
+    return req.ip === '127.0.0.1' || req.ip === '::1' || req.headers.host?.includes('localhost');
+  }
 });
 
 app.use(helmet({
@@ -66,6 +74,7 @@ app.use(cors({
 if (process.env.NODE_ENV === 'production') {
   app.use(limiter);
 }
+app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 

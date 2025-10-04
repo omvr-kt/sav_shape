@@ -219,7 +219,15 @@ async function createAutomaticInvoice(clientId, quoteFile = null, specifications
 // GET /api/invoices/client/:clientId - Récupérer les factures d'un client
 router.get('/client/:clientId', verifyToken, async (req, res) => {
   const clientId = parseInt(req.params.clientId);
-  
+
+  // Vérifier que le clientId est valide
+  if (isNaN(clientId) || clientId <= 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'ID client invalide'
+    });
+  }
+
   // Mettre à jour les factures en retard automatiquement
   await updateOverdueInvoices();
   

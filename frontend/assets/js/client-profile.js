@@ -5,15 +5,15 @@ class ProfileApp {
     this.init();
   }
 
-  init() {
+  async init() {
     console.log('ProfileApp: Initializing...');
-    this.checkAuth();
+    await this.checkAuth();
     this.setupEventListeners();
     // Initialiser le badge tickets dans la sidebar
     initTicketBadge();
   }
 
-  checkAuth() {
+  async checkAuth() {
     const token = localStorage.getItem('token');
     
     if (!token) {
@@ -23,15 +23,25 @@ class ProfileApp {
 
     try {
       const tokenData = JSON.parse(atob(token.split('.')[1]));
+      console.log('Token data decoded:', tokenData);
+
       this.currentUser = {
-        id: tokenData.userId,
+        id: tokenData.userId || tokenData.id,
         email: tokenData.email,
         role: tokenData.role
       };
-      
+
+      console.log('Current user set:', this.currentUser);
+
       this.loadUserInfo();
-      this.loadProfile();
-      this.loadDocuments();
+
+      // Attendre le chargement du profil avant de charger les documents
+      await this.loadProfile();
+
+      // Petit délai pour s'assurer que tout est bien initialisé
+      setTimeout(async () => {
+        await this.loadDocuments();
+      }, 100);
     } catch (error) {
       console.error('Token validation error:', error);
       localStorage.removeItem('token');
@@ -367,96 +377,147 @@ class ProfileApp {
   }
 
   async loadDocuments() {
+    console.log('LoadDocuments called, currentUser:', this.currentUser);
     const documentsSection = document.getElementById('documentsSection');
-    
+
     try {
-      // Récupérer les factures du client pour trouver les documents
-      const response = await api.getClientInvoices(this.currentUser.id);
-      
-      if (response.data && response.data.invoices) {
-        const invoicesWithFiles = response.data.invoices.filter(invoice => 
-          invoice.quote_file || invoice.specifications_file
-        );
-        
-        if (invoicesWithFiles.length === 0) {
-          documentsSection.innerHTML = `
-            <div style="text-align: center; padding: var(--space-4); color: var(--color-muted);">
-              <p>Aucun document disponible</p>
-              <small>Vos documents contractuels apparaîtront ici une fois qu'ils seront associés à vos factures.</small>
-            </div>
-          `;
-          return;
-        }
-        
-        // Grouper les fichiers uniques
-        const documents = [];
-        const seenFiles = new Set();
-        
-        invoicesWithFiles.forEach(invoice => {
-          if (invoice.quote_file && !seenFiles.has(invoice.quote_file)) {
-            documents.push({
-              type: 'quote',
-              file: invoice.quote_file,
-              invoiceId: invoice.id,
-              invoiceNumber: invoice.invoice_number,
-              label: 'Devis',
-              icon: '📋'
-            });
-            seenFiles.add(invoice.quote_file);
-          }
-          
-          if (invoice.specifications_file && !seenFiles.has(invoice.specifications_file)) {
-            documents.push({
-              type: 'specifications', 
-              file: invoice.specifications_file,
-              invoiceId: invoice.id,
-              invoiceNumber: invoice.invoice_number,
-              label: 'Cahier des charges',
-              icon: '📄'
-            });
-            seenFiles.add(invoice.specifications_file);
-          }
-        });
-        
-        documentsSection.innerHTML = `
-          <div class="documents-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-3);">
-            ${documents.map(doc => `
-              <div class="document-item" style="border: 1px solid var(--color-border); border-radius: 8px; padding: var(--space-3); background: var(--color-white);">
-                <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2);">
-                  <span style="font-size: 24px;">${doc.icon}</span>
-                  <div>
-                    <h4 style="margin: 0; font-size: 14px; font-weight: 600; color: var(--color-text);">${doc.label}</h4>
-                    <p style="margin: 0; font-size: 12px; color: var(--color-muted);">Facture ${doc.invoiceNumber}</p>
-                  </div>
-                </div>
-                <button type="button" 
-                        class="btn btn-sm btn--primary download-document-btn" 
-                        data-invoice-id="${doc.invoiceId}" 
-                        data-file-type="${doc.type}"
-                        style="width: 100%;">
-                  Télécharger
-                </button>
-              </div>
-            `).join('')}
-          </div>
-        `;
-        
-        // Ajouter les event listeners pour les boutons de téléchargement
-        documentsSection.querySelectorAll('.download-document-btn').forEach(btn => {
-          btn.addEventListener('click', async (e) => {
-            const invoiceId = parseInt(e.target.dataset.invoiceId);
-            const fileType = e.target.dataset.fileType;
-            await this.downloadDocument(invoiceId, fileType);
+      // Vérifier que l'utilisateur est bien chargé
+      if (!this.currentUser || !this.currentUser.id) {
+        console.error('Utilisateur non initialisé lors du chargement des documents');
+        console.error('currentUser:', this.currentUser);
+        documentsSection.innerHTML = '<p class="no-data">Erreur: utilisateur non identifié</p>';
+        return;
+      }
+
+      console.log('Loading documents for user ID:', this.currentUser.id);
+
+      // Récupérer le profil utilisateur pour les documents directs
+      const userResponse = await api.getUser(this.currentUser.id);
+
+      const documents = [];
+
+      if (userResponse.data && userResponse.data.user) {
+        const user = userResponse.data.user;
+
+        // Ajouter le devis s'il existe
+        if (user.quote_file_decrypted) {
+          documents.push({
+            type: 'quote',
+            file: user.quote_file_decrypted,
+            label: 'Devis',
+            icon: '📋',
+            source: 'profile'
           });
-        });
-        
-      } else {
+        }
+
+        // Ajouter le cahier des charges s'il existe
+        if (user.confidential_file_decrypted) {
+          documents.push({
+            type: 'specifications',
+            file: user.confidential_file_decrypted,
+            label: 'Cahier des charges',
+            icon: '📄',
+            source: 'profile'
+          });
+        }
+      }
+
+      // Également récupérer les documents des factures
+      try {
+        const invoiceResponse = await api.getClientInvoices(this.currentUser.id);
+
+        if (invoiceResponse.data && invoiceResponse.data.invoices) {
+          const invoicesWithFiles = invoiceResponse.data.invoices.filter(invoice =>
+            invoice.quote_file || invoice.specifications_file
+          );
+
+          const seenFiles = new Set();
+
+          invoicesWithFiles.forEach(invoice => {
+            if (invoice.quote_file && !seenFiles.has(invoice.quote_file)) {
+              documents.push({
+                type: 'quote',
+                file: invoice.quote_file,
+                invoiceId: invoice.id,
+                invoiceNumber: invoice.invoice_number,
+                label: 'Devis (Facture)',
+                icon: '📋',
+                source: 'invoice'
+              });
+              seenFiles.add(invoice.quote_file);
+            }
+
+            if (invoice.specifications_file && !seenFiles.has(invoice.specifications_file)) {
+              documents.push({
+                type: 'specifications',
+                file: invoice.specifications_file,
+                invoiceId: invoice.id,
+                invoiceNumber: invoice.invoice_number,
+                label: 'Cahier des charges (Facture)',
+                icon: '📄',
+                source: 'invoice'
+              });
+              seenFiles.add(invoice.specifications_file);
+            }
+          });
+        }
+      } catch (invoiceError) {
+        console.warn('Impossible de charger les documents des factures:', invoiceError);
+      }
+
+      // Afficher les documents ou un message d'absence
+      if (documents.length === 0) {
         documentsSection.innerHTML = `
           <div style="text-align: center; padding: var(--space-4); color: var(--color-muted);">
-            <p>Erreur lors du chargement des documents</p>
+            <p>Aucun document disponible</p>
+            <small>Vos documents contractuels apparaîtront ici.</small>
           </div>
         `;
+        return;
       }
+
+      documentsSection.innerHTML = `
+        <div class="documents-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-3);">
+          ${documents.map(doc => `
+            <div class="document-item" style="border: 1px solid var(--color-border); border-radius: 8px; padding: var(--space-3); background: var(--color-white);">
+              <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2);">
+                <span style="font-size: 24px;">${doc.icon}</span>
+                <div>
+                  <h4 style="margin: 0; font-size: 14px; font-weight: 600; color: var(--color-text);">${doc.label}</h4>
+                  ${doc.invoiceNumber ? `<p style="margin: 0; font-size: 12px; color: var(--color-muted);">Facture ${doc.invoiceNumber}</p>` : ''}
+                </div>
+              </div>
+              <button type="button"
+                      class="btn btn-sm btn--primary download-document-btn"
+                      data-source="${doc.source}"
+                      data-invoice-id="${doc.invoiceId || ''}"
+                      data-file-type="${doc.type}"
+                      style="width: 100%;">
+                Télécharger
+              </button>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      // Ajouter les event listeners pour les boutons de téléchargement
+      documentsSection.querySelectorAll('.download-document-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const source = e.target.dataset.source;
+          const fileType = e.target.dataset.fileType;
+
+          if (source === 'profile') {
+            const document = documents.find(d => d.type === fileType && d.source === 'profile');
+            // Utiliser displayDocument qui gère maintenant les deux formats
+            this.displayDocument(document);
+          } else {
+            // Pour les documents des factures, utiliser l'ancienne méthode
+            const invoiceId = parseInt(e.target.dataset.invoiceId);
+            await this.downloadDocument(invoiceId, fileType);
+          }
+        });
+      });
+
     } catch (error) {
       console.error('Error loading documents:', error);
       documentsSection.innerHTML = `
@@ -512,12 +573,83 @@ class ProfileApp {
     }
   }
 
+  displayDocument(document) {
+    // Vérifier si c'est un fichier avec métadonnées JSON
+    if (this.isFileMetadata(document.file)) {
+      this.downloadFileFromMetadata(document.file, document.label);
+    } else {
+      // Ancien format: afficher le contenu texte
+      const newWindow = window.open('', '_blank');
+      newWindow.document.write(`
+        <html>
+          <head>
+            <title>${document.label}</title>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                padding: 20px;
+                white-space: pre-wrap;
+                line-height: 1.6;
+              }
+              .header {
+                border-bottom: 2px solid #333;
+                padding-bottom: 10px;
+                margin-bottom: 20px;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>${document.label}</h1>
+            </div>
+            <div class="content">
+              ${document.file.replace(/\n/g, '<br>')}
+            </div>
+          </body>
+        </html>
+      `);
+      newWindow.document.close();
+    }
+  }
+
   formatDate(dateString) {
     return formatParisDate(dateString, {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
+  }
+
+  downloadFileFromMetadata(metadataString, fallbackName = 'fichier') {
+    try {
+      const metadata = JSON.parse(metadataString);
+
+      // Créer un lien de téléchargement
+      const link = document.createElement('a');
+      link.href = metadata.data;
+      link.download = metadata.name || fallbackName;
+
+      // Déclencher le téléchargement
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      return true;
+    } catch (error) {
+      console.error('Erreur lors du téléchargement:', error);
+      // Fallback: essayer d'afficher le contenu directement
+      this.displayDocument({ file: metadataString, label: fallbackName });
+      return false;
+    }
+  }
+
+  isFileMetadata(content) {
+    try {
+      const parsed = JSON.parse(content);
+      return parsed.name && parsed.type && parsed.data && parsed.data.startsWith('data:');
+    } catch {
+      return false;
+    }
   }
 
   async handleLogout() {

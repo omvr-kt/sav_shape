@@ -1,6 +1,13 @@
 const express = require('express');
 const User = require('../models/User');
-const { generateToken, verifyToken } = require('../middleware/auth');
+const {
+  generateToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+  revokeRefreshToken,
+  revokeAllUserTokens,
+  verifyToken
+} = require('../middleware/auth');
 const { validateLogin } = require('../middleware/validation');
 
 const router = express.Router();
@@ -44,14 +51,31 @@ router.post('/login', validateLogin, async (req, res) => {
       });
     }
 
-    // Générer le token
+    // Générer les tokens
     const token = generateToken(user);
+    const refreshToken = await generateRefreshToken(user.id);
 
-    // Supprimer le hash du mot de passe avant de renvoyer l'utilisateur
+    // Supprimer le hash du mot de passe et les gros fichiers avant de renvoyer l'utilisateur
     const userResponse = { ...user };
     delete userResponse.password_hash;
+    delete userResponse.quote_file_decrypted;
+    delete userResponse.confidential_file_decrypted;
+    delete userResponse.quote_file;
+    delete userResponse.confidential_file;
+
+    // Log pour déboguer la taille de la réponse
+    console.log('User response size:', JSON.stringify(userResponse).length, 'chars');
+    console.log('User response fields:', Object.keys(userResponse));
 
     console.log(`Connexion réussie pour: ${email} (${user.role})`);
+
+    // Envoyer le refresh token dans un cookie HttpOnly sécurisé
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 jours
+    });
 
     res.json({
       success: true,
@@ -88,9 +112,17 @@ router.get('/me', verifyToken, async (req, res) => {
       });
     }
 
+    // Exclure les gros fichiers pour éviter les problèmes de localStorage
+    const userResponse = { ...user };
+    delete userResponse.password_hash;
+    delete userResponse.quote_file_decrypted;
+    delete userResponse.confidential_file_decrypted;
+    delete userResponse.quote_file;
+    delete userResponse.confidential_file;
+
     res.json({
       success: true,
-      data: { user }
+      data: { user: userResponse }
     });
   } catch (error) {
     console.error('Get user profile error:', error);
@@ -239,11 +271,78 @@ router.post('/change-password', verifyToken, async (req, res) => {
   }
 });
 
-router.post('/logout', verifyToken, (req, res) => {
-  res.json({
-    success: true,
-    message: 'Déconnexion réussie'
-  });
+router.post('/logout', verifyToken, async (req, res) => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+
+    if (refreshToken) {
+      await revokeRefreshToken(refreshToken);
+    }
+
+    res.clearCookie('refreshToken');
+
+    res.json({
+      success: true,
+      message: 'Déconnexion réussie'
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la déconnexion'
+    });
+  }
+});
+
+// POST /auth/refresh - Rafraîchir le token d'accès
+router.post('/refresh', async (req, res) => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) {
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token manquant'
+      });
+    }
+
+    const tokenData = await verifyRefreshToken(refreshToken);
+
+    if (!tokenData) {
+      res.clearCookie('refreshToken');
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token invalide ou expiré'
+      });
+    }
+
+    const user = await User.findById(tokenData.user_id);
+
+    if (!user || !user.is_active) {
+      await revokeRefreshToken(refreshToken);
+      res.clearCookie('refreshToken');
+      return res.status(401).json({
+        success: false,
+        message: 'Utilisateur introuvable ou inactif'
+      });
+    }
+
+    // Générer un nouveau access token
+    const newAccessToken = generateToken(user);
+
+    res.json({
+      success: true,
+      data: {
+        token: newAccessToken
+      }
+    });
+  } catch (error) {
+    console.error('Refresh token error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors du rafraîchissement du token'
+    });
+  }
 });
 
 module.exports = router;

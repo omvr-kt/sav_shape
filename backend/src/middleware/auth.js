@@ -1,5 +1,7 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const User = require('../models/User');
+const db = require('../utils/database');
 
 const generateToken = (user) => {
   if (!process.env.JWT_SECRET) {
@@ -7,14 +9,57 @@ const generateToken = (user) => {
   }
 
   return jwt.sign(
-    { 
-      id: user.id, 
-      email: user.email, 
+    {
+      id: user.id,
+      email: user.email,
       role: user.role,
       iat: Math.floor(Date.now() / 1000)
     },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
+    { expiresIn: '1h' } // Access token expire 1h
+  );
+};
+
+const generateRefreshToken = async (userId) => {
+  const token = crypto.randomBytes(64).toString('hex');
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 jours
+
+  await db.db.run(
+    'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, ?)',
+    [userId, token, expiresAt.toISOString()]
+  );
+
+  return token;
+};
+
+const verifyRefreshToken = async (token) => {
+  const refreshToken = await db.db.get(
+    'SELECT * FROM refresh_tokens WHERE token = ? AND revoked_at IS NULL',
+    [token]
+  );
+
+  if (!refreshToken) {
+    return null;
+  }
+
+  if (new Date(refreshToken.expires_at) < new Date()) {
+    return null;
+  }
+
+  return refreshToken;
+};
+
+const revokeRefreshToken = async (token) => {
+  await db.db.run(
+    'UPDATE refresh_tokens SET revoked_at = datetime("now") WHERE token = ?',
+    [token]
+  );
+};
+
+const revokeAllUserTokens = async (userId) => {
+  await db.db.run(
+    'UPDATE refresh_tokens SET revoked_at = datetime("now") WHERE user_id = ? AND revoked_at IS NULL',
+    [userId]
   );
 };
 
@@ -143,6 +188,10 @@ const requireClientOrOwner = async (req, res, next) => {
 
 module.exports = {
   generateToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+  revokeRefreshToken,
+  revokeAllUserTokens,
   verifyToken,
   requireRole,
   requireAdmin,

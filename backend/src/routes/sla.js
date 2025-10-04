@@ -22,7 +22,7 @@ router.get('/', verifyToken, requireTeamOrAdmin, async (req, res) => {
   }
 });
 
-router.get('/client/:client_id', verifyToken, requireTeamOrAdmin, validateId, async (req, res) => {
+router.get('/client/:client_id', verifyToken, requireTeamOrAdmin, async (req, res) => {
   try {
     const clientId = parseInt(req.params.client_id);
     const slaRules = await SLA.findByClient(clientId);
@@ -113,7 +113,7 @@ router.delete('/:id', verifyToken, requireTeamOrAdmin, validateId, async (req, r
   }
 });
 
-router.post('/client/:client_id/defaults', verifyToken, requireTeamOrAdmin, validateId, async (req, res) => {
+router.post('/client/:client_id/defaults', verifyToken, requireTeamOrAdmin, async (req, res) => {
   try {
     const clientId = parseInt(req.params.client_id);
     

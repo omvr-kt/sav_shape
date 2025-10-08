@@ -143,6 +143,7 @@ const requireRole = (...roles) => {
 
 const requireAdmin = requireRole('admin');
 const requireTeamOrAdmin = requireRole('team', 'admin');
+const requireAdminOrDev = requireRole('admin', 'developer');
 
 const requireClientOrOwner = async (req, res, next) => {
   try {
@@ -196,5 +197,6 @@ module.exports = {
   requireRole,
   requireAdmin,
   requireTeamOrAdmin,
+  requireAdminOrDev,
   requireClientOrOwner
 };

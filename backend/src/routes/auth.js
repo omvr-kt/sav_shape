@@ -271,6 +271,7 @@ router.post('/change-password', verifyToken, async (req, res) => {
   }
 });
 
+
 router.post('/logout', verifyToken, async (req, res) => {
   try {
     const refreshToken = req.cookies.refreshToken;

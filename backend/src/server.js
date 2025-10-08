@@ -40,6 +40,8 @@ const slaRoutes = require('./routes/sla');
 const attachmentRoutes = require('./routes/attachments');
 const { router: invoiceRoutes } = require('./routes/invoices');
 const settingsRoutes = require('./routes/settings');
+const devRoutes = require('./routes/dev');
+const devCommentsRoutes = require('./routes/dev-comments');
 
 const slaService = require('./services/sla');
 
@@ -94,6 +96,8 @@ app.use('/api/sla', slaRoutes);
 app.use('/api/attachments', attachmentRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/dev', devRoutes);
+app.use('/api/dev', devCommentsRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
@@ -146,6 +150,15 @@ app.get('/client/profile', (req, res) => {
 
 app.get('/client/invoices', (req, res) => {
   res.sendFile(path.join(__dirname, '../../frontend/client/invoices.html'));
+});
+
+// Routes développeur
+app.get('/dev/kanban', (req, res) => {
+  res.sendFile(path.join(__dirname, '../../frontend/dev/kanban.html'));
+});
+
+app.get('/dev', (req, res) => {
+  res.redirect('/dev/kanban');
 });
 
 app.get('/test-navigation', (req, res) => {

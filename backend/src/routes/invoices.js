@@ -7,6 +7,7 @@ const { db } = require('../utils/database');
 const SettingsService = require('../services/settingsService');
 const emailService = require('../services/email');
 const { templates } = require('../config/email-templates');
+const { upload, handleUploadError } = require('../middleware/upload');
 
 // Démarrer le scheduler automatique pour les factures en retard
 let overdueScheduler = null;
@@ -361,6 +362,7 @@ router.get('/:id', verifyToken, async (req, res) => {
 router.post('/', [
   verifyToken,
   requireAdmin,
+  upload.single('attachment'), // Ajouter support pour un fichier
   body('client_id').isInt({ min: 1 }).withMessage('ID client invalide'),
   body('amount_ht').isFloat({ min: 0 }).withMessage('Montant HT invalide'),
   body('description').trim().isLength({ min: 1, max: 1000 }).withMessage('Description requise (max 1000 caractères)'),
@@ -370,6 +372,7 @@ router.post('/', [
 ], async (req, res) => {
 
   const { client_id, amount_ht, description, tva_rate = 20.00, no_tva = false } = req.body;
+  const attachmentFile = req.file; // Fichier uploadé
 
   try {
     // D'abord récupérer les informations actuelles du client
@@ -395,9 +398,9 @@ router.post('/', [
       INSERT INTO invoices (
         invoice_number, client_id, amount_ht, tva_rate, amount_tva, amount_ttc, 
         description, status, due_date, client_first_name, client_last_name, client_email, client_company,
-        client_address, client_city, client_country
+        client_address, client_city, client_country, attachment_filename, attachment_path
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'sent', ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'sent', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const result = await db.run(sql, [
@@ -415,7 +418,9 @@ router.post('/', [
       client.company || '',
       client.address || '',
       client.city || '',
-      client.country || ''
+      client.country || '',
+      attachmentFile ? attachmentFile.originalname : null,
+      attachmentFile ? attachmentFile.filename : null
     ]);
 
     // Récupérer la facture créée avec les infos client

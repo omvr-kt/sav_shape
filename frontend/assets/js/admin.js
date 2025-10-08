@@ -5,6 +5,8 @@ class AdminApp {
     this.projects = []; // Initialiser la liste des projets
     this.currentProject = null; // Projet actuellement affiché dans le kanban
     this.sortableInstances = {}; // Pour le drag & drop du kanban
+    this.movingTasks = new Set(); // Verrou pour moves en cours
+    this.debug = false; // Active les logs DnD si true
     this.init();
   }
 
@@ -16,6 +18,8 @@ class AdminApp {
     if (typeof initTicketBadge === 'function') {
       initTicketBadge();
     }
+    // Précharger Sortable pour éviter tout délai lors de l'ouverture du Kanban
+    this.ensureSortableLoaded().catch(() => {});
   }
 
   checkAuth() {
@@ -248,6 +252,25 @@ class AdminApp {
   }
 
   switchTab(tabName) {
+    // Reset kanban view if currently in project kanban mode
+    if (this.currentTab === 'project-kanban') {
+      const projectKanban = document.getElementById('projectKanban');
+      const projectsList = document.getElementById('projects');
+      
+      if (projectKanban) {
+        projectKanban.style.display = 'none';
+      }
+      
+      // Only show projects list if we're switching to the projects tab
+      if (projectsList && tabName === 'projects') {
+        projectsList.style.display = 'block';
+      } else if (projectsList) {
+        projectsList.style.display = 'none';
+      }
+      
+      this.currentProject = null;
+    }
+
     // Update navigation
     document.querySelectorAll('.sidebar__nav-item').forEach(tab => {
       tab.classList.remove('sidebar__nav-item--active');
@@ -1169,16 +1192,44 @@ class AdminApp {
       document.getElementById('kanbanProjectTitle').textContent = project.name;
       document.querySelector('.main-title').textContent = `Projet : ${project.name}`;
       
-      // Charger les tâches du projet
+      // Pré-initialiser le drag & drop et les clics pour éviter d'attendre le chargement réseau
+      this.setupTaskClickHandlers();
+      this.initKanbanDragDrop();
+
+      // Afficher l'état de chargement visuel
+      this.setKanbanLoading(true);
+
+      // Charger les tâches du projet (les instances Sortable prendront en compte les éléments insérés)
       await this.loadProjectTasks(id);
+      this.setKanbanLoading(false);
       
-      // Configurer les événements du kanban
+      // Configurer les événements du kanban (header)
       this.setupKanbanEvents(id);
       
     } catch (error) {
       console.error('Erreur viewProject:', error);
       this.showNotification('Erreur lors de l\'affichage du projet', 'error');
     }
+  }
+
+  setKanbanLoading(isLoading) {
+    const statuses = ['todo_back', 'todo_front', 'in_progress', 'ready_for_review', 'done'];
+    statuses.forEach(status => {
+      const column = document.getElementById(`column-${status}`);
+      if (!column) return;
+      if (isLoading) {
+        column.setAttribute('data-loading', 'true');
+        if (!column.querySelector('.kanban-loading')) {
+          const placeholder = document.createElement('div');
+          placeholder.className = 'kanban-loading';
+          placeholder.textContent = 'Chargement…';
+          column.prepend(placeholder);
+        }
+      } else {
+        column.removeAttribute('data-loading');
+        column.querySelector('.kanban-loading')?.remove();
+      }
+    });
   }
 
   async loadProjectTasks(projectId) {
@@ -1207,13 +1258,22 @@ class AdminApp {
         document.getElementById(`count-${status}`).textContent = '0';
       });
       
+      // Mapping des statuts de la base vers les colonnes kanban
+      const statusMapping = {
+        'todo': 'todo_back',
+        'in_progress': 'in_progress', 
+        'ready_for_review': 'ready_for_review',
+        'done': 'done'
+      };
+
       // Grouper les tâches par statut
       const tasksByStatus = {};
       columns.forEach(status => tasksByStatus[status] = []);
       
       tasks.forEach(task => {
-        if (tasksByStatus[task.status]) {
-          tasksByStatus[task.status].push(task);
+        const kanbanStatus = statusMapping[task.status] || 'todo_back';
+        if (tasksByStatus[kanbanStatus]) {
+          tasksByStatus[kanbanStatus].push(task);
         }
       });
       
@@ -1229,7 +1289,7 @@ class AdminApp {
           <div class="task-card" data-task-id="${task.id}">
             <div class="task-header">
               <h4>${task.title}</h4>
-              <span class="task-priority priority-${task.priority}">${this.getPriorityLabel(task.priority)}</span>
+              <span class="task-urgency ${task.urgency || 'medium'}">${this.getPriorityLabel(task.urgency || 'medium')}</span>
             </div>
             <p class="task-description">${task.description || ''}</p>
             <div class="task-footer">
@@ -1240,7 +1300,10 @@ class AdminApp {
         `).join('');
       });
       
-      // Initialiser le drag & drop après avoir affiché les tâches
+      // Initialiser les event listeners immédiatement
+      this.setupTaskClickHandlers();
+      
+      // Initialiser le drag & drop immédiatement
       this.initKanbanDragDrop();
       
     } catch (error) {
@@ -1249,12 +1312,614 @@ class AdminApp {
     }
   }
 
+  setupTaskClickHandlers() {
+    console.log('Configuration des event listeners pour les tâches...');
+    
+    // Event delegation pour les clics sur les tâches
+    const kanbanBoard = document.getElementById('projectKanban');
+    if (kanbanBoard && !this.taskClickHandlerAttached) {
+      // Ajouter le nouvel event listener
+      this.taskClickHandler = (e) => {
+        const taskCard = e.target.closest('.task-card');
+        if (taskCard && !e.target.closest('button')) {
+          const taskId = taskCard.dataset.taskId;
+          console.log('Clic sur tâche:', taskId);
+          this.openTaskModal(taskId);
+        }
+      };
+      
+      kanbanBoard.addEventListener('click', this.taskClickHandler);
+      this.taskClickHandlerAttached = true;
+      console.log('Event listeners attachés');
+    }
+  }
+
+  async openTaskModal(taskId) {
+    try {
+      console.log('Ouverture modal pour tâche:', taskId);
+      
+      // Récupérer les détails de la tâche
+      const response = await fetch(`/api/dev/tasks/${taskId}`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Erreur lors du chargement de la tâche');
+      }
+      
+      const result = await response.json();
+      const task = result.data;
+      
+      // Créer et afficher le modal en respectant unified-modals.css
+      const modalHtml = `
+        <div class="modal" id="taskModal" role="dialog" aria-modal="true">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h3 class="modal-title">Détails de la tâche</h3>
+              <button class="modal-close" type="button" aria-label="Fermer">&times;</button>
+            </div>
+            <div class="task-detail-tabs">
+              <button class="tab-btn active" data-tab="details">Détails</button>
+              <button class="tab-btn" data-tab="discussions">Discussions</button>
+              <button class="tab-btn" data-tab="attachments">Pièces jointes</button>
+              <button class="tab-btn" data-tab="tickets">Tickets liés</button>
+            </div>
+            <div class="modal-body">
+              <section id="taskTab-details" class="task-tab active">
+                <div class="form-group">
+                  <label>Titre</label>
+                  <input type="text" id="taskTitle" value="${task.title}">
+                </div>
+                <div class="form-group">
+                  <label>Description</label>
+                  <textarea id="taskDescription">${task.description || ''}</textarea>
+                </div>
+                <div class="form-group">
+                  <label>Statut</label>
+                  <select id="taskStatus">
+                    <option value="todo_back" ${task.status === 'todo_back' ? 'selected' : ''}>À faire (Back)</option>
+                    <option value="todo_front" ${task.status === 'todo_front' ? 'selected' : ''}>À faire (Front)</option>
+                    <option value="in_progress" ${task.status === 'in_progress' ? 'selected' : ''}>En cours</option>
+                    <option value="ready_for_review" ${task.status === 'ready_for_review' ? 'selected' : ''}>Prêt pour révision</option>
+                    <option value="done" ${task.status === 'done' ? 'selected' : ''}>Terminé</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Priorité</label>
+                  <select id="taskUrgency">
+                    <option value="low" ${task.urgency === 'low' ? 'selected' : ''}>Faible</option>
+                    <option value="medium" ${task.urgency === 'medium' ? 'selected' : ''}>Moyenne</option>
+                    <option value="high" ${task.urgency === 'high' ? 'selected' : ''}>Élevée</option>
+                    <option value="urgent" ${task.urgency === 'urgent' ? 'selected' : ''}>Urgente</option>
+                  </select>
+                </div>
+              </section>
+              <section id="taskTab-discussions" class="task-tab" hidden>
+                <div id="taskComments" class="comments-list" style="max-height: 360px; overflow-y: auto; padding: 12px; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 12px;">Chargement…</div>
+                <form id="taskCommentForm" class="form-inline">
+                  <textarea id="taskCommentBody" placeholder="Votre message…" rows="3" required style="width:100%;"></textarea>
+                  <div style="margin-top:8px; display:flex; gap:8px; justify-content:flex-end;">
+                    <button type="submit" class="btn btn-primary">Envoyer</button>
+                  </div>
+                </form>
+              </section>
+              
+              <section id="taskTab-attachments" class="task-tab" hidden>
+                <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+                  <input type="file" id="taskAttachmentInput" multiple />
+                  <button class="btn btn-primary" id="taskAttachmentUploadBtn">Uploader</button>
+                </div>
+                <div id="taskAttachments" style="min-height:120px;">Chargement…</div>
+              </section>
+              <section id="taskTab-tickets" class="task-tab" hidden>
+                <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:8px;">
+                  <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="text" id="linkTicketSearch" placeholder="Rechercher ticket (titre, numéro, ID)" />
+                    <button class="btn btn-primary" id="linkTicketBtn">Lier</button>
+                  </div>
+                  <div id="linkTicketResults" style="border:1px solid #e5e7eb; border-radius:6px; max-height:220px; overflow:auto; display:none;"></div>
+                </div>
+                <div id="taskTickets" style="min-height:120px;">Chargement…</div>
+              </section>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" data-close-modal>Annuler</button>
+              <button class="btn btn-primary" id="taskSaveBtn">Sauvegarder</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+      document.documentElement.classList.add('modal-open');
+      document.body.classList.add('modal-open');
+
+      const modalEl = document.getElementById('taskModal');
+      const close = () => {
+        modalEl?.remove();
+        document.documentElement.classList.remove('modal-open');
+        document.body.classList.remove('modal-open');
+      };
+      // Boutons de fermeture
+      modalEl.querySelector('.modal-close')?.addEventListener('click', close);
+      modalEl.querySelector('[data-close-modal]')?.addEventListener('click', close);
+      modalEl.querySelector('#taskSaveBtn')?.addEventListener('click', () => this.saveTask(taskId));
+      // Fermer en cliquant en dehors du contenu
+      modalEl.addEventListener('click', (e) => {
+        if (!e.target.closest('.modal-content')) close();
+      });
+      // Fermer avec ESC
+      const escHandler = (e) => { if (e.key === 'Escape') { close(); window.removeEventListener('keydown', escHandler); } };
+      window.addEventListener('keydown', escHandler);
+      
+      // Tabs logic + lazy loading
+      const tabButtons = Array.from(modalEl.querySelectorAll('.tab-btn'));
+      const sections = {
+        details: modalEl.querySelector('#taskTab-details'),
+        discussions: modalEl.querySelector('#taskTab-discussions'),
+        attachments: modalEl.querySelector('#taskTab-attachments'),
+        tickets: modalEl.querySelector('#taskTab-tickets'),
+      };
+      const showTab = (name) => {
+        tabButtons.forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+        Object.entries(sections).forEach(([k, el]) => {
+          if (!el) return;
+          if (k === name) { el.hidden = false; el.classList.add('active'); } else { el.hidden = true; el.classList.remove('active'); }
+        });
+        if (name === 'discussions') this.loadTaskComments(taskId);
+        if (name === 'attachments') this.loadTaskAttachments(taskId);
+        if (name === 'tickets') this.loadTaskTickets(taskId);
+      };
+      tabButtons.forEach(btn => btn.addEventListener('click', () => showTab(btn.dataset.tab)));
+      // Default is details
+
+      // Comment form
+      const form = modalEl.querySelector('#taskCommentForm');
+      if (form) {
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const textarea = modalEl.querySelector('#taskCommentBody');
+          const val = textarea.value;
+          await this.postTaskComment(taskId, val);
+          textarea.value = '';
+          await this.loadTaskComments(taskId);
+        });
+      }
+
+      // Attachment upload
+      const uploadBtn = modalEl.querySelector('#taskAttachmentUploadBtn');
+      const fileInput = modalEl.querySelector('#taskAttachmentInput');
+      if (uploadBtn && fileInput) {
+        uploadBtn.addEventListener('click', async () => {
+          if (!fileInput.files || fileInput.files.length === 0) {
+            this.showNotification('Sélectionnez un fichier', 'warning');
+            return;
+          }
+          try {
+            // Multi-upload: envoyer tous les fichiers
+            await this.uploadTaskAttachments(taskId, Array.from(fileInput.files));
+            fileInput.value = '';
+            await this.loadTaskAttachments(taskId);
+            this.showNotification('Fichier uploadé', 'success');
+          } catch (e) {
+            this.showNotification('Échec upload fichier', 'error');
+          }
+        });
+      }
+
+      // Link ticket
+      const linkBtn = modalEl.querySelector('#linkTicketBtn');
+      const searchInput = modalEl.querySelector('#linkTicketSearch');
+      const resultsBox = modalEl.querySelector('#linkTicketResults');
+      let searchTimer;
+      const renderResults = (tickets) => {
+        if (!tickets || tickets.length === 0) {
+          resultsBox.style.display = 'none';
+          resultsBox.innerHTML = '';
+          return;
+        }
+        resultsBox.style.display = 'block';
+        resultsBox.innerHTML = tickets.map(t => `
+          <div class="result-item" data-id="${t.id}" style="padding:8px; cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-weight:600;">#${t.ticket_number || t.id} — ${t.title}</div>
+              <div style="font-size:12px; color:#6b7280;">${t.status} · ${t.priority}</div>
+            </div>
+            <button class="btn btn-secondary" data-action="choose-ticket" data-id="${t.id}">Choisir</button>
+          </div>
+        `).join('');
+        resultsBox.querySelectorAll('[data-action="choose-ticket"]').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const id = parseInt(e.currentTarget.dataset.id, 10);
+            try { await this.linkTaskTicket(taskId, id); await this.loadTaskTickets(taskId); this.showNotification('Ticket lié', 'success'); }
+            catch { this.showNotification('Échec liaison ticket', 'error'); }
+          });
+        });
+      };
+      const doSearch = async (q) => {
+        if (!q || q.trim().length < 2) { renderResults([]); return; }
+        try {
+          const res = await fetch(`/api/dev/tickets/search?q=${encodeURIComponent(q)}`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          });
+          if (!res.ok) throw new Error('search_failed');
+          const data = await res.json();
+          renderResults(data.data || []);
+        } catch { renderResults([]); }
+      };
+      if (searchInput) {
+        searchInput.addEventListener('input', () => {
+          clearTimeout(searchTimer);
+          const q = searchInput.value;
+          searchTimer = setTimeout(() => doSearch(q), 250);
+        });
+      }
+      if (linkBtn && searchInput) {
+        linkBtn.addEventListener('click', async () => {
+          const q = searchInput.value;
+          if (/^\d+$/.test(q)) {
+            // Liaison directe par ID si numérique
+            try { await this.linkTaskTicket(taskId, parseInt(q, 10)); await this.loadTaskTickets(taskId); this.showNotification('Ticket lié', 'success'); }
+            catch { this.showNotification('Échec liaison ticket', 'error'); }
+          } else {
+            await doSearch(q);
+          }
+        });
+      }
+
+    } catch (error) {
+      console.error('Erreur ouverture modal tâche:', error);
+      this.showNotification('Erreur lors de l\'ouverture de la tâche', 'error');
+    }
+  }
+
+  async loadTaskComments(taskId) {
+    const container = document.querySelector('#taskModal #taskComments');
+    if (!container) return;
+    try {
+      const res = await fetch(`/api/dev/tasks/${taskId}/comments`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }});
+      if (!res.ok) throw new Error('Erreur chargement commentaires');
+      const data = await res.json();
+      const comments = data.data || [];
+      if (comments.length === 0) { container.innerHTML = '<div style="color:#6b7280;">Aucun message</div>'; return; }
+      container.innerHTML = comments.map(c => `
+        <div class="comment-item" style="margin-bottom:12px;">
+          <div style="font-weight:600; font-size:13px; color:#111827;">${c.author_first_name || ''} ${c.author_last_name || ''} <span style="color:#6b7280; font-weight:400;">(${api.formatDateTime ? api.formatDateTime(c.created_at) : c.created_at})</span></div>
+          <div style="white-space:pre-wrap; font-size:13px; color:#374151;">${(c.body || '').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+        </div>
+      `).join('');
+      container.scrollTop = container.scrollHeight;
+    } catch (e) {
+      container.textContent = 'Erreur lors du chargement des commentaires';
+    }
+  }
+
+  async postTaskComment(taskId, body) {
+    if (!body || !body.trim()) return;
+    await fetch(`/api/dev/tasks/${taskId}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      body: JSON.stringify({ body: body.trim() })
+    });
+  }
+
+  async loadTaskActivity(taskId) {
+    const container = document.querySelector('#taskModal #taskActivity');
+    if (!container) return;
+    try {
+      const res = await fetch(`/api/dev/tasks/${taskId}/activity`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }});
+      if (!res.ok) throw new Error('Erreur activité');
+      const data = await res.json();
+      const items = data.data || [];
+      if (items.length === 0) { container.innerHTML = '<div style="color:#6b7280;">Aucune activité</div>'; return; }
+      container.innerHTML = items.map(a => `
+        <div class="activity-item" style="padding:8px 0; border-bottom:1px solid #eee; font-size:13px;">
+          <div style="color:#111827; font-weight:600;">${a.action || a.type || 'activité'}</div>
+          <div style="color:#374151;">${(a.details ? JSON.stringify(a.details) : '')}</div>
+          <div style="color:#6b7280;">${api.formatDateTime ? api.formatDateTime(a.created_at) : a.created_at}</div>
+        </div>
+      `).join('');
+    } catch (e) {
+      container.textContent = 'Erreur lors du chargement de l\'activité';
+    }
+  }
+
+  async loadTaskAttachments(taskId) {
+    const container = document.querySelector('#taskModal #taskAttachments');
+    if (!container) return;
+    try {
+      const res = await fetch(`/api/dev/tasks/${taskId}/attachments`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }});
+      if (!res.ok) throw new Error('Erreur pièces jointes');
+      const data = await res.json();
+      const files = data.data || [];
+      if (files.length === 0) { container.innerHTML = '<div style="color:#6b7280;">Aucune pièce jointe</div>'; return; }
+      container.innerHTML = `
+        <div class="attachments-list">
+          ${files.map(f => `
+            <div class="attachment-item" style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #eee;">
+              <div>
+                <div style="font-size:13px; font-weight:600; color:#111827;">${f.filename}</div>
+                <div style="font-size:12px; color:#6b7280;">${(f.size || 0)} octets — ${f.uploader_first_name || ''} ${f.uploader_last_name || ''}</div>
+              </div>
+              <div style="display:flex; gap:8px;">
+                <button class="btn btn-secondary" data-action="download-attachment" data-id="${f.id}">Télécharger</button>
+                <button class="btn btn-secondary" data-action="delete-attachment" data-id="${f.id}">Supprimer</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>`;
+
+      // Delegation for delete
+      container.querySelectorAll('[data-action="download-attachment"]').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const id = parseInt(e.currentTarget.dataset.id, 10);
+          try {
+            await this.downloadTaskAttachment(id);
+          } catch (err) {
+            this.showNotification('Échec téléchargement', 'error');
+          }
+        });
+      });
+
+      container.querySelectorAll('[data-action="delete-attachment"]').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const id = parseInt(e.currentTarget.dataset.id, 10);
+          if (!id) return;
+          try {
+            await this.deleteTaskAttachment(id);
+            await this.loadTaskAttachments(taskId);
+            this.showNotification('Pièce jointe supprimée', 'success');
+          } catch (err) {
+            this.showNotification('Échec suppression', 'error');
+          }
+        });
+      });
+    } catch (e) {
+      container.textContent = 'Erreur lors du chargement des pièces jointes';
+    }
+  }
+
+  async uploadTaskAttachments(taskId, files) {
+    const formData = new FormData();
+    files.forEach(f => formData.append('attachments', f));
+    const res = await fetch(`/api/dev/tasks/${taskId}/attachments`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      body: formData,
+    });
+    if (!res.ok) throw new Error('upload_failed');
+    return res.json();
+  }
+
+  async deleteTaskAttachment(attachmentId) {
+    const res = await fetch(`/api/dev/attachments/${attachmentId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+    });
+    if (!res.ok) throw new Error('delete_failed');
+    return res.json();
+  }
+
+  async downloadTaskAttachment(attachmentId) {
+    const res = await fetch(`/api/dev/attachments/download/${attachmentId}`, {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+    });
+    if (!res.ok) throw new Error('download_failed');
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const match = disposition.match(/filename="?([^";]+)"?/);
+    a.download = match ? match[1] : `attachment-${attachmentId}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  }
+
+  async loadTaskTickets(taskId) {
+    const container = document.querySelector('#taskModal #taskTickets');
+    if (!container) return;
+    try {
+      const res = await fetch(`/api/dev/tasks/${taskId}/tickets`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }});
+      if (!res.ok) throw new Error('Erreur tickets liés');
+      const data = await res.json();
+      const tickets = data.data || [];
+      if (tickets.length === 0) { container.innerHTML = '<div style="color:#6b7280;">Aucun ticket lié</div>'; return; }
+      container.innerHTML = tickets.map(t => `
+        <div class="ticket-link" style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #eee; font-size:13px;">
+          <div>
+            <div style="font-weight:600; color:#111827;">#${t.id} — ${t.title}</div>
+            <div style="color:#6b7280;">${t.status} · ${t.priority}</div>
+          </div>
+          <div>
+            <button class="btn btn-secondary" data-action="unlink-ticket" data-id="${t.id}">Délier</button>
+          </div>
+        </div>
+      `).join('');
+
+      container.querySelectorAll('[data-action="unlink-ticket"]').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const ticketId = parseInt(e.currentTarget.dataset.id, 10);
+          try {
+            await this.unlinkTaskTicket(taskId, ticketId);
+            await this.loadTaskTickets(taskId);
+            this.showNotification('Ticket délié', 'success');
+          } catch (err) {
+            this.showNotification('Échec délier ticket', 'error');
+          }
+        });
+      });
+    } catch (e) {
+      container.textContent = 'Erreur lors du chargement des tickets liés';
+    }
+  }
+
+  async linkTaskTicket(taskId, ticketId) {
+    const res = await fetch(`/api/dev/tasks/${taskId}/tickets`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      body: JSON.stringify({ ticket_id: ticketId })
+    });
+    if (!res.ok) throw new Error('link_failed');
+    return res.json();
+  }
+
+  async unlinkTaskTicket(taskId, ticketId) {
+    const res = await fetch(`/api/dev/tasks/${taskId}/tickets/${ticketId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+    });
+    if (!res.ok) throw new Error('unlink_failed');
+    return res.json();
+  }
+
+  async saveTask(taskId) {
+    try {
+      const updates = {
+        title: document.getElementById('taskTitle').value,
+        description: document.getElementById('taskDescription').value,
+        status: document.getElementById('taskStatus').value,
+        urgency: document.getElementById('taskUrgency').value
+      };
+      
+      const response = await fetch(`/api/dev/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(updates)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Erreur lors de la sauvegarde');
+      }
+      
+      // Fermer le modal
+      document.getElementById('taskModal')?.remove();
+      document.documentElement.classList.remove('modal-open');
+      document.body.classList.remove('modal-open');
+      
+      // Recharger les tâches
+      if (this.currentProject) {
+        await this.loadProjectTasks(this.currentProject.id);
+      }
+      
+      this.showNotification('Tâche mise à jour avec succès', 'success');
+      
+    } catch (error) {
+      console.error('Erreur sauvegarde tâche:', error);
+      this.showNotification('Erreur lors de la sauvegarde', 'error');
+    }
+  }
+
   initKanbanDragDrop() {
-    console.log('Initialisation du drag & drop...');
+    if (this.debug) console.log('Initialisation du drag & drop...');
+    
+    // Forcer le chargement de Sortable si pas disponible
+    this.ensureSortableLoaded().then(() => {
+      this.setupSortableDragDrop();
+    }).catch((err) => {
+      if (this.debug) console.warn('Échec du chargement de Sortable, fallback natif', err);
+      this.initNativeDragDrop();
+    });
+  }
+
+  async ensureSortableLoaded() {
+    // Empêcher les tentatives simultanées et fiabiliser la détection
+    if (this._sortableLoadPromise) return this._sortableLoadPromise;
+    this._sortableLoadPromise = new Promise((resolve, reject) => {
+      // Déjà disponible
+      if (typeof Sortable !== 'undefined') {
+        if (this.debug) console.log('Sortable déjà disponible');
+        resolve();
+        return;
+      }
+
+      if (this.debug) console.log('Tentative de chargement de Sortable...');
+
+      // Rechercher un script existant
+      let script = document.querySelector('script[src*="sortablejs"], script[src*="Sortable.min.js"], script[src*="sortable"]');
+
+      // Fonction de polling fiable au cas où onload ne se déclenche pas
+      const pollForSortable = () => typeof Sortable !== 'undefined';
+      const startPolling = () => {
+        const start = Date.now();
+        const interval = setInterval(() => {
+          if (pollForSortable()) {
+            clearInterval(interval);
+            clearTimeout(timeout);
+            if (this.debug) console.log('Sortable détecté via polling');
+            resolve();
+          } else if (Date.now() - start > 4000) {
+            clearInterval(interval);
+            // Laisser le timeout gérer le reject pour messages cohérents
+          }
+        }, 50);
+        return interval;
+      };
+
+      const timeout = setTimeout(() => {
+        if (typeof Sortable === 'undefined') {
+          if (this.debug) console.warn('Timeout chargement Sortable');
+          reject(new Error('Timeout chargement Sortable'));
+        }
+      }, 5000);
+
+      // Si un script existe déjà mais a été chargé avant, onload ne sera pas rappelé.
+      if (script) {
+        // Si déjà chargé, on résout au polling immédiat
+        if (pollForSortable()) {
+          clearTimeout(timeout);
+          resolve();
+          return;
+        }
+        // Attacher quand même les events et lancer un polling
+        script.addEventListener('load', () => {
+          if (pollForSortable()) {
+            clearTimeout(timeout);
+            if (this.debug) console.log('Sortable chargé (event load)');
+            resolve();
+          }
+        });
+        script.addEventListener('error', () => {
+          clearTimeout(timeout);
+          reject(new Error('Erreur de chargement de Sortable'));
+        });
+        startPolling();
+        return;
+      }
+
+      // Créer et charger le script si absent
+      script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js';
+      script.async = true;
+      script.addEventListener('load', () => {
+        if (pollForSortable()) {
+          clearTimeout(timeout);
+          if (this.debug) console.log('Sortable chargé avec succès');
+          resolve();
+        }
+      });
+      script.addEventListener('error', () => {
+        clearTimeout(timeout);
+        reject(new Error('Erreur de chargement de Sortable'));
+      });
+      document.head.appendChild(script);
+      startPolling();
+    });
+    return this._sortableLoadPromise;
+  }
+
+  setupSortableDragDrop() {
+    if (this.debug) console.log('Configuration du drag & drop avec Sortable...');
     
     // Détruire les instances existantes
-    Object.values(this.sortableInstances).forEach(instance => {
-      if (instance) instance.destroy();
+    Object.values(this.sortableInstances || {}).forEach(instance => {
+      if (instance && instance.destroy) instance.destroy();
     });
     this.sortableInstances = {};
     
@@ -1264,42 +1929,168 @@ class AdminApp {
     statuses.forEach(status => {
       const column = document.getElementById(`column-${status}`);
       if (column) {
-        console.log(`Création Sortable pour colonne: ${status}`);
+        if (this.debug) console.log(`Création Sortable pour colonne: ${status}, nombre de tâches: ${column.children.length}`);
         this.sortableInstances[status] = Sortable.create(column, {
           group: 'kanban',
-          animation: 150,
+          animation: 120,
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
           dragClass: 'dragging',
+          draggable: '.task-card',
+          direction: 'vertical',
+          handle: '.task-header, .task-title, .task-card',
+          filter: 'button, a, .no-drag',
+          preventOnFilter: true,
+          scroll: true,
+          scrollSensitivity: 60,
+          scrollSpeed: 10,
+          fallbackOnBody: true,
+          delay: 0,
+          delayOnTouchOnly: true,
+          touchStartThreshold: 3,
           
           onStart: (evt) => {
             document.body.classList.add('dragging');
+            if (this.debug) console.log('Début drag:', evt.item.dataset.taskId);
           },
           
           onEnd: (evt) => {
             document.body.classList.remove('dragging');
-            
+
             // Si la tâche a changé de colonne
             if (evt.from !== evt.to) {
               const taskId = evt.item.dataset.taskId;
               const newStatus = evt.to.id.replace('column-', '');
-              console.log(`Déplacement tâche ${taskId} vers ${newStatus}`);
-              this.moveTask(taskId, newStatus);
+              if (this.debug) console.log(`Déplacement tâche ${taskId} vers ${newStatus}`);
+
+              const oldParent = evt.from;
+              const oldIndex = evt.oldIndex;
+              const newParent = evt.to;
+
+              // Mettre à jour les compteurs immédiatement
+              this.updateKanbanCounts();
+
+              this.moveTask(taskId, newStatus, {
+                oldParent,
+                oldIndex,
+                newParent,
+                item: evt.item,
+              });
             }
           },
           
           onMove: (evt) => {
-            // Permettre le déplacement entre toutes les colonnes
             return true;
           }
         });
       }
     });
+    
+    if (this.debug) console.log('Sortable configuré avec succès');
   }
 
-  async moveTask(taskId, newStatus) {
+  initNativeDragDrop() {
+    if (this.debug) console.log('Initialisation du drag & drop natif HTML5...');
+    
+    if (this.nativeDragDropInitialized) {
+      if (this.debug) console.log('Drag & drop natif déjà initialisé, mise à jour des tâches uniquement');
+      this.makeTasksDraggable();
+      return;
+    }
+    
+    const statuses = ['todo_back', 'todo_front', 'in_progress', 'ready_for_review', 'done'];
+    
+    statuses.forEach(status => {
+      const column = document.getElementById(`column-${status}`);
+      if (column) {
+        // Rendre la colonne droppable
+        column.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          column.classList.add('drag-over');
+        });
+        
+        column.addEventListener('dragleave', () => {
+          column.classList.remove('drag-over');
+        });
+        
+        column.addEventListener('drop', (e) => {
+          e.preventDefault();
+          column.classList.remove('drag-over');
+
+          const taskId = e.dataTransfer.getData('text/plain');
+          const newStatus = column.id.replace('column-', '');
+
+          if (this.debug) console.log(`Drop tâche ${taskId} vers ${newStatus}`);
+          const item = document.querySelector(`.task-card[data-task-id="${taskId}"]`);
+          const oldParent = item?.parentElement;
+          const oldIndex = item ? Array.from(oldParent.children).indexOf(item) : -1;
+          if (item && column && item.parentElement !== column) {
+            column.appendChild(item);
+          }
+          this.updateKanbanCounts();
+          this.moveTask(taskId, newStatus, { oldParent, oldIndex, newParent: column, item });
+        });
+      }
+    });
+    
+    this.nativeDragDropInitialized = true;
+    
+    // Rendre les tâches draggables
+    this.makeTasksDraggable();
+    
+    if (this.debug) console.log('Drag & drop natif configuré');
+  }
+
+  makeTasksDraggable() {
+    const taskCards = document.querySelectorAll('.task-card');
+    taskCards.forEach(card => {
+      card.draggable = true;
+      
+      card.addEventListener('dragstart', (e) => {
+        const taskId = card.dataset.taskId;
+        e.dataTransfer.setData('text/plain', taskId);
+        card.classList.add('dragging');
+        if (this.debug) console.log('Début drag natif:', taskId);
+      });
+      
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+      });
+    });
+  }
+
+
+  updateKanbanCounts() {
+    const statuses = ['todo_back', 'todo_front', 'in_progress', 'ready_for_review', 'done'];
+    statuses.forEach(status => {
+      const column = document.getElementById(`column-${status}`);
+      const count = document.getElementById(`count-${status}`);
+      if (column && count) {
+        count.textContent = column.children.length;
+      }
+    });
+  }
+
+  async moveTask(taskId, newStatus, revertCtx) {
     try {
-      console.log(`moveTask: tâche ${taskId} vers ${newStatus}`);
+      if (this.debug) console.log(`moveTask: tâche ${taskId} vers ${newStatus}`);
+      if (this.movingTasks.has(taskId)) {
+        if (this.debug) console.warn('Move déjà en cours pour', taskId);
+        return;
+      }
+      this.movingTasks.add(taskId);
+      
+      // Mapper les colonnes kanban vers les statuts DB
+      const statusMapping = {
+        'todo_back': 'todo',
+        'todo_front': 'todo',
+        'in_progress': 'in_progress',
+        'ready_for_review': 'ready_for_review',
+        'done': 'done'
+      };
+      
+      const dbStatus = statusMapping[newStatus] || newStatus;
+      if (this.debug) console.log(`Mapping ${newStatus} vers ${dbStatus}`);
       
       const response = await fetch(`/api/dev/tasks/${taskId}`, {
         method: 'PATCH',
@@ -1307,25 +2098,28 @@ class AdminApp {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({ status: dbStatus })
       });
       
       if (response.ok) {
-        // Recharger les tâches pour synchroniser
-        if (this.currentProject?.id) {
-          await this.loadProjectTasks(this.currentProject.id);
-        }
-        this.showNotification('Tâche déplacée avec succès', 'success');
+        // Succès: pas de reload, maintenir l'état optimiste
+        this.updateKanbanCounts();
+        this.showNotification('Tâche déplacée', 'success');
       } else {
         throw new Error('Erreur lors du déplacement');
       }
     } catch (error) {
       console.error('Erreur moveTask:', error);
-      this.showNotification('Erreur lors du déplacement de la tâche', 'error');
-      // Recharger pour annuler le déplacement visuel
-      if (this.currentProject?.id) {
-        await this.loadProjectTasks(this.currentProject.id);
+      this.showNotification('Déplacement annulé (erreur)', 'error');
+      // Revenir à l'état précédent sans recharger tout
+      if (revertCtx && revertCtx.oldParent && revertCtx.item) {
+        const { oldParent, oldIndex, item } = revertCtx;
+        const refNode = oldParent.children[oldIndex] || null;
+        oldParent.insertBefore(item, refNode);
       }
+      this.updateKanbanCounts();
+    } finally {
+      this.movingTasks.delete(taskId);
     }
   }
 

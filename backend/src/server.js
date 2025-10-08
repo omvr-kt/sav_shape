@@ -44,6 +44,7 @@ const devRoutes = require('./routes/dev');
 const devCommentsRoutes = require('./routes/dev-comments');
 
 const slaService = require('./services/sla');
+const { addKanbanTables } = require('../migrations/add_kanban_tables');
 
 const app = express();
 const PORT = config.server.port;
@@ -177,6 +178,14 @@ const startServer = async () => {
   try {
     await initDatabase();
     console.log('Database initialized successfully');
+
+    // Ensure Kanban-related tables exist (idempotent)
+    try {
+      await addKanbanTables();
+      console.log('Kanban tables ensured');
+    } catch (migrateErr) {
+      console.error('Failed to ensure Kanban tables:', migrateErr);
+    }
     
     // Start SLA monitoring service
     slaService.start();

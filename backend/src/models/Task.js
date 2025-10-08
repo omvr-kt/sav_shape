@@ -43,23 +43,14 @@ class Task {
         p.name as project_name,
         creator.first_name as creator_first_name,
         creator.last_name as creator_last_name,
-        updater.first_name as updater_first_name,
-        updater.last_name as updater_last_name
+        assigned.first_name as assigned_first_name,
+        assigned.last_name as assigned_last_name
       FROM tasks t
       LEFT JOIN projects p ON t.project_id = p.id
       LEFT JOIN users creator ON t.created_by = creator.id
-      LEFT JOIN users updater ON t.updated_by = updater.id
+      LEFT JOIN users assigned ON t.assigned_to = assigned.id
       WHERE t.id = ?
     `, [id]);
-
-    if (task) {
-      // Ajouter les tickets liés
-      task.linked_tickets = await this.getLinkedTickets(id);
-      // Ajouter les pièces jointes
-      task.attachments = await this.getAttachments(id);
-      // Ajouter le nombre de commentaires
-      task.comment_count = await this.getCommentCount(id);
-    }
 
     return task;
   }
@@ -108,13 +99,13 @@ class Task {
     }
 
     query += ' GROUP BY t.id';
-    query += ' ORDER BY t.due_at ASC, t.urgency DESC, t.created_at ASC';
+    query += ' ORDER BY COALESCE(t.due_at, t.due_date) ASC, t.urgency DESC, t.created_at ASC';
 
     return await db.all(query, params);
   }
 
   static async update(id, updates, updated_by) {
-    const allowedFields = ['title', 'description', 'urgency', 'status', 'start_at'];
+    const allowedFields = ['title', 'description', 'urgency', 'status', 'due_date', 'assigned_to'];
     const fieldsToUpdate = [];
     const values = [];
 
@@ -183,9 +174,26 @@ class Task {
 
   // Calcul de la date d'échéance selon l'urgence (SLA)
   static calculateDueDate(startAt, urgency) {
-    const start = new Date(startAt);
-    let hoursToAdd;
+    // Convertir startAt en timestamp robuste (prend en charge dates SQLite sans timezone)
+    let startMs;
+    if (startAt instanceof Date) {
+      const t = startAt.getTime();
+      startMs = Number.isFinite(t) ? t : Date.now();
+    } else if (typeof startAt === 'string') {
+      let s = startAt.trim();
+      // Normaliser "YYYY-MM-DD HH:mm:ss" en ISO-like pour parsing
+      if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(s)) {
+        s = s.replace(' ', 'T');
+      }
+      const parsed = Date.parse(s);
+      startMs = Number.isFinite(parsed) ? parsed : Date.now();
+    } else if (typeof startAt === 'number' && Number.isFinite(startAt)) {
+      startMs = startAt;
+    } else {
+      startMs = Date.now();
+    }
 
+    let hoursToAdd;
     switch (urgency) {
       case 'urgent': hoursToAdd = 24; break;
       case 'high': hoursToAdd = 48; break;
@@ -194,8 +202,11 @@ class Task {
       default: hoursToAdd = 72;
     }
 
-    const dueDate = new Date(start.getTime() + (hoursToAdd * 60 * 60 * 1000));
-    return dueDate.toISOString();
+    const dueMs = startMs + (hoursToAdd * 60 * 60 * 1000);
+    const dueDate = new Date(dueMs);
+    const iso = dueDate.toISOString();
+    // Sécurité: si jamais iso est invalide (cas improbable), fallback sur maintenant + 72h
+    return typeof iso === 'string' ? iso : new Date(Date.now() + 72 * 3600000).toISOString();
   }
 
   // Gestion des tickets liés
@@ -243,7 +254,9 @@ class Task {
       'todo_back': 'open',
       'todo_front': 'open',
       'in_progress': 'in_progress',
-      'ready_for_review': 'in_review',
+      // Map "ready_for_review" to an allowed ticket status
+      // Tickets allowed: 'open','in_progress','waiting_client','resolved','closed'
+      'ready_for_review': 'in_progress',
       'done': 'resolved'
     };
 

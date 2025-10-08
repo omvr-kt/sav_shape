@@ -5,12 +5,15 @@ const { db } = require('../utils/database');
 const multer = require('multer');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const fs = require('fs');
 const router = express.Router();
 
 // Configuration multer pour les pièces jointes
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../../uploads/tasks'));
+    const dest = path.join(__dirname, '../../uploads/tasks');
+    try { if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true }); } catch (e) {}
+    cb(null, dest);
   },
   filename: (req, file, cb) => {
     const uniqueName = `${Date.now()}-${uuidv4()}${path.extname(file.originalname)}`;
@@ -20,27 +23,10 @@ const storage = multer.diskStorage({
 
 const upload = multer({ 
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
   fileFilter: (req, file, cb) => {
-    // Autoriser plus de types de fichiers
-    const allowedTypes = [
-      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
-      'application/pdf',
-      'text/plain', 'text/csv',
-      'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/zip', 'application/x-zip-compressed',
-      'application/json', 'application/xml'
-    ];
-    
-    console.log('Upload tentative - Type de fichier:', file.mimetype, 'Nom:', file.originalname);
-    
-    if (allowedTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      console.error('Type de fichier refusé:', file.mimetype);
-      cb(new Error(`Type de fichier non autorisé: ${file.mimetype}`), false);
-    }
+    console.log('[dev attachments] Upload type:', file.mimetype, 'name:', file.originalname);
+    cb(null, true);
   }
 });
 
@@ -564,8 +550,8 @@ router.get('/test', (req, res) => {
 
 // ===== ATTACHMENTS TÂCHES =====
 
-// POST /api/dev/tasks/:id/attachments - Upload d'attachement
-router.post('/tasks/:id/attachments', verifyToken, requireAdminOrDev, upload.single('attachment'), async (req, res) => {
+// POST /api/dev/tasks/:id/attachments - Upload d'attachement (single ou multiple)
+router.post('/tasks/:id/attachments', verifyToken, requireAdminOrDev, upload.any(), async (req, res) => {
   try {
     const taskId = req.params.id;
     
@@ -581,7 +567,8 @@ router.post('/tasks/:id/attachments', verifyToken, requireAdminOrDev, upload.sin
       path: req.file.path
     } : 'No file');
     
-    if (!req.file) {
+    const files = req.files && req.files.length ? req.files : (req.file ? [req.file] : []);
+    if (!files.length) {
       console.log('ERROR: No file provided');
       return res.status(400).json({
         success: false,
@@ -611,26 +598,24 @@ router.post('/tasks/:id/attachments', verifyToken, requireAdminOrDev, upload.sin
       });
     }
     
-    // Utiliser la méthode du modèle Task
-    const attachmentId = await Task.addAttachment(taskId, {
-      filename: req.file.originalname,
-      path: req.file.path,
-      size: req.file.size,
-      mime_type: req.file.mimetype,
-      uploaded_by: req.user.id
-    });
-    
-    const newAttachment = await db.get(`
-      SELECT ta.*, u.first_name as uploader_first_name, u.last_name as uploader_last_name
-      FROM task_attachments ta
-      JOIN users u ON ta.uploaded_by = u.id
-      WHERE ta.id = ?
-    `, [attachmentId]);
-    
-    res.json({
-      success: true,
-      data: newAttachment
-    });
+    const results = [];
+    for (const f of files) {
+      const attachmentId = await Task.addAttachment(taskId, {
+        filename: f.originalname,
+        path: f.path,
+        size: f.size,
+        mime_type: f.mimetype,
+        uploaded_by: req.user.id
+      });
+      const newAttachment = await db.get(`
+        SELECT ta.*, u.first_name as uploader_first_name, u.last_name as uploader_last_name
+        FROM task_attachments ta
+        JOIN users u ON ta.uploaded_by = u.id
+        WHERE ta.id = ?
+      `, [attachmentId]);
+      results.push(newAttachment);
+    }
+    res.json({ success: true, data: results });
   } catch (error) {
     console.error('Erreur upload attachment:', error);
     res.status(500).json({
@@ -680,6 +665,34 @@ router.get('/tasks/:id/attachments', verifyToken, requireAdminOrDev, async (req,
       success: false,
       message: 'Erreur lors de la récupération des attachements'
     });
+  }
+});
+
+// GET /api/dev/attachments/download/:id - Télécharger un attachement de tâche
+router.get('/attachments/download/:id', verifyToken, requireAdminOrDev, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const attachment = await db.get('SELECT * FROM task_attachments WHERE id = ?', [id]);
+    if (!attachment) {
+      return res.status(404).json({ success: false, message: 'Fichier non trouvé' });
+    }
+    const task = await Task.findById(attachment.task_id);
+    if (!task) {
+      return res.status(404).json({ success: false, message: 'Tâche non trouvée' });
+    }
+    const hasAccess = await Task.hasProjectAccess(req.user.id, task.project_id);
+    if (!hasAccess) {
+      return res.status(403).json({ success: false, message: 'Accès refusé à ce projet' });
+    }
+    if (!fs.existsSync(attachment.path)) {
+      return res.status(404).json({ success: false, message: 'Fichier introuvable sur le serveur' });
+    }
+    res.setHeader('Content-Disposition', `attachment; filename="${attachment.filename || path.basename(attachment.path)}"`);
+    res.setHeader('Content-Type', attachment.mime_type || 'application/octet-stream');
+    res.sendFile(path.resolve(attachment.path));
+  } catch (error) {
+    console.error('Erreur téléchargement attachment tâche:', error);
+    res.status(500).json({ success: false, message: 'Erreur lors du téléchargement' });
   }
 });
 
@@ -786,6 +799,39 @@ router.get('/tasks/:id/comments', verifyToken, requireAdminOrDev, async (req, re
   }
 });
 
+// ===== RECHERCHE TICKETS POUR LIAISON =====
+// GET /api/dev/tickets/search?q=...&limit=10
+router.get('/tickets/search', verifyToken, requireAdminOrDev, async (req, res) => {
+  try {
+    const q = (req.query.q || '').toString().trim();
+    const limit = Math.min(parseInt(req.query.limit || '10', 10) || 10, 25);
+    if (!q) return res.json({ success: true, data: [] });
+    let rows;
+    if (/^\d+$/.test(q)) {
+      // Recherche par id numérique ou ticket_number
+      rows = await db.all(`
+        SELECT id, ticket_number, title, status, priority
+        FROM tickets
+        WHERE id = ? OR ticket_number LIKE ?
+        ORDER BY created_at DESC
+        LIMIT ?
+      `, [parseInt(q, 10), `%${q}%`, limit]);
+    } else {
+      rows = await db.all(`
+        SELECT id, ticket_number, title, status, priority
+        FROM tickets
+        WHERE title LIKE ? OR ticket_number LIKE ?
+        ORDER BY created_at DESC
+        LIMIT ?
+      `, [`%${q}%`, `%${q}%`, limit]);
+    }
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    console.error('Erreur recherche tickets:', error);
+    res.status(500).json({ success: false, message: 'Erreur recherche tickets' });
+  }
+});
+
 // POST /api/dev/tasks/:id/comments - Créer un commentaire
 router.post('/tasks/:id/comments', verifyToken, requireAdminOrDev, async (req, res) => {
   try {
@@ -825,7 +871,8 @@ router.post('/tasks/:id/comments', verifyToken, requireAdminOrDev, async (req, r
       VALUES (?, ?, ?)
     `, [taskId, req.user.id, content.trim()]);
     
-    const commentId = comment.lastID;
+    // Notre helper db.run() retourne un objet { id, changes }
+    const commentId = comment.id;
     if (!commentId) {
       throw new Error('Erreur lors de la création du commentaire');
     }

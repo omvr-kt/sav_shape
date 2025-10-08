@@ -27,33 +27,16 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  // Types de fichiers autorisés
-  const allowedTypes = [
-    // Images
-    'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/webp',
-    // Documents
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'text/plain', 'text/csv',
-    // Archives
-    'application/zip', 'application/x-rar-compressed'
-  ];
-
-  if (allowedTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error('Type de fichier non autorisé'), false);
-  }
+  // Tout autoriser, journaliser seulement
+  console.log('[attachments] Upload type:', file.mimetype, 'name:', file.originalname);
+  cb(null, true);
 };
 
 const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB max
+    fileSize: 100 * 1024 * 1024 // 100MB max
   }
 });
 

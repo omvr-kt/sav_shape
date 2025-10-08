@@ -37,6 +37,10 @@ fi
 echo "🌟 Lancement du serveur sur le port 3000..."
 echo "📊 Logs disponibles dans server.log"
 
+# Assurer les migrations/structures DB à jour (idempotent)
+echo "🗂  Vérification/ajout des tables Kanban (idempotent)..."
+node migrations/add_kanban_tables.js >/dev/null 2>&1 || true
+
 # Démarrer en arrière-plan avec nohup pour persister après déconnexion SSH
 nohup npm start > server.log 2>&1 &
 SERVER_PID=$!

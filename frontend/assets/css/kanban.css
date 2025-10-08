@@ -60,6 +60,10 @@
   gap: 12px;
   display: flex;
   flex-direction: column;
+  -webkit-overflow-scrolling: touch;
+  will-change: scroll-position;
+  contain: layout paint;
+  position: relative;
 }
 
 /* ===== TASK CARDS ===== */
@@ -73,6 +77,8 @@
   transition: all 0.2s ease;
   position: relative;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  will-change: transform, box-shadow;
+  transform: translateZ(0);
 }
 
 .task-card:hover {
@@ -1630,4 +1636,9 @@
   .project-actions .btn {
     flex: none;
   }
+}
+.kanban-loading {
+  color: #6b7280;
+  font-size: 13px;
+  padding: 8px 0;
 }

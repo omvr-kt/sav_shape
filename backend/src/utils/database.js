@@ -199,6 +199,136 @@ const initDatabase = async () => {
       )
     `);
 
+    // ===== Kanban / Dev tables (idempotent) =====
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS developer_projects (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        project_id INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        UNIQUE(user_id, project_id)
+      )
+    `);
+
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS tasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT,
+        urgency TEXT NOT NULL CHECK (urgency IN ('low', 'medium', 'high', 'urgent')) DEFAULT 'medium',
+        status TEXT NOT NULL CHECK (status IN ('todo_back', 'todo_front', 'in_progress', 'ready_for_review', 'done')) DEFAULT 'todo_back',
+        start_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        due_at DATETIME NOT NULL,
+        order_index INTEGER DEFAULT 0,
+        created_by INTEGER NOT NULL,
+        updated_by INTEGER,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (created_by) REFERENCES users(id),
+        FOREIGN KEY (updated_by) REFERENCES users(id)
+      )
+    `);
+
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS task_attachments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        task_id INTEGER NOT NULL,
+        filename TEXT NOT NULL,
+        path TEXT NOT NULL,
+        size INTEGER NOT NULL,
+        mime_type TEXT NOT NULL,
+        uploaded_by INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+        FOREIGN KEY (uploaded_by) REFERENCES users(id)
+      )
+    `);
+
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS task_comments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        task_id INTEGER NOT NULL,
+        author_id INTEGER NOT NULL,
+        body TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        edited BOOLEAN DEFAULT FALSE,
+        FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+        FOREIGN KEY (author_id) REFERENCES users(id)
+      )
+    `);
+
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS comment_mentions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        comment_id INTEGER NOT NULL,
+        mentioned_user_id INTEGER NOT NULL,
+        read_at DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (comment_id) REFERENCES task_comments(id) ON DELETE CASCADE,
+        FOREIGN KEY (mentioned_user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS task_tickets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        task_id INTEGER NOT NULL,
+        ticket_id INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+        FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
+        UNIQUE(task_id, ticket_id)
+      )
+    `);
+
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS activity_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        entity_type TEXT NOT NULL,
+        entity_id INTEGER NOT NULL,
+        action TEXT NOT NULL,
+        payload_json TEXT,
+        actor_id INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (actor_id) REFERENCES users(id)
+      )
+    `);
+
+    // Helpful indexes
+    await db.run(`CREATE INDEX IF NOT EXISTS idx_tasks_project_status_due ON tasks(project_id, status, due_at)`);
+    await db.run(`CREATE INDEX IF NOT EXISTS idx_developer_projects_user ON developer_projects(user_id, project_id)`);
+    await db.run(`CREATE INDEX IF NOT EXISTS idx_task_comments_task ON task_comments(task_id)`);
+    await db.run(`CREATE INDEX IF NOT EXISTS idx_comment_mentions_user ON comment_mentions(mentioned_user_id, read_at)`);
+
+    // Backfill/ensure missing columns for legacy databases
+    const ensureColumn = async (table, column, definition) => {
+      const cols = await db.all(`PRAGMA table_info(${table})`);
+      const exists = Array.isArray(cols) && cols.some(c => c.name === column);
+      if (!exists) {
+        await db.run(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+      }
+    };
+
+    // Ensure expected columns exist (legacy-safe)
+    await ensureColumn('task_comments', 'author_id', 'INTEGER');
+    await ensureColumn('task_comments', 'body', "TEXT DEFAULT ''");
+    await ensureColumn('task_comments', 'created_at', "DATETIME DEFAULT (datetime('now','localtime'))");
+    await ensureColumn('task_comments', 'updated_at', "DATETIME DEFAULT (datetime('now','localtime'))");
+    await ensureColumn('task_comments', 'edited', 'BOOLEAN DEFAULT 0');
+
+    await ensureColumn('task_attachments', 'filename', 'TEXT');
+    await ensureColumn('task_attachments', 'path', 'TEXT');
+    await ensureColumn('task_attachments', 'size', 'INTEGER');
+    await ensureColumn('task_attachments', 'mime_type', 'TEXT');
+    await ensureColumn('task_attachments', 'uploaded_by', 'INTEGER');
+    await ensureColumn('task_attachments', 'uploaded_at', "DATETIME DEFAULT (datetime('now','localtime'))");
+    await ensureColumn('task_attachments', 'created_at', "DATETIME DEFAULT (datetime('now','localtime'))");
+
     await db.run(`
       CREATE TABLE IF NOT EXISTS refresh_tokens (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

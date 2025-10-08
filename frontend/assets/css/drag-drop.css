@@ -1,0 +1,84 @@
+/* Styles pour le drag & drop du kanban */
+
+.task-card {
+  cursor: grab;
+  transition: all 0.2s ease;
+  user-select: none;
+  will-change: transform, box-shadow;
+  transform: translateZ(0);
+}
+
+.task-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.task-card.dragging {
+  opacity: 0.6;
+  cursor: grabbing;
+  transform: rotate(2deg);
+}
+
+.task-card[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+/* Styles pour les colonnes en mode drop */
+.kanban-column.drag-over {
+  background-color: rgba(99, 102, 241, 0.1);
+  border: 2px dashed #6366f1;
+  transform: scale(1.02);
+}
+
+/* Styles pour Sortable.js */
+.sortable-ghost {
+  opacity: 0.4;
+  background: #f3f4f6;
+  border: 2px dashed #d1d5db;
+}
+
+.sortable-chosen {
+  transform: rotate(2deg);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Animation lors du drag & drop */
+body.dragging {
+  cursor: grabbing !important;
+}
+
+body.dragging * {
+  cursor: grabbing !important;
+}
+
+/* Amélioration visuelle des colonnes */
+.kanban-column {
+  transition: all 0.2s ease;
+  min-height: 200px;
+  position: relative;
+  contain: layout paint;
+}
+
+.kanban-column:empty::before {
+  content: 'Glissez une tâche ici';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #9ca3af;
+  font-size: 14px;
+  pointer-events: none;
+}
+
+/* Indicateur de zone de drop */
+.drop-indicator {
+  height: 2px;
+  background: #6366f1;
+  margin: 4px 0;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.drop-indicator.active {
+  opacity: 1;
+}

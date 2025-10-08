@@ -2712,44 +2712,8 @@ class AdminApp {
             </div>
           </div>
           
-          <div class="form-group">
-            <label class="form-label" for="editClientQuote">Devis</label>
-            ${(() => {
-              // Si c'est un fichier uploadé (JSON)
-              if (this.hasValidFile(client.quote_file_decrypted)) {
-                try {
-                  const fileData = JSON.parse(client.quote_file_decrypted);
-                  return `
-                    <div class="file-display" style="padding: 10px; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-background);">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <div>
-                          <span style="font-weight: 500;">📋 ${fileData.name || 'Devis'}</span>
-                          <small style="display: block; color: var(--color-muted); margin-top: 4px;">Devis uploadé</small>
-                        </div>
-                        <button type="button" class="btn btn-sm btn--primary" onclick="adminApp.downloadQuoteFile('${encodeURIComponent(client.quote_file_decrypted)}')">
-                          Télécharger
-                        </button>
-                      </div>
-                    </div>
-                    <div style="margin-top: 10px;">
-                      <label for="editClientQuote">Remplacer le fichier :</label>
-                      <input type="file" id="editClientQuote" name="quote_file" class="form-input">
-                    </div>
-                  `;
-                } catch {
-                  // Ancien format texte
-                  return `
-                    <input type="file" id="editClientQuote" name="quote_file" class="form-input">
-                    <small class="form-text text-muted">Aucun devis uploadé</small>
-                  `;
-                }
-              } else {
-                return `
-                  <input type="file" id="editClientQuote" name="quote_file" class="form-input">
-                  <small class="form-text text-muted">Aucun devis uploadé</small>
-                `;
-              }
-            })()}
+          <div class="form-info" style="padding:10px; border:1px dashed #e5e7eb; border-radius:6px; background:#fafafa;">
+            <small>Note: Les documents "Devis" et "Cahier des charges" sont désormais gérés au niveau du projet (voir l'édition du projet).</small>
           </div>
 
           <div class="form-group">
@@ -2887,8 +2851,7 @@ class AdminApp {
       company: formData.get('company'),
       address: formData.get('address'),
       city: formData.get('city'),
-      country: formData.get('country'),
-      confidential_file: formData.get('confidential_file')
+      country: formData.get('country')
     };
 
     // Nettoyer les valeurs vides
@@ -2898,38 +2861,7 @@ class AdminApp {
       }
     });
 
-    // Gérer les fichiers uploadés
-    const quoteFile = formData.get('quote_file');
-    const specificationsFile = formData.get('specifications_file');
-
-    // Convertir les fichiers en base64 si fournis
-    if (quoteFile && quoteFile instanceof File && quoteFile.size > 0) {
-      try {
-        const quoteBase64 = await this.readFileAsBase64(quoteFile);
-        updateData.quote_file = this.createFileMetadata(quoteFile, quoteBase64);
-      } catch (error) {
-        console.error('Erreur lecture fichier devis:', error);
-        this.showNotification(`Erreur lors de la lecture du fichier devis: ${error.message}`, 'error');
-        return;
-      }
-    }
-
-    if (specificationsFile && specificationsFile instanceof File && specificationsFile.size > 0) {
-      try {
-        const specsBase64 = await this.readFileAsBase64(specificationsFile);
-        const specsMetadata = this.createFileMetadata(specificationsFile, specsBase64);
-
-        // Stocker le cahier des charges dans confidential_file avec un marqueur
-        const currentConfidential = updateData.confidential_file || '';
-        updateData.confidential_file = currentConfidential +
-          (currentConfidential ? '\n\n--- CAHIER DES CHARGES ---\n\n' : '') +
-          specsMetadata;
-      } catch (error) {
-        console.error('Erreur lecture cahier des charges:', error);
-        this.showNotification(`Erreur lors de la lecture du cahier des charges: ${error.message}`, 'error');
-        return;
-      }
-    }
+    // Documents (devis / cahier des charges) gérés au niveau projet: plus de traitement côté client
 
     // Collecter les données SLA
     const slaData = [];
@@ -3645,18 +3577,8 @@ class AdminApp {
           <small>Numéro SIREN de l'entreprise (optionnel)</small>
         </div>
         
-        <div class="form-group">
-          <label class="form-label" for="clientQuote">Devis *</label>
-          <input type="file" id="clientQuote" name="quote_file"
-                 class="form-input" required>
-          <small>Tous formats acceptés (max 2MB, images compressées automatiquement)</small>
-        </div>
-        
-        <div class="form-group">
-          <label class="form-label" for="clientSpecifications">Cahier des charges</label>
-          <input type="file" id="clientSpecifications" name="confidential_file"
-                 class="form-input">
-          <small>Tous formats acceptés (max 2MB, images compressées automatiquement)</small>
+        <div class="form-info" style="padding:10px; border:1px dashed #e5e7eb; border-radius:6px; background:#fafafa;">
+          <small>Note: Les documents "Devis" et "Cahier des charges" seront associés à un projet (à ajouter après la création du client).</small>
         </div>
         
         
@@ -3775,38 +3697,7 @@ class AdminApp {
       
       if (response.success) {
         const clientId = response.data.user.id;
-        
-        // Traitement des fichiers si présents
-        const quoteFile = formData.get('quote_file');
-        const specificationsFile = formData.get('specifications_file');
-
-        const fileUpdateData = {};
-
-        try {
-          if (quoteFile && quoteFile.size > 0) {
-            submitBtn.textContent = 'Traitement du devis...';
-            const quoteBase64 = await this.readFileAsBase64(quoteFile);
-            fileUpdateData.quote_file = this.createFileMetadata(quoteFile, quoteBase64);
-          }
-
-          if (specificationsFile && specificationsFile.size > 0) {
-            submitBtn.textContent = 'Traitement du cahier des charges...';
-            const specsBase64 = await this.readFileAsBase64(specificationsFile);
-            const specsMetadata = this.createFileMetadata(specificationsFile, specsBase64);
-            fileUpdateData.confidential_file = specsMetadata;
-          }
-
-          // Mettre à jour le client avec les fichiers
-          if (Object.keys(fileUpdateData).length > 0) {
-            submitBtn.textContent = 'Sauvegarde des fichiers...';
-            await api.updateUser(clientId, fileUpdateData);
-          }
-
-          this.showNotification('Client créé avec succès (fichiers traités)', 'success');
-        } catch (fileError) {
-          console.error('File processing error:', fileError);
-          this.showNotification('Client créé mais erreur lors du traitement des fichiers', 'warning');
-        }
+        this.showNotification('Client créé avec succès', 'success');
         
         this.closeModal();
         this.loadClients();

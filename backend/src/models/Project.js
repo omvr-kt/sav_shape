@@ -71,7 +71,7 @@ class Project {
   }
 
   static async update(id, updates) {
-    const allowedFields = ['name', 'description', 'status'];
+    const allowedFields = ['name', 'description', 'status', 'quote_file', 'specifications_file'];
     const fieldsToUpdate = [];
     const values = [];
 

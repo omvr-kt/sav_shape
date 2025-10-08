@@ -2368,7 +2368,29 @@ class AdminApp {
               <option value="archived" ${project.status === 'archived' ? 'selected' : ''}>Archivé</option>
             </select>
           </div>
-          
+
+          <div class="form-group" style="border-top:1px solid #e5e7eb; padding-top:12px; margin-top:8px;">
+            <label class="form-label">Documents projet</label>
+            <div style="display:flex; gap:16px; flex-wrap:wrap;">
+              <div>
+                <div>Devis:</div>
+                ${project.quote_file ? `<a href="${project.quote_file}" target="_blank">${project.quote_file.split('/').pop()}</a>` : '<span style="color:#6b7280;">Aucun devis</span>'}
+                <div style="margin-top:6px;">
+                  <input type="file" id="projectQuoteFile" />
+                  <button type="button" class="btn btn-secondary" id="uploadProjectQuoteBtn">Uploader devis</button>
+                </div>
+              </div>
+              <div>
+                <div>Cahier des charges:</div>
+                ${project.specifications_file ? `<a href="${project.specifications_file}" target="_blank">${project.specifications_file.split('/').pop()}</a>` : '<span style="color:#6b7280;">Aucun cahier des charges</span>'}
+                <div style="margin-top:6px;">
+                  <input type="file" id="projectSpecsFile" />
+                  <button type="button" class="btn btn-secondary" id="uploadProjectSpecsBtn">Uploader cahier des charges</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           
           ${project.status !== 'archived' ? `
             <div class="form-warning">
@@ -2388,6 +2410,35 @@ class AdminApp {
         await this.handleEditProject(e.target);
       });
       
+      // Uploads devis/specs par projet
+      const quoteBtn = document.getElementById('uploadProjectQuoteBtn');
+      const specsBtn = document.getElementById('uploadProjectSpecsBtn');
+      const quoteInput = document.getElementById('projectQuoteFile');
+      const specsInput = document.getElementById('projectSpecsFile');
+      if (quoteBtn && quoteInput) {
+        quoteBtn.addEventListener('click', async () => {
+          if (!quoteInput.files || !quoteInput.files[0]) { this.showNotification('Sélectionnez un devis', 'warning'); return; }
+          try {
+            quoteBtn.disabled = true; quoteBtn.textContent = 'Upload...';
+            const resp = await api.uploadProjectQuote(project.id, quoteInput.files[0]);
+            if (resp && resp.success) { this.showNotification('Devis uploadé', 'success'); this.closeModal(); this.editProject(project.id); }
+            else this.showNotification(resp?.message || 'Échec upload devis', 'error');
+          } catch (err) { this.showNotification('Échec upload devis', 'error'); }
+          finally { quoteBtn.disabled = false; quoteBtn.textContent = 'Uploader devis'; }
+        });
+      }
+      if (specsBtn && specsInput) {
+        specsBtn.addEventListener('click', async () => {
+          if (!specsInput.files || !specsInput.files[0]) { this.showNotification('Sélectionnez un cahier des charges', 'warning'); return; }
+          try {
+            specsBtn.disabled = true; specsBtn.textContent = 'Upload...';
+            const resp = await api.uploadProjectSpecifications(project.id, specsInput.files[0]);
+            if (resp && resp.success) { this.showNotification('Cahier des charges uploadé', 'success'); this.closeModal(); this.editProject(project.id); }
+            else this.showNotification(resp?.message || 'Échec upload cahier des charges', 'error');
+          } catch (err) { this.showNotification('Échec upload cahier des charges', 'error'); }
+          finally { specsBtn.disabled = false; specsBtn.textContent = 'Uploader cahier des charges'; }
+        });
+      }
     } catch (error) {
       this.showNotification('Erreur lors du chargement du projet', 'error');
     }

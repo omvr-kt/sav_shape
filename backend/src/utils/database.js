@@ -329,6 +329,10 @@ const initDatabase = async () => {
     await ensureColumn('task_attachments', 'uploaded_at', "DATETIME DEFAULT (datetime('now','localtime'))");
     await ensureColumn('task_attachments', 'created_at', "DATETIME DEFAULT (datetime('now','localtime'))");
 
+    // Ensure project-level files (quote/specifications) exist per project
+    await ensureColumn('projects', 'quote_file', 'TEXT');
+    await ensureColumn('projects', 'specifications_file', 'TEXT');
+
     await db.run(`
       CREATE TABLE IF NOT EXISTS refresh_tokens (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

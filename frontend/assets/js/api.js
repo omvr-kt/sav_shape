@@ -199,6 +199,26 @@ class ApiClient {
     });
   }
 
+  async uploadProjectQuote(id, file) {
+    const formData = new FormData();
+    formData.append('quote', file);
+    return fetch(`${this.baseURL}/projects/${id}/upload-quote`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      body: formData,
+    }).then(r => r.json());
+  }
+
+  async uploadProjectSpecifications(id, file) {
+    const formData = new FormData();
+    formData.append('specifications', file);
+    return fetch(`${this.baseURL}/projects/${id}/upload-specifications`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      body: formData,
+    }).then(r => r.json());
+  }
+
   async deleteProject(id) {
     return this.request(`/projects/${id}`, { method: 'DELETE' });
   }

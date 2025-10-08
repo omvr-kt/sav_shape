@@ -369,10 +369,27 @@ class ApiClient {
   }
 
   async createInvoice(invoiceData) {
-    return this.request('/invoices', {
-      method: 'POST',
-      body: JSON.stringify(invoiceData)
-    });
+    // Si il y a un fichier attaché, utiliser FormData
+    if (invoiceData.attachment) {
+      const formData = new FormData();
+      Object.keys(invoiceData).forEach(key => {
+        if (key !== 'attachment') {
+          formData.append(key, invoiceData[key]);
+        }
+      });
+      formData.append('attachment', invoiceData.attachment);
+      
+      return this.request('/invoices', {
+        method: 'POST',
+        body: formData,
+        headers: {} // Pas de Content-Type pour FormData, le navigateur l'ajoute automatiquement
+      });
+    } else {
+      return this.request('/invoices', {
+        method: 'POST',
+        body: JSON.stringify(invoiceData)
+      });
+    }
   }
 
   async updateInvoice(id, data) {

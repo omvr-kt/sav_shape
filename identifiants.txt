@@ -1,0 +1,7 @@
+Compte Admin :
+  - Email : admin@agency.local
+  - Mot de passe : Admin123!Shape
+
+  Compte Développeur (Team) :
+  - Email : dev@agency.local
+  - Mot de passe : Dev123!Shape

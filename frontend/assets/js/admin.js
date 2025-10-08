@@ -2,6 +2,9 @@ class AdminApp {
   constructor() {
     this.currentUser = null;
     this.currentTab = 'dashboard';
+    this.projects = []; // Initialiser la liste des projets
+    this.currentProject = null; // Projet actuellement affiché dans le kanban
+    this.sortableInstances = {}; // Pour le drag & drop du kanban
     this.init();
   }
 
@@ -51,6 +54,18 @@ class AdminApp {
     // App is now visible by default with sidebar structure
     document.getElementById('currentUser').textContent = 
       `${this.currentUser.first_name} ${this.currentUser.last_name}`;
+    
+    // Afficher le lien Kanban Dev pour admins et développeurs
+    const devKanbanLink = document.getElementById('devKanbanLink');
+    console.log('Lien Kanban Dev trouvé:', devKanbanLink);
+    console.log('Rôle utilisateur:', this.currentUser.role);
+    if (devKanbanLink && (this.currentUser.role === 'admin' || this.currentUser.role === 'developer')) {
+      devKanbanLink.style.display = 'block';
+      console.log('Lien Kanban Dev affiché');
+    } else if (devKanbanLink) {
+      devKanbanLink.style.display = 'none';
+      console.log('Lien Kanban Dev caché');
+    }
     
     // Set initial title based on current tab
     this.updateTitle();
@@ -121,6 +136,10 @@ class AdminApp {
           <button id="refreshInvoices" class="btn btn-secondary btn-sm">Actualiser</button>
           <button id="newInvoiceBtn" class="btn btn-primary">+ Nouvelle Facture</button>
         </div>
+      `,
+      'project-kanban': `
+        <button id="backToProjectsBtn" class="btn btn-secondary">← Retour aux projets</button>
+        <button id="createTaskBtn" class="btn btn-primary">+ Nouvelle tâche</button>
       `
     };
 
@@ -179,6 +198,13 @@ class AdminApp {
     // Navigation tabs (sidebar items)
     document.querySelectorAll('.sidebar__nav-item').forEach(tab => {
       tab.addEventListener('click', (e) => {
+        // Ne pas empêcher le comportement par défaut pour le lien Kanban Dev
+        if (tab.id === 'devKanbanLink') {
+          console.log('Clic sur Kanban Dev - navigation autorisée vers:', tab.href);
+          return;
+        }
+        
+        console.log('Clic sur onglet:', tab.dataset.tab);
         e.preventDefault();
         const tabName = tab.dataset.tab;
         this.switchTab(tabName);
@@ -194,14 +220,7 @@ class AdminApp {
       this.loadInvoices();
     });
 
-    // Add buttons
-    document.getElementById('addProjectBtn')?.addEventListener('click', () => {
-      this.showAddProjectModal();
-    });
-
-    document.getElementById('addClientBtn')?.addEventListener('click', () => {
-      this.showAddClientModal();
-    });
+    // Add buttons - removed duplicates as they are handled in setupEventListeners()
 
     document.getElementById('newInvoiceBtn')?.addEventListener('click', () => {
       this.showNewInvoiceModal();
@@ -444,6 +463,7 @@ class AdminApp {
 
     try {
       const response = await api.getProjects();
+      this.projects = response.data.projects; // Stocker les projets pour utilisation dans viewProject
       this.renderProjectsTable(response.data.projects);
     } catch (error) {
       console.error('Projects load error:', error);
@@ -1128,44 +1148,321 @@ class AdminApp {
 
   async viewProject(id) {
     try {
-      const response = await api.getProject(id);
-      const project = response.data.project;
+      const project = this.projects.find(p => p.id === id);
+      if (!project) {
+        this.showNotification('Projet non trouvé', 'error');
+        return;
+      }
+
+      // Stocker le projet actuel
+      this.currentProject = project;
+
+      // Cacher la liste des projets et afficher le kanban
+      document.getElementById('projects').style.display = 'none';
+      document.getElementById('projectKanban').style.display = 'block';
       
-      const modal = this.createModal(`Projet - ${project.name}`, `
-        <div class="project-view">
-          <div class="project-header">
-            <div class="project-meta">
-              <div class="meta-row">
-                <span class="meta-label">Client:</span>
-                <span class="meta-value">${project.client_company || project.client_first_name + ' ' + project.client_last_name}</span>
-              </div>
-              <div class="meta-row">
-                <span class="meta-label">Statut:</span>
-                <span class="status-badge status-${project.status}">${project.status}</span>
-              </div>
-              <div class="meta-row">
-                <span class="meta-label">Créé le:</span>
-                <span class="meta-value">${api.formatDate(project.created_at)}</span>
-              </div>
-            </div>
-          </div>
-          
-          <div class="project-content">
-            <h4>Description</h4>
-            <div class="project-description">
-              ${project.description || 'Aucune description fournie'}
-            </div>
-          </div>
-          
-          <div class="modal-actions">
-            <button type="button" class="btn btn-secondary" onclick="adminApp.closeModal()">Fermer</button>
-            <button type="button" class="btn btn-primary" onclick="adminApp.editProject(${project.id}); adminApp.closeModal();">Modifier</button>
-          </div>
-        </div>
-      `);
+      // Changer l'état du tab pour afficher les bons boutons dans le header
+      this.currentTab = 'project-kanban';
+      this.updateHeaderActions();
+      
+      // Mettre à jour les titres
+      document.getElementById('kanbanProjectTitle').textContent = project.name;
+      document.querySelector('.main-title').textContent = `Projet : ${project.name}`;
+      
+      // Charger les tâches du projet
+      await this.loadProjectTasks(id);
+      
+      // Configurer les événements du kanban
+      this.setupKanbanEvents(id);
       
     } catch (error) {
-      this.showNotification('Erreur lors du chargement du projet', 'error');
+      console.error('Erreur viewProject:', error);
+      this.showNotification('Erreur lors de l\'affichage du projet', 'error');
+    }
+  }
+
+  async loadProjectTasks(projectId) {
+    try {
+      console.log('Chargement des tâches pour le projet:', projectId);
+      const response = await fetch(`/api/dev/projects/${projectId}/tasks`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      
+      console.log('Réponse du serveur:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Erreur serveur:', errorText);
+        throw new Error(`Erreur lors du chargement des tâches: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('Tâches chargées:', result);
+      const tasks = result.data || [];
+      
+      // Vider toutes les colonnes
+      const columns = ['todo_back', 'todo_front', 'in_progress', 'ready_for_review', 'done'];
+      columns.forEach(status => {
+        document.getElementById(`column-${status}`).innerHTML = '';
+        document.getElementById(`count-${status}`).textContent = '0';
+      });
+      
+      // Grouper les tâches par statut
+      const tasksByStatus = {};
+      columns.forEach(status => tasksByStatus[status] = []);
+      
+      tasks.forEach(task => {
+        if (tasksByStatus[task.status]) {
+          tasksByStatus[task.status].push(task);
+        }
+      });
+      
+      // Afficher les tâches dans chaque colonne
+      columns.forEach(status => {
+        const tasks = tasksByStatus[status];
+        const column = document.getElementById(`column-${status}`);
+        const count = document.getElementById(`count-${status}`);
+        
+        count.textContent = tasks.length;
+        
+        column.innerHTML = tasks.map(task => `
+          <div class="task-card" data-task-id="${task.id}">
+            <div class="task-header">
+              <h4>${task.title}</h4>
+              <span class="task-priority priority-${task.priority}">${this.getPriorityLabel(task.priority)}</span>
+            </div>
+            <p class="task-description">${task.description || ''}</p>
+            <div class="task-footer">
+              <span class="task-assignee">${task.assignee_name || 'Non assigné'}</span>
+              <span class="task-date">${api.formatDate(task.created_at)}</span>
+            </div>
+          </div>
+        `).join('');
+      });
+      
+      // Initialiser le drag & drop après avoir affiché les tâches
+      this.initKanbanDragDrop();
+      
+    } catch (error) {
+      console.error('Erreur loadProjectTasks:', error);
+      this.showNotification('Erreur lors du chargement des tâches', 'error');
+    }
+  }
+
+  initKanbanDragDrop() {
+    console.log('Initialisation du drag & drop...');
+    
+    // Détruire les instances existantes
+    Object.values(this.sortableInstances).forEach(instance => {
+      if (instance) instance.destroy();
+    });
+    this.sortableInstances = {};
+    
+    // Créer une instance Sortable pour chaque colonne
+    const statuses = ['todo_back', 'todo_front', 'in_progress', 'ready_for_review', 'done'];
+    
+    statuses.forEach(status => {
+      const column = document.getElementById(`column-${status}`);
+      if (column) {
+        console.log(`Création Sortable pour colonne: ${status}`);
+        this.sortableInstances[status] = Sortable.create(column, {
+          group: 'kanban',
+          animation: 150,
+          ghostClass: 'sortable-ghost',
+          chosenClass: 'sortable-chosen',
+          dragClass: 'dragging',
+          
+          onStart: (evt) => {
+            document.body.classList.add('dragging');
+          },
+          
+          onEnd: (evt) => {
+            document.body.classList.remove('dragging');
+            
+            // Si la tâche a changé de colonne
+            if (evt.from !== evt.to) {
+              const taskId = evt.item.dataset.taskId;
+              const newStatus = evt.to.id.replace('column-', '');
+              console.log(`Déplacement tâche ${taskId} vers ${newStatus}`);
+              this.moveTask(taskId, newStatus);
+            }
+          },
+          
+          onMove: (evt) => {
+            // Permettre le déplacement entre toutes les colonnes
+            return true;
+          }
+        });
+      }
+    });
+  }
+
+  async moveTask(taskId, newStatus) {
+    try {
+      console.log(`moveTask: tâche ${taskId} vers ${newStatus}`);
+      
+      const response = await fetch(`/api/dev/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      
+      if (response.ok) {
+        // Recharger les tâches pour synchroniser
+        if (this.currentProject?.id) {
+          await this.loadProjectTasks(this.currentProject.id);
+        }
+        this.showNotification('Tâche déplacée avec succès', 'success');
+      } else {
+        throw new Error('Erreur lors du déplacement');
+      }
+    } catch (error) {
+      console.error('Erreur moveTask:', error);
+      this.showNotification('Erreur lors du déplacement de la tâche', 'error');
+      // Recharger pour annuler le déplacement visuel
+      if (this.currentProject?.id) {
+        await this.loadProjectTasks(this.currentProject.id);
+      }
+    }
+  }
+
+  setupKanbanEvents(projectId) {
+    console.log('setupKanbanEvents appelé avec projectId:', projectId);
+    
+    // Utiliser event delegation pour les boutons du header qui peuvent être recréés
+    const headerActions = document.getElementById('mainHeaderActions');
+    if (headerActions) {
+      // Supprimer les anciens event listeners pour éviter les doublons
+      headerActions.removeEventListener('click', this.kanbanHeaderClickHandler);
+      
+      // Créer le handler avec le projectId en closure
+      this.kanbanHeaderClickHandler = (e) => {
+        if (e.target.id === 'backToProjectsBtn') {
+          console.log('Clic sur retour aux projets');
+          document.getElementById('projectKanban').style.display = 'none';
+          document.getElementById('projects').style.display = 'block';
+          document.querySelector('.main-title').textContent = 'Espace Agence';
+          this.currentProject = null;
+          this.currentTab = 'projects';
+          this.updateHeaderActions();
+        } else if (e.target.id === 'createTaskBtn') {
+          console.log('Clic sur nouvelle tâche, projectId:', projectId);
+          this.showCreateTaskModal(projectId);
+        }
+      };
+      
+      // Attacher l'event listener
+      headerActions.addEventListener('click', this.kanbanHeaderClickHandler);
+      console.log('Event delegation configurée pour les boutons du header');
+    }
+  }
+
+  getPriorityLabel(priority) {
+    const labels = {
+      'low': 'Faible',
+      'medium': 'Moyenne',
+      'high': 'Haute',
+      'urgent': 'Urgente'
+    };
+    return labels[priority] || priority;
+  }
+
+  async showCreateTaskModal(projectId) {
+    console.log('showCreateTaskModal appelée avec projectId:', projectId);
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Nouvelle tâche</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="createTaskForm">
+            <div class="form-group">
+              <label>Titre *</label>
+              <input type="text" id="taskTitle" required>
+            </div>
+            <div class="form-group">
+              <label>Description</label>
+              <textarea id="taskDescription"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Priorité</label>
+              <select id="taskPriority">
+                <option value="low">Faible</option>
+                <option value="medium">Moyenne</option>
+                <option value="high">Haute</option>
+                <option value="urgent">Urgente</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Statut</label>
+              <select id="taskStatus">
+                <option value="todo_back">To-do Back</option>
+                <option value="todo_front">To-do Front</option>
+                <option value="in_progress">In Progress</option>
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary modal-close">Annuler</button>
+          <button type="submit" class="btn btn-primary" form="createTaskForm">Créer</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Événements
+    modal.querySelectorAll('.modal-close').forEach(btn => {
+      btn.onclick = () => modal.remove();
+    });
+    
+    modal.onclick = (e) => {
+      if (e.target === modal) modal.remove();
+    };
+    
+    document.getElementById('createTaskForm').onsubmit = async (e) => {
+      e.preventDefault();
+      await this.createTask(projectId, modal);
+    };
+  }
+
+  async createTask(projectId, modal) {
+    try {
+      const title = document.getElementById('taskTitle').value;
+      const description = document.getElementById('taskDescription').value;
+      const priority = document.getElementById('taskPriority').value;
+      const status = document.getElementById('taskStatus').value;
+      
+      const response = await fetch(`/api/dev/projects/${projectId}/tasks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          title,
+          description,
+          urgency: priority, // Le backend attend 'urgency' au lieu de 'priority'
+          status
+        })
+      });
+      
+      if (!response.ok) throw new Error('Erreur lors de la création de la tâche');
+      
+      this.showNotification('Tâche créée avec succès', 'success');
+      modal.remove();
+      await this.loadProjectTasks(projectId);
+      
+    } catch (error) {
+      console.error('Erreur createTask:', error);
+      this.showNotification('Erreur lors de la création de la tâche', 'error');
     }
   }
 
@@ -3013,6 +3310,13 @@ class AdminApp {
                       placeholder="Décrivez la prestation facturée (développement, maintenance, consulting...)"></textarea>
           </div>
           
+          <div class="form-group">
+            <label class="form-label" for="invoiceAttachment">Document associé (optionnel)</label>
+            <input type="file" id="invoiceAttachment" name="attachment" 
+                   class="form-input" accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png">
+            <small>Formats acceptés: PDF, Word, images, texte (max 10MB)</small>
+          </div>
+          
           <div class="form-row">
             <div class="form-group">
               <label class="form-label" for="invoiceAmountHT">Montant HT (€) *</label>
@@ -3096,6 +3400,14 @@ class AdminApp {
 
   async handleCreateInvoice(form) {
     const formData = new FormData(form);
+    
+    // Vérifier s'il y a un fichier attaché
+    const attachmentFile = formData.get('attachment');
+    if (attachmentFile && attachmentFile.size > 10 * 1024 * 1024) { // 10MB max
+      this.showNotification('Le fichier ne doit pas dépasser 10MB', 'error');
+      return;
+    }
+    
     const invoiceData = {
       client_id: parseInt(formData.get('client_id')),
       amount_ht: parseFloat(formData.get('amount_ht')),
@@ -3103,6 +3415,11 @@ class AdminApp {
       no_tva: formData.get('no_tva') === 'on',
       tva_rate: formData.get('no_tva') === 'on' ? 0 : 20
     };
+    
+    // Ajouter le fichier si présent
+    if (attachmentFile && attachmentFile.size > 0) {
+      invoiceData.attachment = attachmentFile;
+    }
 
     // Validation
     if (invoiceData.amount_ht <= 0) {

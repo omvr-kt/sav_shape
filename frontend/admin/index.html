@@ -27,6 +27,7 @@
     <link rel="stylesheet" href="/assets/css/sidebar.css?v=1757355956">
     <link rel="stylesheet" href="/assets/css/admin.css?v=1757355956">
     <link rel="stylesheet" href="/assets/css/unified-modals.css?v=1757355956">
+    <link rel="stylesheet" href="/assets/css/kanban.css?v=1759450000">
 </head>
 <body>
     <div class="app-layout">
@@ -54,6 +55,9 @@
                     </a>
                     <a href="#invoices" class="sidebar__nav-item" data-tab="invoices">
                         <span class="sidebar__nav-text">Facturation</span>
+                    </a>
+                    <a href="/dev/kanban" class="sidebar__nav-item" id="devKanbanLink" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; margin-top: 8px;" onclick="console.log('Clic direct sur Kanban Dev!'); return true;">
+                        <span class="sidebar__nav-text">🚀 Kanban Dev</span>
                     </a>
                 </div>
             </nav>
@@ -147,6 +151,64 @@
                         </div>
                     </div>
 
+                    <!-- Project Kanban View -->
+                    <div id="projectKanban" class="tab-content" style="display: none;">
+                        <div class="kanban-header">
+                            <h2 id="kanbanProjectTitle">Projet</h2>
+                        </div>
+                        <div class="kanban-board">
+                            <div class="kanban-column" data-status="todo_back">
+                                <div class="kanban-column-header">
+                                    <h3>To-do Back</h3>
+                                    <span class="task-count" id="count-todo_back">0</span>
+                                </div>
+                                <div class="kanban-column-content" id="column-todo_back">
+                                    <!-- Tasks will be inserted here -->
+                                </div>
+                            </div>
+
+                            <div class="kanban-column" data-status="todo_front">
+                                <div class="kanban-column-header">
+                                    <h3>To-do Front</h3>
+                                    <span class="task-count" id="count-todo_front">0</span>
+                                </div>
+                                <div class="kanban-column-content" id="column-todo_front">
+                                    <!-- Tasks will be inserted here -->
+                                </div>
+                            </div>
+
+                            <div class="kanban-column" data-status="in_progress">
+                                <div class="kanban-column-header">
+                                    <h3>In Progress</h3>
+                                    <span class="task-count" id="count-in_progress">0</span>
+                                </div>
+                                <div class="kanban-column-content" id="column-in_progress">
+                                    <!-- Tasks will be inserted here -->
+                                </div>
+                            </div>
+
+                            <div class="kanban-column" data-status="ready_for_review">
+                                <div class="kanban-column-header">
+                                    <h3>Ready for Review</h3>
+                                    <span class="task-count" id="count-ready_for_review">0</span>
+                                </div>
+                                <div class="kanban-column-content" id="column-ready_for_review">
+                                    <!-- Tasks will be inserted here -->
+                                </div>
+                            </div>
+
+                            <div class="kanban-column" data-status="done">
+                                <div class="kanban-column-header">
+                                    <h3>Done</h3>
+                                    <span class="task-count" id="count-done">0</span>
+                                </div>
+                                <div class="kanban-column-content" id="column-done">
+                                    <!-- Tasks will be inserted here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </main>
         </div>
@@ -156,12 +218,13 @@
     <div id="modalContainer"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="/assets/js/auth-utils.js"></script>
     <script src="/assets/js/timezone-utils.js"></script>
     <script src="/assets/js/business-hours.js"></script>
     <script src="/assets/js/pdf-generator.js?v=1757350256"></script>
     <script src="/assets/js/api.js?v=1757350256"></script>
     <script src="/assets/js/timezone-simple.js"></script>
-    <script src="/assets/js/admin.js?v=1758962400"></script>
+    <script src="/assets/js/admin.js?v=1758990000"></script>
 </body>
 </html>

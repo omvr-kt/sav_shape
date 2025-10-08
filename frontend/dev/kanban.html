@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="fr" class="theme-shape">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanban Dev - Shape SAV</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+
+    <!-- Meta tags Open Graph -->
+    <meta property="og:title" content="Shape SAV - Kanban Dev">
+    <meta property="og:description" content="Interface Kanban pour la gestion des tâches de développement.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://sav.shape-conseil.fr/dev/">
+
+    <!-- Theme Shape Design System -->
+    <link rel="stylesheet" href="/styles/theme-shape.css">
+    <link rel="stylesheet" href="/src/components/ui/index.css">
+    <link rel="stylesheet" href="/assets/css/design-system.css?v=1757355956">
+    <link rel="stylesheet" href="/assets/css/main.css?v=1757355956">
+    <link rel="stylesheet" href="/assets/css/sidebar.css?v=1757355956">
+    <link rel="stylesheet" href="/assets/css/kanban.css?v=1759450000">
+    
+    <!-- Sortable.js pour le drag & drop -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar__header">
+                <div class="sidebar__logo">S</div>
+                <div class="sidebar__logo-text">Shape SAV</div>
+            </div>
+
+            <nav class="sidebar__nav">
+                <div class="sidebar__nav-section">
+                    <div class="sidebar__nav-title">Projets Dev</div>
+                    <div id="projectsList" class="projects-list">
+                        <div class="loading">Chargement...</div>
+                    </div>
+                </div>
+
+                <div class="sidebar__nav-section" id="adminSection" style="display: none;">
+                    <div class="sidebar__nav-title">Administration</div>
+                    <a href="#all-projects" class="sidebar__nav-item" data-action="all-projects">
+                        <span class="sidebar__nav-text">Tous les projets</span>
+                    </a>
+                    <a href="#archived-projects" class="sidebar__nav-item" data-action="archived-projects">
+                        <span class="sidebar__nav-text">Projets archivés</span>
+                    </a>
+                    <a href="#manage-developers" class="sidebar__nav-item" data-action="manage-developers">
+                        <span class="sidebar__nav-text">Gestion développeurs</span>
+                    </a>
+                </div>
+            </nav>
+
+            <div class="sidebar__footer">
+                <div class="sidebar__user" id="sidebarUser">
+                    <div class="sidebar__user-avatar" id="sidebarUserAvatar">D</div>
+                    <div class="sidebar__user-info">
+                        <div class="sidebar__user-name" id="currentUser">Développeur</div>
+                        <div class="sidebar__user-role" id="currentUserRole">Développeur</div>
+                    </div>
+                </div>
+                
+                <!-- Badge mentions non lues -->
+                <div class="mentions-badge" id="mentionsBadge" style="display: none;">
+                    <span id="mentionsCount">0</span>
+                </div>
+                
+                <button id="logoutBtn" class="sidebar__logout-btn">
+                    <span>Déconnexion</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="main-content" id="mainContent">
+            <header class="main-header">
+                <h1 class="main-title" id="projectTitle">Sélectionnez un projet</h1>
+                <div class="main-header-actions" id="mainHeaderActions">
+                    <button id="createTaskBtn" class="btn btn-primary" style="display: none;">
+                        <span>Nouvelle tâche</span>
+                    </button>
+                    <button id="projectSettingsBtn" class="btn btn-secondary" style="display: none;">
+                        <span>⚙️</span>
+                    </button>
+                </div>
+            </header>
+
+            <main class="main-body">
+                <div class="container">
+                    <!-- Vue Kanban -->
+                    <div id="kanbanView" class="kanban-board" style="display: none;">
+                        <div class="kanban-column" data-status="todo_back">
+                            <div class="kanban-column-header">
+                                <h3>To-do Back</h3>
+                                <span class="task-count" id="count-todo_back">0</span>
+                            </div>
+                            <div class="kanban-column-content" id="column-todo_back">
+                                <!-- Tasks will be inserted here -->
+                            </div>
+                        </div>
+
+                        <div class="kanban-column" data-status="todo_front">
+                            <div class="kanban-column-header">
+                                <h3>To-do Front</h3>
+                                <span class="task-count" id="count-todo_front">0</span>
+                            </div>
+                            <div class="kanban-column-content" id="column-todo_front">
+                                <!-- Tasks will be inserted here -->
+                            </div>
+                        </div>
+
+                        <div class="kanban-column" data-status="in_progress">
+                            <div class="kanban-column-header">
+                                <h3>In Progress</h3>
+                                <span class="task-count" id="count-in_progress">0</span>
+                            </div>
+                            <div class="kanban-column-content" id="column-in_progress">
+                                <!-- Tasks will be inserted here -->
+                            </div>
+                        </div>
+
+                        <div class="kanban-column" data-status="ready_for_review">
+                            <div class="kanban-column-header">
+                                <h3>Ready for Review</h3>
+                                <span class="task-count" id="count-ready_for_review">0</span>
+                            </div>
+                            <div class="kanban-column-content" id="column-ready_for_review">
+                                <!-- Tasks will be inserted here -->
+                            </div>
+                        </div>
+
+                        <div class="kanban-column" data-status="done">
+                            <div class="kanban-column-header">
+                                <h3>Done</h3>
+                                <span class="task-count" id="count-done">0</span>
+                            </div>
+                            <div class="kanban-column-content" id="column-done">
+                                <!-- Tasks will be inserted here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vue d'accueil -->
+                    <div id="welcomeView" class="welcome-view">
+                        <div class="welcome-content">
+                            <h2>🚀 Bienvenue dans l'espace Dev</h2>
+                            <p>Sélectionnez un projet dans le menu latéral pour commencer à gérer vos tâches.</p>
+                            
+                            <div class="quick-stats" id="quickStats">
+                                <div class="stat-card">
+                                    <div class="stat-number" id="totalProjects">-</div>
+                                    <div class="stat-label">Projets assignés</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number" id="totalTasks">-</div>
+                                    <div class="stat-label">Tâches actives</div>
+                                </div>
+                                <div class="stat-card urgent">
+                                    <div class="stat-number" id="urgentTasks">-</div>
+                                    <div class="stat-label">Tâches urgentes</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vues admin -->
+                    <div id="allProjectsView" style="display: none;">
+                        <div class="section-header">
+                            <h2>Tous les projets</h2>
+                            <button id="createProjectBtn" class="btn btn-primary">Nouveau projet</button>
+                        </div>
+                        <div id="allProjectsList" class="projects-grid">
+                            <div class="loading">Chargement...</div>
+                        </div>
+                    </div>
+
+                    <div id="archivedProjectsView" style="display: none;">
+                        <div class="section-header">
+                            <h2>Projets archivés</h2>
+                        </div>
+                        <div id="archivedProjectsList" class="projects-grid">
+                            <div class="loading">Chargement...</div>
+                        </div>
+                    </div>
+
+                    <div id="manageDevelopersView" style="display: none;">
+                        <div class="section-header">
+                            <h2>Gestion des développeurs</h2>
+                        </div>
+                        <div id="developersList" class="developers-grid">
+                            <div class="loading">Chargement...</div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Task Detail Panel (Drawer) -->
+    <div id="taskDetailPanel" class="task-detail-panel">
+        <div class="task-detail-header">
+            <h3 id="taskDetailTitle">Détails de la tâche</h3>
+            <button id="closeTaskDetail" class="close-btn">×</button>
+        </div>
+        <div class="task-detail-content" id="taskDetailContent">
+            <!-- Task details will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Modals will be injected here -->
+    <div id="modalContainer"></div>
+
+    <!-- Loading overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <script src="/assets/js/auth-utils.js"></script>
+    <script src="/assets/js/api.js?v=1757350256"></script>
+    <script src="/assets/js/kanban.js?v=1759510000"></script>
+</body>
+</html>

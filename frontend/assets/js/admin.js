@@ -931,19 +931,30 @@ class AdminApp {
       const ensureUsers = async () => {
         if (usersCache.length) return usersCache;
         try {
-          const res = await api.getUsers({});
-          usersCache = (res.data.users || []).filter(u => u.role !== 'client');
+          let res;
+          try {
+            res = await api.getAllUsers();
+          } catch (e) {
+            // fallback admin-only endpoint
+            res = await api.getUsers({});
+          }
+          usersCache = (res.data.users || []);
+          // Trier par nom pour une liste stable
+          usersCache.sort((a,b) => `${a.first_name||''} ${a.last_name||''}`.localeCompare(`${b.first_name||''} ${b.last_name||''}`));
           return usersCache;
         } catch { return []; }
       };
       const filterUsers = (q) => {
-        q = q.toLowerCase();
-        return usersCache.filter(u => {
+        q = (q||'').toLowerCase();
+        const list = usersCache.filter(u => {
           const email = (u.email||'').toLowerCase();
           const fn = (u.first_name||'').toLowerCase();
           const ln = (u.last_name||'').toLowerCase();
-          return email.includes(q) || fn.includes(q) || ln.includes(q);
-        }).slice(0,5);
+          const full = `${fn} ${ln}`.trim();
+          if (!q) return true; // afficher tous si aucun filtre après @
+          return email.includes(q) || fn.includes(q) || ln.includes(q) || full.includes(q);
+        });
+        return list.slice(0,8);
       };
       const insertAtCursor = (el, text) => {
         const start = el.selectionStart || 0;
@@ -963,15 +974,18 @@ class AdminApp {
         const at = upto.lastIndexOf('@');
         if (at === -1) { closeMention(); return; }
         const fragment = upto.substring(at+1);
-        if (fragment.length < 1 || /\s/.test(fragment)) { closeMention(); return; }
+        if (/\s/.test(fragment)) { closeMention(); return; }
         await ensureUsers();
         const matches = filterUsers(fragment);
         if (!matches.length) { closeMention(); return; }
-        mentionList.innerHTML = matches.map(u => `
-          <div class="mention-item" data-email="${u.email}" style="padding:6px 8px; cursor:pointer; border-radius:4px;">
-            <strong>${u.first_name || ''} ${u.last_name || ''}</strong> <span style="color:#6b7280; font-size:12px;">${u.email}</span>
-          </div>
-        `).join('');
+        mentionList.innerHTML = matches.map(u => {
+          const name = `${u.first_name||''} ${u.last_name||''}`.trim() || u.email;
+          return `
+            <div class="mention-item" data-email="${u.email}" style="padding:6px 8px; cursor:pointer; border-radius:4px;">
+              <strong>${name}</strong> <span style=\"color:#6b7280; font-size:12px;\">${u.email}</span>
+            </div>
+          `;
+        }).join('');
         mentionBox.style.display = 'block';
         mentionList.querySelectorAll('.mention-item').forEach(item => {
           item.addEventListener('click', () => {

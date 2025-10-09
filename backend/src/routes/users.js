@@ -1,7 +1,7 @@
 const express = require('express');
 const User = require('../models/User');
 const SLA = require('../models/SLA');
-const { verifyToken, requireAdmin } = require('../middleware/auth');
+const { verifyToken, requireAdmin, requireTeamOrAdmin } = require('../middleware/auth');
 const { validateUserCreation, validateId } = require('../middleware/validation');
 const { createAutomaticInvoice } = require('./invoices');
 
@@ -27,6 +27,25 @@ router.get('/', verifyToken, requireAdmin, async (req, res) => {
       success: false,
       message: 'Erreur lors de la récupération des utilisateurs'
     });
+  }
+});
+
+// Liste de tous les utilisateurs (pour mentions) pour admin et équipe
+router.get('/all', verifyToken, requireTeamOrAdmin, async (req, res) => {
+  try {
+    const users = await User.findAll({});
+    // Ne retourner que les champs utiles
+    const sanitized = users.map(u => ({
+      id: u.id,
+      email: u.email,
+      first_name: u.first_name,
+      last_name: u.last_name,
+      role: u.role
+    }));
+    res.json({ success: true, data: { users: sanitized } });
+  } catch (error) {
+    console.error('Get all users error:', error);
+    res.status(500).json({ success: false, message: 'Erreur lors de la récupération des utilisateurs' });
   }
 });
 

@@ -149,6 +149,10 @@ class ApiClient {
     return this.request(`/users?${params}`);
   }
 
+  async getAllUsers() {
+    return this.request('/users/all');
+  }
+
   async getUser(id) {
     return this.request(`/users/${id}`);
   }

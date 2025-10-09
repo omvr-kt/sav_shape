@@ -865,8 +865,16 @@ class AdminApp {
           linkedTasksBox.querySelectorAll('[data-action="unlink-task"]').forEach(btn => {
             btn.addEventListener('click', async (e) => {
               const taskId = parseInt(e.currentTarget.dataset.id, 10);
-              try { await api.unlinkTaskFromTicket(ticketId, taskId); await loadLinkedTasks(); this.showNotification('Tâche déliée', 'success'); }
-              catch { this.showNotification('Échec délier', 'error'); }
+          try {
+            await api.unlinkTaskFromTicket(ticketId, taskId);
+            await loadLinkedTasks();
+            // Si le kanban du même projet est ouvert, recharger les tâches pour sync immédiate
+            if (this.currentTab === 'project-kanban' && this.currentProject?.id === ticket.project_id) {
+              await this.loadProjectTasks(ticket.project_id);
+            }
+            this.showNotification('Tâche déliée', 'success');
+          }
+          catch { this.showNotification('Échec délier', 'error'); }
             });
           });
         } catch { linkedTasksBox.innerHTML = '<div style="color:#b91c1c;">Erreur chargement des tâches liées</div>'; }
@@ -897,7 +905,14 @@ class AdminApp {
           if (!q) { this.showNotification('Entrez un terme de recherche ou un ID', 'warning'); return; }
           const taskId = await pickTaskBySearch(q);
           if (!taskId) { this.showNotification('Aucune tâche correspondante', 'warning'); return; }
-          try { await api.linkTaskToTicket(ticketId, taskId); await loadLinkedTasks(); this.showNotification('Tâche liée', 'success'); }
+          try {
+            await api.linkTaskToTicket(ticketId, taskId);
+            await loadLinkedTasks();
+            if (this.currentTab === 'project-kanban' && this.currentProject?.id === ticket.project_id) {
+              await this.loadProjectTasks(ticket.project_id);
+            }
+            this.showNotification('Tâche liée', 'success');
+          }
           catch { this.showNotification('Échec liaison tâche', 'error'); }
         });
       }

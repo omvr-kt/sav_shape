@@ -248,6 +248,17 @@ class Task {
     `, [taskId]);
   }
 
+  // Récupérer les tâches liées à un ticket
+  static async getTasksByTicket(ticketId) {
+    return await db.all(`
+      SELECT t.*
+      FROM task_tickets tt
+      INNER JOIN tasks t ON tt.task_id = t.id
+      WHERE tt.ticket_id = ?
+      ORDER BY t.created_at DESC
+    `, [ticketId]);
+  }
+
   // Propagation du statut vers les tickets liés
   static async propagateStatusToTickets(taskId, newTaskStatus) {
     const statusMapping = {

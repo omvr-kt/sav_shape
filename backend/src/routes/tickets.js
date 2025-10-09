@@ -1,5 +1,6 @@
 const express = require('express');
 const Ticket = require('../models/Ticket');
+const Task = require('../models/Task');
 const Comment = require('../models/Comment');
 const Project = require('../models/Project');
 const User = require('../models/User');
@@ -219,6 +220,21 @@ router.put('/:id', verifyToken, validateId, validateTicketUpdate, async (req, re
     const oldStatus = ticket.status;
     
     const updatedTicket = await Ticket.update(ticketId, updates);
+
+    // Si le ticket passe à résolu/fermé, marquer les tâches liées comme "done"
+    try {
+      const newStatus = updates.status;
+      if (statusChanged && (newStatus === 'resolved' || newStatus === 'closed')) {
+        const linkedTasks = await Task.getTasksByTicket(ticketId);
+        for (const task of linkedTasks) {
+          if (task.status !== 'done') {
+            await Task.update(task.id, { status: 'done' }, req.user.id);
+          }
+        }
+      }
+    } catch (syncErr) {
+      console.warn('Sync tasks on ticket resolve failed:', syncErr.message);
+    }
 
     // Notification au client si le statut a changé
     if (statusChanged && req.user.role !== 'client') {

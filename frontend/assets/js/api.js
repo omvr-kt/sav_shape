@@ -237,6 +237,22 @@ class ApiClient {
     return this.request(`/tickets/${id}`);
   }
 
+  // Dev links: tasks <-> tickets
+  async getTicketLinkedTasks(ticketId) {
+    return this.request(`/dev/tickets/${ticketId}/tasks`);
+  }
+
+  async linkTaskToTicket(ticketId, taskId) {
+    return this.request(`/dev/tickets/${ticketId}/tasks`, {
+      method: 'POST',
+      body: JSON.stringify({ task_id: taskId })
+    });
+  }
+
+  async unlinkTaskFromTicket(ticketId, taskId) {
+    return this.request(`/dev/tickets/${ticketId}/tasks/${taskId}`, { method: 'DELETE' });
+  }
+
   async createTicket(ticketData) {
     return this.request('/tickets', {
       method: 'POST',

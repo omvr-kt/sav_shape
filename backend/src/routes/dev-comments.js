@@ -542,4 +542,67 @@ router.delete('/tasks/:id/tickets/:ticketId', verifyToken, requireAdminOrDev, as
   }
 });
 
+// ===== LIAISON TÂCHES DEPUIS TICKETS =====
+
+// GET /api/dev/tickets/:id/tasks - Liste des tâches liées à un ticket
+router.get('/tickets/:id/tasks', verifyToken, requireAdminOrDev, async (req, res) => {
+  try {
+    const ticketId = req.params.id;
+    // Vérifier l'accès au ticket
+    const ticket = await db.get('SELECT * FROM tickets WHERE id = ?', [ticketId]);
+    if (!ticket) return res.status(404).json({ success: false, message: 'Ticket non trouvé' });
+
+    // Admin/Dev: OK; si besoin, ajouter ACL ici
+    const tasks = await db.all(`
+      SELECT t.*
+      FROM task_tickets tt
+      INNER JOIN tasks t ON tt.task_id = t.id
+      WHERE tt.ticket_id = ?
+      ORDER BY t.created_at DESC
+    `, [ticketId]);
+    res.json({ success: true, data: tasks });
+  } catch (error) {
+    console.error('Erreur récupération tâches liées au ticket:', error);
+    res.status(500).json({ success: false, message: 'Erreur lors de la récupération des tâches' });
+  }
+});
+
+// POST /api/dev/tickets/:id/tasks - Lier une tâche à un ticket
+router.post('/tickets/:id/tasks', verifyToken, requireAdminOrDev, async (req, res) => {
+  try {
+    const ticketId = req.params.id;
+    const { task_id } = req.body;
+    if (!task_id) return res.status(400).json({ success: false, message: 'ID de la tâche requis' });
+
+    // Vérifier que la tâche existe
+    const task = await Task.findById(task_id);
+    if (!task) return res.status(404).json({ success: false, message: 'Tâche non trouvée' });
+
+    // Lier
+    const linked = await Task.linkTicket(task_id, ticketId);
+    if (!linked) {
+      return res.status(400).json({ success: false, message: 'Déjà lié' });
+    }
+    await Task.logActivity('task', task_id, 'ticket_linked', { ticket_id: ticketId }, req.user.id);
+    res.json({ success: true, message: 'Tâche liée au ticket' });
+  } catch (error) {
+    console.error('Erreur liaison tâche->ticket:', error);
+    res.status(500).json({ success: false, message: 'Erreur lors de la liaison' });
+  }
+});
+
+// DELETE /api/dev/tickets/:id/tasks/:taskId - Délier une tâche d'un ticket
+router.delete('/tickets/:id/tasks/:taskId', verifyToken, requireAdminOrDev, async (req, res) => {
+  try {
+    const { id: ticketId, taskId } = req.params;
+    const unlinked = await Task.unlinkTicket(taskId, ticketId);
+    if (!unlinked) return res.status(404).json({ success: false, message: 'Lien non trouvé' });
+    await Task.logActivity('task', taskId, 'ticket_unlinked', { ticket_id: ticketId }, req.user.id);
+    res.json({ success: true, message: 'Tâche déliée du ticket' });
+  } catch (error) {
+    console.error('Erreur délier tâche->ticket:', error);
+    res.status(500).json({ success: false, message: 'Erreur lors du délier' });
+  }
+});
+
 module.exports = router;

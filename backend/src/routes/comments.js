@@ -86,6 +86,22 @@ router.post('/ticket/:ticket_id', verifyToken, validateTicketId, validateComment
       });
     }
 
+    // Mentions @email dans le contenu
+    try {
+      const { db } = require('../utils/database');
+      const mentionMatches = (content.match(/@([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/g) || [])
+        .map(m => m.slice(1).toLowerCase());
+      const uniqueEmails = [...new Set(mentionMatches)];
+      for (const email of uniqueEmails) {
+        const user = await User.findByEmail(email);
+        if (user) {
+          await db.run(`INSERT INTO ticket_comment_mentions (comment_id, mentioned_user_id) VALUES (?, ?)`, [comment.id, user.id]);
+        }
+      }
+    } catch (mentionErr) {
+      console.warn('Mention parse failed:', mentionErr.message);
+    }
+
     // Notifications selon le type d'utilisateur
     try {
       const project = await Project.findById(ticket.project_id);

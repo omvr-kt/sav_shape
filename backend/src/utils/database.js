@@ -333,6 +333,24 @@ const initDatabase = async () => {
     await ensureColumn('projects', 'quote_file', 'TEXT');
     await ensureColumn('projects', 'specifications_file', 'TEXT');
 
+    // Ticket comment mentions (per ticket comment)
+    const tcmInfo = await db.all("PRAGMA table_info(ticket_comment_mentions)").catch(() => []);
+    if (!Array.isArray(tcmInfo) || tcmInfo.length === 0) {
+      await db.run(`
+        CREATE TABLE IF NOT EXISTS ticket_comment_mentions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          comment_id INTEGER NOT NULL,
+          mentioned_user_id INTEGER NOT NULL,
+          read_at DATETIME,
+          created_at DATETIME DEFAULT (datetime('now','localtime')),
+          FOREIGN KEY (comment_id) REFERENCES ticket_comments(id) ON DELETE CASCADE,
+          FOREIGN KEY (mentioned_user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+      await db.run('CREATE INDEX IF NOT EXISTS idx_tcm_user ON ticket_comment_mentions(mentioned_user_id, read_at)');
+      await db.run('CREATE INDEX IF NOT EXISTS idx_tcm_comment ON ticket_comment_mentions(comment_id)');
+    }
+
     await db.run(`
       CREATE TABLE IF NOT EXISTS refresh_tokens (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

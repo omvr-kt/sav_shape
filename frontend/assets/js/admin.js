@@ -738,6 +738,18 @@ class AdminApp {
             </div>
           ` : ''}
           
+          <!-- Tâches liées (Kanban) -->
+          <div class="ticket-linked-tasks" style="margin: 16px 0;">
+            <h4 style="font-size: 16px; font-weight: 600; color: #1f2937; margin-bottom: 12px;">Tâches liées</h4>
+            <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+              <input type="text" id="ticketTaskSearch" placeholder="Rechercher une tâche du projet..." style="flex:1;" />
+              <button class="btn btn-secondary" id="ticketTaskLinkBtn">Lier</button>
+            </div>
+            <div id="ticketLinkedTasks" style="border:1px solid #e5e7eb; border-radius:6px; padding:8px; min-height:40px;">
+              <div style="color:#6b7280;">Chargement…</div>
+            </div>
+          </div>
+
           <!-- Conversation avec le client -->
           <div class="ticket-comments" style="margin-bottom: 20px;">
             <h4 style="font-size: 16px; font-weight: 600; color: #1f2937; margin-bottom: 16px;">Conversation avec le client (${comments.length})</h4>
@@ -832,6 +844,64 @@ class AdminApp {
       // Gérer l'ajout de commentaire
       const ticketId = id; // Sauvegarder l'ID du ticket pour le closure
       
+      // Charger et gérer les tâches liées
+      const linkedTasksBox = document.getElementById('ticketLinkedTasks');
+      const taskSearchInput = document.getElementById('ticketTaskSearch');
+      const taskLinkBtn = document.getElementById('ticketTaskLinkBtn');
+      const loadLinkedTasks = async () => {
+        try {
+          const r = await api.getTicketLinkedTasks(ticketId);
+          const tasks = r.data || [];
+          if (!tasks.length) { linkedTasksBox.innerHTML = '<div style="color:#6b7280;">Aucune tâche liée</div>'; return; }
+          linkedTasksBox.innerHTML = tasks.map(t => `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #eee;">
+              <div>
+                <div style="font-weight:600;">#${t.id} — ${t.title}</div>
+                <div style="font-size:12px; color:#6b7280;">${t.status} · ${t.urgency}</div>
+              </div>
+              <button class="btn btn-secondary" data-action="unlink-task" data-id="${t.id}">Délier</button>
+            </div>
+          `).join('');
+          linkedTasksBox.querySelectorAll('[data-action="unlink-task"]').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+              const taskId = parseInt(e.currentTarget.dataset.id, 10);
+              try { await api.unlinkTaskFromTicket(ticketId, taskId); await loadLinkedTasks(); this.showNotification('Tâche déliée', 'success'); }
+              catch { this.showNotification('Échec délier', 'error'); }
+            });
+          });
+        } catch { linkedTasksBox.innerHTML = '<div style="color:#b91c1c;">Erreur chargement des tâches liées</div>'; }
+      };
+      await loadLinkedTasks();
+
+      let projectTasksCache = [];
+      const ensureProjectTasks = async () => {
+        if (projectTasksCache.length) return projectTasksCache;
+        try {
+          // Récupérer les tâches du projet du ticket
+          const projectId = ticket.project_id;
+          const res = await fetch(`/api/dev/projects/${projectId}/tasks`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }});
+          const data = await res.json();
+          projectTasksCache = (data.data || []).filter(Boolean);
+          return projectTasksCache;
+        } catch { return []; }
+      };
+      const pickTaskBySearch = async (q) => {
+        const all = await ensureProjectTasks();
+        const norm = (q || '').toLowerCase();
+        const found = all.find(t => String(t.id) === norm) || all.find(t => t.title.toLowerCase().includes(norm));
+        return found ? found.id : null;
+      };
+      if (taskLinkBtn && taskSearchInput) {
+        taskLinkBtn.addEventListener('click', async () => {
+          const q = taskSearchInput.value.trim();
+          if (!q) { this.showNotification('Entrez un terme de recherche ou un ID', 'warning'); return; }
+          const taskId = await pickTaskBySearch(q);
+          if (!taskId) { this.showNotification('Aucune tâche correspondante', 'warning'); return; }
+          try { await api.linkTaskToTicket(ticketId, taskId); await loadLinkedTasks(); this.showNotification('Tâche liée', 'success'); }
+          catch { this.showNotification('Échec liaison tâche', 'error'); }
+        });
+      }
+
       // File attachment functionality
       let selectedFiles = [];
       window.currentSelectedFiles = selectedFiles; // Make it globally accessible for removal
@@ -1188,9 +1258,9 @@ class AdminApp {
       this.currentTab = 'project-kanban';
       this.updateHeaderActions();
       
-      // Mettre à jour les titres
-      document.getElementById('kanbanProjectTitle').textContent = project.name;
-      document.querySelector('.main-title').textContent = `Projet : ${project.name}`;
+      // Mettre à jour les titres (un seul affichage en haut)
+      const titleEl = document.querySelector('.main-title');
+      if (titleEl) titleEl.textContent = `Projet : ${project.name}`;
       
       // Pré-initialiser le drag & drop et les clics pour éviter d'attendre le chargement réseau
       this.setupTaskClickHandlers();

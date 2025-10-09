@@ -781,7 +781,10 @@ class AdminApp {
                       </div>
                       <div style="background: ${isFromClient ? '#ffffff' : '#0e2433'}; color: ${isFromClient ? '#374151' : 'white'}; padding: 12px 16px; border-radius: 12px; ${isFromClient ? 'border-bottom-left-radius: 4px;' : 'border-bottom-right-radius: 4px;'} box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: ${isFromClient ? '1px solid #e5e7eb' : 'none'};">
                         <div style="line-height: 1.4; font-size: 14px;">
-                          ${comment.content.replace(/\n/g, '<br>')}
+                          ${comment.content
+                            .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                            .replace(/@([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/g,'<span style="color:#2563eb; font-weight:600;">@$1</span>')
+                            .replace(/\n/g, '<br>')}
                         </div>
                         ${this.renderAttachments(comment.attachments, isFromClient)}
                         ${comment.is_internal ? '<div style="margin-top: 6px; padding: 2px 6px; background: rgba(255,255,255,0.2); border-radius: 4px; font-size: 11px;">Message interne</div>' : ''}
@@ -797,8 +800,11 @@ class AdminApp {
             <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-top: 20px;">
               <h3 style="font-size: 16px; font-weight: 600; color: #1f2937; margin: 0 0 16px 0;">Ajouter un commentaire</h3>
               <form id="addCommentForm">
-                <textarea id="commentContent" name="content" placeholder="Écrivez votre commentaire ou question ici..." 
+                <textarea id="commentContent" name="content" placeholder="Écrivez votre commentaire ou question ici... (@email pour mentionner)" 
                           style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; line-height: 1.5; resize: vertical; min-height: 80px; font-family: inherit;" required></textarea>
+                <div id="mentionSuggestions" style="display:none; position: relative;">
+                  <div id="mentionList" style="position:absolute; z-index:10; background:white; border:1px solid #e5e7eb; border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,0.08); padding:6px; max-height:160px; overflow:auto; width:100%;"></div>
+                </div>
                 
                 <div style="display: flex; align-items: center; gap: 12px; margin-top: 12px;">
                   <button type="button" id="attachFileBtn" style="display: flex; align-items: center; gap: 6px; background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; font-size: 13px; cursor: pointer;">
@@ -916,6 +922,72 @@ class AdminApp {
           catch { this.showNotification('Échec liaison tâche', 'error'); }
         });
       }
+
+      // Mention suggestions (@email)
+      const commentTextarea = document.getElementById('commentContent');
+      const mentionBox = document.getElementById('mentionSuggestions');
+      const mentionList = document.getElementById('mentionList');
+      let usersCache = [];
+      const ensureUsers = async () => {
+        if (usersCache.length) return usersCache;
+        try {
+          const res = await api.getUsers({});
+          usersCache = (res.data.users || []).filter(u => u.role !== 'client');
+          return usersCache;
+        } catch { return []; }
+      };
+      const filterUsers = (q) => {
+        q = q.toLowerCase();
+        return usersCache.filter(u => {
+          const email = (u.email||'').toLowerCase();
+          const fn = (u.first_name||'').toLowerCase();
+          const ln = (u.last_name||'').toLowerCase();
+          return email.includes(q) || fn.includes(q) || ln.includes(q);
+        }).slice(0,5);
+      };
+      const insertAtCursor = (el, text) => {
+        const start = el.selectionStart || 0;
+        const end = el.selectionEnd || 0;
+        const before = el.value.substring(0, start);
+        const after = el.value.substring(end);
+        el.value = before + text + after;
+        const pos = before.length + text.length;
+        el.setSelectionRange(pos, pos);
+        el.focus();
+      };
+      const closeMention = () => { mentionBox.style.display = 'none'; mentionList.innerHTML=''; };
+      commentTextarea.addEventListener('input', async () => {
+        const val = commentTextarea.value;
+        const caret = commentTextarea.selectionStart || val.length;
+        const upto = val.substring(0, caret);
+        const at = upto.lastIndexOf('@');
+        if (at === -1) { closeMention(); return; }
+        const fragment = upto.substring(at+1);
+        if (fragment.length < 1 || /\s/.test(fragment)) { closeMention(); return; }
+        await ensureUsers();
+        const matches = filterUsers(fragment);
+        if (!matches.length) { closeMention(); return; }
+        mentionList.innerHTML = matches.map(u => `
+          <div class="mention-item" data-email="${u.email}" style="padding:6px 8px; cursor:pointer; border-radius:4px;">
+            <strong>${u.first_name || ''} ${u.last_name || ''}</strong> <span style="color:#6b7280; font-size:12px;">${u.email}</span>
+          </div>
+        `).join('');
+        mentionBox.style.display = 'block';
+        mentionList.querySelectorAll('.mention-item').forEach(item => {
+          item.addEventListener('click', () => {
+            const email = item.dataset.email;
+            // Replace the @fragment with @email
+            const before = val.substring(0, at);
+            const after = val.substring(caret);
+            commentTextarea.value = `${before}@${email} ${after}`;
+            const pos = (before+`@${email} `).length;
+            commentTextarea.setSelectionRange(pos, pos);
+            closeMention();
+            commentTextarea.focus();
+          });
+        });
+      });
+      commentTextarea.addEventListener('blur', () => setTimeout(closeMention, 150));
 
       // File attachment functionality
       let selectedFiles = [];

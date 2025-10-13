@@ -76,7 +76,7 @@ const initDatabase = async () => {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
-        role TEXT NOT NULL CHECK (role IN ('admin', 'client', 'team')),
+        role TEXT NOT NULL CHECK (role IN ('admin', 'client', 'team', 'developer')),
         first_name TEXT NOT NULL,
         last_name TEXT NOT NULL,
         company TEXT,
@@ -309,16 +309,37 @@ const initDatabase = async () => {
     const ensureColumn = async (table, column, definition) => {
       const cols = await db.all(`PRAGMA table_info(${table})`);
       const exists = Array.isArray(cols) && cols.some(c => c.name === column);
-      if (!exists) {
+      if (exists) return;
+      try {
         await db.run(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+      } catch (err) {
+        // Fallback: certains SQLite n'acceptent pas des DEFAULT non constants via ALTER
+        console.warn(`[DB] ALTER ADD COLUMN failed for ${table}.${column} (${definition}):`, err && err.message);
+        // Retenter sans DEFAULT puis peupler via UPDATE
+        const def = definition || '';
+        const upToDefault = def.split(/\s+DEFAULT\s+/i)[0] || def; // type seul
+        await db.run(`ALTER TABLE ${table} ADD COLUMN ${column} ${upToDefault}`);
+        // Peupler valeurs par défaut
+        const mStr = def.match(/DEFAULT\s+'([^']*)'/i);
+        const mTs = /DEFAULT\s+CURRENT_TIMESTAMP/i.test(def);
+        if (mStr) {
+          const val = mStr[1];
+          await db.run(`UPDATE ${table} SET ${column} = ? WHERE ${column} IS NULL`, [val]);
+        } else if (mTs) {
+          await db.run(`UPDATE ${table} SET ${column} = CURRENT_TIMESTAMP WHERE ${column} IS NULL`);
+        } else if (/INTEGER\s+DEFAULT\s+\d+/i.test(def)) {
+          const mInt = def.match(/DEFAULT\s+(\d+)/i);
+          const ival = mInt ? parseInt(mInt[1], 10) : 0;
+          await db.run(`UPDATE ${table} SET ${column} = ? WHERE ${column} IS NULL`, [ival]);
+        }
       }
     };
 
     // Ensure expected columns exist (legacy-safe)
     await ensureColumn('task_comments', 'author_id', 'INTEGER');
     await ensureColumn('task_comments', 'body', "TEXT DEFAULT ''");
-    await ensureColumn('task_comments', 'created_at', "DATETIME DEFAULT (datetime('now','localtime'))");
-    await ensureColumn('task_comments', 'updated_at', "DATETIME DEFAULT (datetime('now','localtime'))");
+    await ensureColumn('task_comments', 'created_at', 'DATETIME DEFAULT CURRENT_TIMESTAMP');
+    await ensureColumn('task_comments', 'updated_at', 'DATETIME DEFAULT CURRENT_TIMESTAMP');
     await ensureColumn('task_comments', 'edited', 'BOOLEAN DEFAULT 0');
 
     await ensureColumn('task_attachments', 'filename', 'TEXT');
@@ -326,12 +347,27 @@ const initDatabase = async () => {
     await ensureColumn('task_attachments', 'size', 'INTEGER');
     await ensureColumn('task_attachments', 'mime_type', 'TEXT');
     await ensureColumn('task_attachments', 'uploaded_by', 'INTEGER');
-    await ensureColumn('task_attachments', 'uploaded_at', "DATETIME DEFAULT (datetime('now','localtime'))");
-    await ensureColumn('task_attachments', 'created_at', "DATETIME DEFAULT (datetime('now','localtime'))");
+    await ensureColumn('task_attachments', 'uploaded_at', 'DATETIME DEFAULT CURRENT_TIMESTAMP');
+    await ensureColumn('task_attachments', 'created_at', 'DATETIME DEFAULT CURRENT_TIMESTAMP');
 
     // Ensure project-level files (quote/specifications) exist per project
     await ensureColumn('projects', 'quote_file', 'TEXT');
     await ensureColumn('projects', 'specifications_file', 'TEXT');
+
+    // Ensure optional user profile fields exist for compatibility
+    await ensureColumn('users', 'confidential_file', 'TEXT');
+    await ensureColumn('users', 'address', 'TEXT');
+    await ensureColumn('users', 'city', 'TEXT');
+    await ensureColumn('users', 'country', 'TEXT');
+
+    // Ensure tasks table has all expected columns (legacy-safe)
+    await ensureColumn('tasks', 'urgency', "TEXT DEFAULT 'medium'");
+    await ensureColumn('tasks', 'status', "TEXT DEFAULT 'todo_back'");
+    await ensureColumn('tasks', 'start_at', 'DATETIME DEFAULT CURRENT_TIMESTAMP');
+    await ensureColumn('tasks', 'due_at', 'DATETIME DEFAULT CURRENT_TIMESTAMP');
+    await ensureColumn('tasks', 'order_index', 'INTEGER DEFAULT 0');
+    await ensureColumn('tasks', 'created_by', 'INTEGER');
+    await ensureColumn('tasks', 'updated_by', 'INTEGER');
 
     // Ticket comment mentions (per ticket comment)
     const tcmInfo = await db.all("PRAGMA table_info(ticket_comment_mentions)").catch(() => []);
@@ -441,7 +477,7 @@ const runMigrations = async () => {
           amount_tva DECIMAL(10,2) NOT NULL,
           amount_ttc DECIMAL(10,2) NOT NULL,
           description TEXT NOT NULL,
-          status TEXT NOT NULL DEFAULT 'sent' CHECK (status IN ('sent', 'paid', 'overdue', 'cancelled')),
+          status TEXT NOT NULL DEFAULT 'sent' CHECK (status IN ('sent', 'paid', 'overdue')),
           due_date DATE,
           paid_date DATETIME,
           created_at DATETIME DEFAULT (datetime('now', 'localtime')),
@@ -528,9 +564,9 @@ const insertDefaultSettings = async () => {
       
       // Labels de priorité
       { key: 'priority_low_label', value: 'Faible', description: 'Label pour priorité faible', category: 'labels' },
-      { key: 'priority_normal_label', value: 'Normal', description: 'Label pour priorité normale', category: 'labels' },
-      { key: 'priority_high_label', value: 'Élevé', description: 'Label pour priorité élevée', category: 'labels' },
-      { key: 'priority_urgent_label', value: 'Urgent', description: 'Label pour priorité urgente', category: 'labels' },
+      { key: 'priority_normal_label', value: 'Moyenne', description: 'Label pour priorité moyenne', category: 'labels' },
+      { key: 'priority_high_label', value: 'Élevée', description: 'Label pour priorité élevée', category: 'labels' },
+      { key: 'priority_urgent_label', value: 'Urgente', description: 'Label pour priorité urgente', category: 'labels' },
       
       // Configuration des factures
       { key: 'invoice_prefix', value: 'SHAPE', description: 'Préfixe des numéros de facture', category: 'invoicing' },

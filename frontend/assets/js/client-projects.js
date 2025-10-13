@@ -1,3 +1,5 @@
+// Logs activés par défaut; utilisez ?debug=1 pour mode verbeux
+
 class ProjectsApp {
   constructor() {
     this.currentUser = null;
@@ -7,7 +9,6 @@ class ProjectsApp {
   }
 
   init() {
-    console.log('ProjectsApp: Initializing...');
     this.checkAuth();
     this.setupEventListeners();
   }
@@ -179,7 +180,6 @@ class ProjectsApp {
   }
 
   createTicketForProject(projectId) {
-    console.log('Creating ticket for project:', projectId);
     const project = this.projects.find(p => p.id === projectId);
     
     if (!project) {
@@ -192,7 +192,6 @@ class ProjectsApp {
   }
 
   viewProjectDetails(projectId) {
-    console.log('Viewing project details:', projectId);
     const project = this.projects.find(p => p.id === projectId);
     
     if (!project) {
@@ -238,10 +237,10 @@ class ProjectsApp {
             <div class="form-group">
               <label class="form-label" for="ticketPriority">Priorité *</label>
               <select id="ticketPriority" name="priority" class="form-select" required>
-                <option value="normal">Normale - Dans les temps</option>
-                <option value="high">Haute - Urgent</option>
+                <option value="normal">Moyenne - Dans les temps</option>
+                <option value="high">Élevée - Urgent</option>
                 <option value="urgent">Urgente - Critique</option>
-                <option value="low">Basse - Quand possible</option>
+                <option value="low">Faible - Quand possible</option>
               </select>
             </div>
             
@@ -433,6 +432,5 @@ class ProjectsApp {
 
 // Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('DOM loaded - initializing ProjectsApp');
   window.projectsApp = new ProjectsApp();
 });

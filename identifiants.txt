@@ -5,3 +5,9 @@ Compte Admin :
   Compte Développeur (Team) :
   - Email : dev@agency.local
   - Mot de passe : Dev123!Shape
+
+Compte Client Startup.io :
+  - Email : it@startup.io
+  - Mot de passe (temporaire) : Sppg93SQgo23KN
+  - Rôle : client
+  - Statut : actif

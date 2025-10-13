@@ -47,7 +47,7 @@ class User {
   }
 
   static async update(id, updates) {
-    const allowedFields = ['first_name', 'last_name', 'company', 'is_active', 'confidential_file', 'quote_file', 'address', 'city', 'country'];
+    const allowedFields = ['email', 'role', 'first_name', 'last_name', 'company', 'is_active', 'confidential_file', 'quote_file', 'address', 'city', 'country'];
     const fieldsToUpdate = [];
     const values = [];
 

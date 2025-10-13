@@ -37,7 +37,7 @@ const validateUserCreation = [
     .isLength({ min: 6 })
     .withMessage('Le mot de passe doit contenir au moins 6 caractères'),
   body('role')
-    .isIn(['admin', 'client', 'team'])
+    .isIn(['admin', 'client', 'team', 'developer'])
     .withMessage('Rôle invalide'),
   body('first_name')
     .trim()

@@ -1,6 +1,6 @@
 // Générateur PDF sécurisé pour les factures
 window.generateSafeInvoicePDF = function(invoice) {
-  console.log('Generating PDF for invoice:', invoice);
+  
   
   if (!invoice) {
     throw new Error('Données de facture manquantes');
@@ -29,7 +29,7 @@ window.generateSafeInvoicePDF = function(invoice) {
     status: invoice.status || 'sent'
   };
   
-  console.log('Safe invoice data:', safeInvoice);
+  
   
   // Configuration des couleurs Shape Conseil
   const primaryColor = [14, 36, 51];    // #0E2433 - Bleu marine 
@@ -44,7 +44,7 @@ window.generateSafeInvoicePDF = function(invoice) {
   // Informations de l'entreprise (Shape Conseil)
   doc.setFontSize(16);
   doc.setTextColor(...primaryColor);
-  doc.text('SHAPE CONSEIL', 140, 30);
+  doc.text('SHAPE', 140, 30);
   
   doc.setFontSize(10);
   doc.text('SIREN: 990204588', 140, 40);
@@ -162,7 +162,7 @@ window.generateSafeInvoicePDF = function(invoice) {
   doc.setTextColor(...darkColor);
   doc.setFontSize(8);
   doc.text('Merci pour votre confiance !', 20, 270);
-  doc.text('En cas de question, contactez-nous à omar@shape-conseil.fr', 20, 275);
+  doc.text('En cas de question, contactez-nous à contact@shape-conseil.fr', 20, 275);
   
   // Télécharger le PDF
   doc.save(`Facture-${safeInvoice.invoice_number}.pdf`);
@@ -193,8 +193,7 @@ function getInvoiceStatusLabel(status) {
   const labels = {
     'sent': 'Envoyée',
     'paid': 'Payée',
-    'overdue': 'En retard',
-    'cancelled': 'Annulée'
+    'overdue': 'En retard'
   };
   return labels[status] || status;
 }

@@ -73,9 +73,10 @@ const templates = {
   newTicketForOmar: (ticket, client, project) => {
     const priorityClass = `priority-${ticket.priority}`;
     const priorityLabel = {
-      urgent: 'URGENT',
+      urgent: 'URGENTE',
       high: 'ÉLEVÉE',
-      normal: 'NORMALE',
+      normal: 'MOYENNE',
+      medium: 'MOYENNE',
       low: 'FAIBLE'
     }[ticket.priority] || ticket.priority.toUpperCase();
 
@@ -382,9 +383,10 @@ function formatStatus(status) {
 
 function formatPriority(priority) {
   const priorityMap = {
-    'urgent': 'Urgent',
+    'urgent': 'Urgente',
     'high': 'Élevée',
-    'normal': 'Normale',
+    'normal': 'Moyenne',
+    'medium': 'Moyenne',
     'low': 'Faible'
   };
   return priorityMap[priority] || priority;

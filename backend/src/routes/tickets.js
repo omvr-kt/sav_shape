@@ -13,7 +13,7 @@ const router = express.Router();
 
 router.get('/', verifyToken, async (req, res) => {
   try {
-    const { client_id, project_id, status, priority, assigned_to, overdue_only } = req.query;
+    const { client_id, project_id, status, priority, assigned_to, overdue_only, exclude_status } = req.query;
     let filters = {};
 
     console.log('API Tickets - User role:', req.user.role, 'User ID:', req.user.id);
@@ -30,6 +30,10 @@ router.get('/', verifyToken, async (req, res) => {
     if (status) filters.status = status;
     if (priority) filters.priority = priority;
     if (overdue_only === 'true') filters.overdue_only = true;
+    if (exclude_status) {
+      // accept comma-separated list
+      filters.exclude_status = typeof exclude_status === 'string' ? exclude_status.split(',') : exclude_status;
+    }
 
     console.log('API Tickets - Filters appliqués:', filters);
     const tickets = await Ticket.findAll(filters);

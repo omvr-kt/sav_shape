@@ -353,7 +353,8 @@ router.get('/projects/:id/tasks', verifyToken, requireAdminOrDev, async (req, re
 router.post('/projects/:id/tasks', verifyToken, requireAdminOrDev, async (req, res) => {
   try {
     const projectId = req.params.id;
-    const { title, description, urgency, status, start_at, ticket_ids } = req.body;
+    const { title, description, urgency, status, start_at, ticket_ids } = req.body || {};
+    console.log('[dev] create task body:', { projectId, title, description, urgency, status, start_at });
     
     // Vérifier l'accès au projet
     const accessibleProjects = await Task.getUserAccessibleProjects(req.user.id);
@@ -373,15 +374,20 @@ router.post('/projects/:id/tasks', verifyToken, requireAdminOrDev, async (req, r
       });
     }
     
+    const allowedUrgencies = new Set(['low','medium','high','urgent']);
+    const allowedStatuses = new Set(['todo_back','todo_front','in_progress','ready_for_review','done']);
+    const safeUrgency = allowedUrgencies.has((urgency||'').toLowerCase()) ? (urgency||'').toLowerCase() : 'medium';
+    const safeStatus = allowedStatuses.has(status) ? status : 'todo_back';
+
     const taskData = {
       project_id: projectId,
       title,
       description,
-      urgency: urgency || 'medium',
-      status: status || 'todo_back',
+      urgency: safeUrgency,
+      status: safeStatus,
       start_at: start_at || new Date().toISOString(),
       created_by: req.user.id,
-      ticket_ids: ticket_ids || []
+      ticket_ids: Array.isArray(ticket_ids) ? ticket_ids : []
     };
     
     const task = await Task.create(taskData);
@@ -391,7 +397,7 @@ router.post('/projects/:id/tasks', verifyToken, requireAdminOrDev, async (req, r
       data: task
     });
   } catch (error) {
-    console.error('Erreur création tâche:', error);
+    console.error('Erreur création tâche:', error && (error.stack || error.message || error));
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la création de la tâche'
@@ -515,6 +521,7 @@ router.get('/developers', verifyToken, requireAdmin, async (req, res) => {
         u.email,
         u.is_active,
         GROUP_CONCAT(p.name) as assigned_projects,
+        GROUP_CONCAT(p.id) as assigned_project_ids,
         COUNT(p.id) as project_count
       FROM users u
       LEFT JOIN developer_projects dp ON u.id = dp.user_id
@@ -546,6 +553,36 @@ router.get('/test', (req, res) => {
     message: 'API dev fonctionne',
     timestamp: new Date().toISOString()
   });
+});
+
+// ===== PROJECT MEMBERS (for mentions & ACL) =====
+// Returns admins and developers assigned to project
+router.get('/projects/:id/members', verifyToken, requireAdminOrDev, async (req, res) => {
+  try {
+    const projectId = parseInt(req.params.id);
+    if (isNaN(projectId)) return res.status(400).json({ success: false, message: 'Projet invalide' });
+
+    // Admins
+    const admins = await db.all(`SELECT id, email, first_name, last_name, role FROM users WHERE role = 'admin'`);
+    // Developers assigned to this project
+    const devs = await db.all(`
+      SELECT u.id, u.email, u.first_name, u.last_name, u.role
+      FROM developer_projects dp
+      INNER JOIN users u ON u.id = dp.user_id
+      WHERE dp.project_id = ? AND u.role = 'developer'
+    `, [projectId]);
+
+    const merged = [...admins, ...devs];
+    // Deduplicate by id
+    const uniq = [];
+    const seen = new Set();
+    for (const u of merged) { if (!seen.has(u.id)) { seen.add(u.id); uniq.push(u); } }
+
+    res.json({ success: true, data: uniq });
+  } catch (error) {
+    console.error('Erreur récupération membres projet:', error);
+    res.status(500).json({ success: false, message: 'Erreur lors de la récupération des membres du projet' });
+  }
 });
 
 // ===== ATTACHMENTS TÂCHES =====

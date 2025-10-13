@@ -110,6 +110,13 @@ class Ticket {
       query += ' AND t.status = ?';
       params.push(filters.status);
     }
+    if (filters.exclude_status) {
+      // Support single status or array of statuses to exclude
+      const excluded = Array.isArray(filters.exclude_status) ? filters.exclude_status : [filters.exclude_status];
+      const placeholders = excluded.map(() => '?').join(',');
+      query += ` AND t.status NOT IN (${placeholders})`;
+      params.push(...excluded);
+    }
 
     if (filters.priority) {
       query += ' AND t.priority = ?';

@@ -59,13 +59,14 @@ class ConfigService {
             in_progress: 'En cours',
             waiting_client: 'En attente',
             resolved: 'Résolu',
-            closed: 'Fermé'
+            closed: 'Résolu'
           },
           priority: {
             low: 'Faible',
-            normal: 'Normal',
-            high: 'Élevé',
-            urgent: 'Urgent'
+            normal: 'Moyenne',
+            medium: 'Moyenne',
+            high: 'Élevée',
+            urgent: 'Urgente'
           }
         },
         businessHours: {

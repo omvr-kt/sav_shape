@@ -371,12 +371,19 @@ router.post('/', [
   handleValidationErrors
 ], async (req, res) => {
 
-  const { client_id, amount_ht, description, tva_rate = 20.00, no_tva = false } = req.body;
+  // Normaliser les valeurs en entrée (multer place tout en string pour multipart)
   const attachmentFile = req.file; // Fichier uploadé
+  const client_id = parseInt(req.body.client_id, 10);
+  const amount_ht = parseFloat(req.body.amount_ht);
+  const description = (req.body.description || '').trim();
+  const tva_rate = req.body.tva_rate !== undefined && req.body.tva_rate !== null && req.body.tva_rate !== ''
+    ? parseFloat(req.body.tva_rate)
+    : 20.0;
+  const no_tva = (req.body.no_tva === true) || (req.body.no_tva === 'true') || (req.body.no_tva === 'on');
 
   try {
     // D'abord récupérer les informations actuelles du client
-    const clientSQL = 'SELECT first_name, last_name, email, company FROM users WHERE id = ?';
+    const clientSQL = 'SELECT first_name, last_name, email, company, address, city, country FROM users WHERE id = ?';
     const client = await db.get(clientSQL, [client_id]);
     
     if (!client) {
@@ -397,30 +404,24 @@ router.post('/', [
     const sql = `
       INSERT INTO invoices (
         invoice_number, client_id, amount_ht, tva_rate, amount_tva, amount_ttc, 
-        description, status, due_date, client_first_name, client_last_name, client_email, client_company,
-        client_address, client_city, client_country, attachment_filename, attachment_path
+        description, status, due_date, client_first_name, client_last_name, client_email, client_company
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'sent', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'sent', ?, ?, ?, ?, ?)
     `;
 
     const result = await db.run(sql, [
-      invoiceNumber, 
-      client_id, 
-      amount_ht, 
-      finalTvaRate, 
-      amount_tva, 
-      amount_ttc, 
-      description, 
+      invoiceNumber,
+      client_id,
+      amount_ht,
+      finalTvaRate,
+      amount_tva,
+      amount_ttc,
+      description,
       dueDate.toISOString().split('T')[0], // Format date only (YYYY-MM-DD)
       client.first_name || '',
       client.last_name || '',
       client.email || '',
-      client.company || '',
-      client.address || '',
-      client.city || '',
-      client.country || '',
-      attachmentFile ? attachmentFile.originalname : null,
-      attachmentFile ? attachmentFile.filename : null
+      client.company || ''
     ]);
 
     // Récupérer la facture créée avec les infos client
@@ -479,7 +480,7 @@ router.post('/', [
 router.put('/:id/status', [
   verifyToken,
   requireAdmin,
-  body('status').isIn(['pending', 'paid', 'overdue', 'cancelled']).withMessage('Statut invalide'),
+  body('status').isIn(['sent', 'paid', 'overdue']).withMessage('Statut invalide'),
   handleValidationErrors
 ], async (req, res) => {
 
@@ -527,7 +528,7 @@ router.put('/:id', [
   body('amount_ht').optional().isFloat({ min: 0 }).withMessage('Montant HT invalide'),
   body('tva_rate').optional().isFloat({ min: 0, max: 100 }).withMessage('Taux TVA invalide'),
   body('description').optional().trim().isLength({ min: 1, max: 1000 }).withMessage('Description invalide (max 1000 caractères)'),
-  body('status').optional().isIn(['sent', 'paid', 'overdue', 'cancelled']).withMessage('Statut invalide'),
+  body('status').optional().isIn(['sent', 'paid', 'overdue']).withMessage('Statut invalide'),
   handleValidationErrors
 ], async (req, res) => {
 
@@ -760,21 +761,9 @@ router.get('/:id/pdf', verifyToken, async (req, res) => {
              THEN i.client_company 
              ELSE u.company 
            END as company,
-           CASE 
-             WHEN i.client_address IS NOT NULL 
-             THEN i.client_address 
-             ELSE u.address 
-           END as address,
-           CASE 
-             WHEN i.client_city IS NOT NULL 
-             THEN i.client_city 
-             ELSE u.city 
-           END as city,
-           CASE 
-             WHEN i.client_country IS NOT NULL 
-             THEN i.client_country 
-             ELSE u.country 
-           END as country
+           u.address as address,
+           u.city as city,
+           u.country as country
     FROM invoices i
     LEFT JOIN users u ON i.client_id = u.id
     WHERE i.id = ?

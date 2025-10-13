@@ -42,7 +42,7 @@ body.modal-open {
   width: 100vw !important;
   height: 100vh !important;
   background: transparent !important;
-  z-index: 9999 !important;
+  z-index: 100000 !important; /* Au-dessus de l'app */
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -61,7 +61,7 @@ body.modal-open {
   width: 100vw !important;
   height: 100vh !important;
   background: rgba(0, 0, 0, 0.5) !important;
-  z-index: -1 !important;
+  z-index: 100000 !important; /* Doit couvrir l'application */
   pointer-events: auto !important; /* Permettre les clics sur l'overlay */
   cursor: pointer !important; /* Montrer que c'est cliquable */
 }
@@ -74,10 +74,17 @@ body.modal-open {
   max-height: 90vh !important;
   box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
   position: relative !important;
-  z-index: 10000 !important;
+  z-index: 1 !important; /* Au-dessus de l'overlay interne */
   display: flex !important;
   flex-direction: column !important;
-  overflow: hidden !important; /* Le conteneur global ne défile pas, mais les enfants peuvent */
+  overflow-y: auto !important; /* Autoriser le scroll du contenu si le markup n'a pas .modal-body */
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* Quand l'overlay est enfant de .modal (markup admin), le placer derrière le contenu */
+.modal .modal-overlay {
+  z-index: 0 !important;
 }
 
 /* Conteneur scrollable SÉPARÉ à l'intérieur du modal - C'EST LUI QUI DOIT DÉFILER */

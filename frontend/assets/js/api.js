@@ -60,6 +60,14 @@ class ApiClient {
       ...options,
     };
 
+    // Si body est un FormData, laisser le navigateur gérer Content-Type
+    if (config.body instanceof FormData) {
+      // Cloner sans Content-Type
+      const headers = { ...config.headers };
+      delete headers['Content-Type'];
+      config.headers = headers;
+    }
+
     try {
       const response = await fetch(url, config);
       
@@ -223,6 +231,10 @@ class ApiClient {
     }).then(r => r.json());
   }
 
+  async getProjectMembers(projectId) {
+    return this.request(`/dev/projects/${projectId}/members`);
+  }
+
   async deleteProject(id) {
     return this.request(`/projects/${id}`, { method: 'DELETE' });
   }
@@ -371,16 +383,18 @@ class ApiClient {
       'in_progress': 'En cours',
       'waiting_client': 'Attente client',
       'resolved': 'Résolu',
-      'closed': 'Fermé'
+      // Normaliser l'affichage de closed en "Résolu"
+      'closed': 'Résolu'
     };
     return statusMap[status] || status;
   }
 
   formatPriority(priority) {
     const priorityMap = {
-      'urgent': 'Urgent',
+      'urgent': 'Urgente',
       'high': 'Élevée',
-      'normal': 'Normale',
+      'normal': 'Moyenne',
+      'medium': 'Moyenne',
       'low': 'Faible'
     };
     return priorityMap[priority] || priority;
@@ -527,13 +541,13 @@ async function updateTicketBadge() {
           ticket.status === 'in_progress'
         ).length;
       }
-      console.log('Badge mis à jour depuis ticketsApp:', totalTickets);
+      
     } else {
       // Sinon, utiliser l'API directement
       try {
         const token = localStorage.getItem('token');
         if (!token) {
-          console.log('Pas de token, badge à 0');
+          
           totalTickets = 0;
         } else {
           const response = await fetch('/api/tickets', {
@@ -582,7 +596,7 @@ async function updateTicketBadge() {
               ).length;
             }
             
-            console.log('Badge mis à jour depuis API:', totalTickets);
+            
           } else {
             console.warn('Erreur API tickets pour badge:', response.status);
             totalTickets = 0;

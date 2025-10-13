@@ -119,6 +119,19 @@ router.put('/:id', verifyToken, requireTeamOrAdmin, validateId, async (req, res)
 
     const updatedProject = await Project.update(projectId, updates);
 
+    // Si le projet est marqué comme terminé, clôturer les tickets associés
+    if (updates.status === 'completed') {
+      const { db } = require('../utils/database');
+      try {
+        await db.run(
+          "UPDATE tickets SET status = 'resolved', updated_at = datetime('now', 'localtime') WHERE project_id = ? AND status NOT IN ('resolved','closed')",
+          [projectId]
+        );
+      } catch (e) {
+        console.error('Erreur lors de la clôture des tickets du projet:', e);
+      }
+    }
+
     res.json({
       success: true,
       message: 'Projet mis à jour avec succès',

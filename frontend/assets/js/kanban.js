@@ -30,6 +30,24 @@ class KanbanManager {
       // Charger les projets
       await this.loadProjects();
       
+      // Si l'utilisateur est développeur, afficher uniquement la vue Kanban
+      if (this.currentUser.role === 'developer') {
+        // Masquer la vue d'accueil et les vues admin
+        const welcome = document.getElementById('welcomeView');
+        if (welcome) welcome.style.display = 'none';
+        this.hideAdminViews();
+
+        // Sélectionner automatiquement le premier projet assigné s'il existe
+        const firstProject = (this.projects || []).find(p => p.status === 'active') || (this.projects || [])[0];
+        if (firstProject) {
+          await this.selectProject(firstProject.id);
+        } else {
+          // Aucun projet assigné: afficher un message minimal sans autre navigation
+          const title = document.getElementById('projectTitle');
+          if (title) title.textContent = 'Aucun projet assigné';
+        }
+      }
+      
       // Charger les mentions non lues
       await this.loadUnreadMentions();
       
@@ -40,8 +58,8 @@ class KanbanManager {
       this.handleUrlParams();
       
     } catch (error) {
-      console.error('Erreur initialisation Kanban:', error);
-      this.showError('Erreur lors de l\'initialisation');
+      console.error('Kanban initialization error:', error);
+      this.showError('Initialization error');
     }
   }
 
@@ -63,7 +81,7 @@ class KanbanManager {
       }
       return null;
     } catch (error) {
-      console.error('Erreur récupération utilisateur:', error);
+      console.error('Error getting current user:', error);
       return null;
     }
   }
@@ -72,7 +90,7 @@ class KanbanManager {
     document.getElementById('currentUser').textContent = 
       `${this.currentUser.first_name} ${this.currentUser.last_name}`;
     document.getElementById('currentUserRole').textContent = 
-      this.currentUser.role === 'admin' ? 'Administrateur' : 'Développeur';
+      this.currentUser.role === 'admin' ? 'Administrator' : 'Developer';
     
     // Afficher les sections admin si nécessaire
     if (this.currentUser.role === 'admin') {
@@ -97,7 +115,7 @@ class KanbanManager {
         this.updateQuickStats();
       }
     } catch (error) {
-      console.error('Erreur chargement projets:', error);
+      console.error('Error loading projects:', error);
     }
   }
 
@@ -105,7 +123,7 @@ class KanbanManager {
     const container = document.getElementById('projectsList');
     
     if (this.projects.length === 0) {
-      container.innerHTML = '<div class="no-projects">Aucun projet assigné</div>';
+      container.innerHTML = '<div class="no-projects">No assigned projects</div>';
       return;
     }
     
@@ -131,7 +149,7 @@ class KanbanManager {
         this.updateMentionsBadge();
       }
     } catch (error) {
-      console.error('Erreur chargement mentions:', error);
+      console.error('Error loading mentions:', error);
     }
   }
 
@@ -171,17 +189,68 @@ class KanbanManager {
       document.getElementById('urgentTasks').textContent = urgentTasks;
       
     } catch (error) {
-      console.error('Erreur mise à jour stats:', error);
+      console.error('Error updating stats:', error);
     }
   }
 
   setupEventListeners() {
-    // Navigation projets
+    // Navigation projets (clic sur item ou bouton data-action)
     document.addEventListener('click', (e) => {
-      if (e.target.closest('.project-item')) {
+      const projectItem = e.target.closest('.project-item');
+      if (projectItem) {
         e.preventDefault();
-        const projectId = e.target.closest('.project-item').dataset.projectId;
-        this.selectProject(projectId);
+        const projectId = projectItem.dataset.projectId;
+        if (projectId) this.selectProject(projectId);
+        return;
+      }
+      const actionBtn = e.target.closest('[data-action]');
+      if (actionBtn) {
+        const action = actionBtn.dataset.action;
+        if (action === 'select-project') {
+          e.preventDefault();
+          const pid = actionBtn.dataset.projectId;
+          if (pid) this.selectProject(pid);
+        } else if (action === 'archive-project') {
+          e.preventDefault();
+          const pid = actionBtn.dataset.projectId;
+          if (pid) this.archiveProject(pid);
+        } else if (action === 'restore-project') {
+          e.preventDefault();
+          const pid = actionBtn.dataset.projectId;
+          if (pid) this.restoreProject(pid);
+        } else if (action === 'edit-description') {
+          e.preventDefault();
+          this.editTaskDescription();
+        } else if (action === 'toggle-upload') {
+          e.preventDefault();
+          this.showUploadArea();
+        } else if (action === 'browse-files') {
+          e.preventDefault();
+          document.getElementById('fileInput')?.click();
+        } else if (action === 'send-comment') {
+          e.preventDefault();
+          this.addComment();
+        } else if (action === 'close-modal') {
+          e.preventDefault();
+          this.closeTaskModal();
+        } else if (action === 'assign-dev') {
+          e.preventDefault();
+          const uid = actionBtn.dataset.userId;
+          // Récupérer la valeur du select frère
+          const selector = actionBtn.parentElement?.querySelector('.project-selector');
+          const selectedProject = selector?.value;
+          if (uid && selectedProject) {
+            this.assignToProject(uid, selectedProject);
+          } else {
+            this.showError('Select a project to assign');
+          }
+        }
+      }
+      // Ouvrir la fiche tâche via carte
+      const taskCard = e.target.closest('.task-card');
+      if (taskCard && taskCard.dataset.taskId) {
+        e.preventDefault();
+        this.openTaskDetail(taskCard.dataset.taskId);
       }
     });
 
@@ -194,7 +263,7 @@ class KanbanManager {
       }
     });
 
-    // Nouvelle tâche
+    // New Task
     document.getElementById('createTaskBtn').addEventListener('click', () => {
       this.showCreateTaskModal();
     });
@@ -209,9 +278,22 @@ class KanbanManager {
       this.logout();
     });
 
-    // Gestion clavier
+    // Keyboard handling (global)
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
+        // If mention suggestions are open, first close them and do not close the panel
+        const suggestions = document.getElementById('mentionSuggestions');
+        if (suggestions && suggestions.style.display !== 'none') {
+          this.hideMentionSuggestions();
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        // Do not close when typing inside inputs/textareas/contenteditable within the panel
+        const active = document.activeElement;
+        if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) {
+          return;
+        }
         this.closeTaskDetail();
       }
     });
@@ -267,7 +349,12 @@ class KanbanManager {
       // Mettre à jour l'interface
       document.getElementById('projectTitle').textContent = `${project.name} - Dev`;
       document.getElementById('createTaskBtn').style.display = 'block';
-      document.getElementById('projectSettingsBtn').style.display = 'block';
+      // Bouton paramètres projet réservé aux admins
+      if (this.currentUser.role === 'admin') {
+        document.getElementById('projectSettingsBtn').style.display = 'block';
+      } else {
+        document.getElementById('projectSettingsBtn').style.display = 'none';
+      }
       
       // Mettre à jour la navigation
       document.querySelectorAll('.project-item').forEach(item => {
@@ -287,8 +374,8 @@ class KanbanManager {
       this.setupDragAndDrop();
       
     } catch (error) {
-      console.error('Erreur sélection projet:', error);
-      this.showError('Erreur lors du chargement du projet');
+      console.error('Project selection error:', error);
+      this.showError('Error loading project');
     }
   }
 
@@ -305,11 +392,11 @@ class KanbanManager {
         this.tasks = this.groupTasksByStatus(result.data);
         this.renderKanbanBoard();
       } else {
-        throw new Error('Erreur lors du chargement des tâches');
+        throw new Error('Error loading tasks');
       }
     } catch (error) {
-      console.error('Erreur chargement tâches:', error);
-      this.showError('Erreur lors du chargement des tâches');
+      console.error('Error loading tasks:', error);
+      this.showError('Error loading tasks');
     } finally {
       this.showLoading(false);
     }
@@ -398,7 +485,7 @@ class KanbanManager {
     }
     
     return `
-      <div class="task-card" data-task-id="${task.id}" onclick="kanbanManager.openTaskDetail(${task.id})">
+      <div class="task-card" data-task-id="${task.id}">
         <div class="task-card-header">
           <h4 class="task-title">${this.escapeHtml(task.title)}</h4>
           <span class="task-urgency ${task.urgency}">${task.urgency}</span>
@@ -429,18 +516,19 @@ class KanbanManager {
     });
     this.sortableInstances = {};
     
-    // Créer une instance Sortable pour chaque colonne
+    // Créer une instance Sortable pour chaque colonne (avec fallback natif si Sortable indisponible)
     const statuses = ['todo_back', 'todo_front', 'in_progress', 'ready_for_review', 'done'];
     
-    statuses.forEach(status => {
-      const column = document.getElementById(`column-${status}`);
-      if (column) {
-        this.sortableInstances[status] = Sortable.create(column, {
-          group: 'kanban',
-          animation: 150,
-          ghostClass: 'sortable-ghost',
-          chosenClass: 'sortable-chosen',
-          dragClass: 'dragging',
+    if (typeof Sortable !== 'undefined') {
+      statuses.forEach(status => {
+        const column = document.getElementById(`column-${status}`);
+        if (column) {
+          this.sortableInstances[status] = Sortable.create(column, {
+            group: 'kanban',
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            chosenClass: 'sortable-chosen',
+            dragClass: 'dragging',
           
           onStart: (evt) => {
             document.body.classList.add('dragging');
@@ -461,9 +549,39 @@ class KanbanManager {
             // Permettre le déplacement entre toutes les colonnes
             return true;
           }
+          });
+        }
+      });
+    } else {
+      // Fallback: HTML5 Drag & Drop natif
+      statuses.forEach(status => {
+        const column = document.getElementById(`column-${status}`);
+        if (!column) return;
+        column.addEventListener('dragover', (e) => { e.preventDefault(); });
+        column.addEventListener('drop', (e) => {
+          e.preventDefault();
+          const taskId = e.dataTransfer.getData('text/plain');
+          const item = document.querySelector(`.task-card[data-task-id="${taskId}"]`);
+          if (!item) return;
+          if (item.parentElement !== column) {
+            column.appendChild(item);
+            const newStatus = column.id.replace('column-', '');
+            this.moveTask(taskId, newStatus);
+          }
         });
-      }
-    });
+      });
+      // Rendre les cartes draggables
+      document.querySelectorAll('.task-card').forEach(card => {
+        card.setAttribute('draggable', 'true');
+        card.addEventListener('dragstart', (e) => {
+          e.dataTransfer.setData('text/plain', card.dataset.taskId);
+          document.body.classList.add('dragging');
+        });
+        card.addEventListener('dragend', () => {
+          document.body.classList.remove('dragging');
+        });
+      });
+    }
   }
 
   async moveTask(taskId, newStatus) {
@@ -482,13 +600,13 @@ class KanbanManager {
       if (response.ok) {
         // Recharger les tâches pour synchroniser
         await this.loadTasks(this.currentProject.id);
-        this.showSuccess('Tâche déplacée avec succès');
+        this.showSuccess('Task moved successfully');
       } else {
-        throw new Error('Erreur lors du déplacement');
+        throw new Error('Error while moving');
       }
     } catch (error) {
-      console.error('Erreur déplacement tâche:', error);
-      this.showError('Erreur lors du déplacement de la tâche');
+      console.error('Task move error:', error);
+      this.showError('Error while moving task');
       // Recharger pour annuler le déplacement visuel
       await this.loadTasks(this.currentProject.id);
     } finally {
@@ -508,8 +626,8 @@ class KanbanManager {
         document.getElementById('taskDetailPanel').classList.add('open');
       }
     } catch (error) {
-      console.error('Erreur ouverture détail tâche:', error);
-      this.showError('Erreur lors de l\'ouverture des détails');
+      console.error('Error opening task detail:', error);
+      this.showError('Error opening details');
     }
   }
 
@@ -520,10 +638,10 @@ class KanbanManager {
     
     content.innerHTML = `
       <div class="task-detail-tabs">
-        <button class="tab-btn active" data-tab="details">Détails</button>
-        <button class="tab-btn" data-tab="attachments">Pièces jointes</button>
-        <button class="tab-btn" data-tab="comments">Discussion</button>
-        <button class="tab-btn" data-tab="activity">Activité</button>
+        <button class="tab-btn active" data-tab="details">Details</button>
+        <button class="tab-btn" data-tab="attachments">Attachments</button>
+        <button class="tab-btn" data-tab="comments">Comments</button>
+        <button class="tab-btn" data-tab="activity">Activity</button>
       </div>
       
       <div class="task-detail-content">
@@ -531,28 +649,28 @@ class KanbanManager {
           <div class="task-detail-section">
             <h4>Description</h4>
             <div class="description-content">
-              <p id="taskDescription">${task.description || 'Aucune description'}</p>
-              <button class="btn btn-sm btn-secondary" onclick="kanbanManager.editTaskDescription()">
-                ✏️ Modifier
+              <p id="taskDescription">${task.description || 'No description'}</p>
+              <button class="btn btn-sm btn-secondary" data-action="edit-description">
+                ✏️ Edit
               </button>
             </div>
           </div>
           
           <div class="task-detail-section">
-            <h4>Informations</h4>
+            <h4>Information</h4>
             <div class="task-info">
-              <div><strong>Urgence:</strong> <span class="task-urgency ${task.urgency}">${this.getUrgencyLabel(task.urgency)}</span></div>
-              <div><strong>Statut:</strong> ${this.getStatusLabel(task.status)}</div>
-              <div><strong>Début:</strong> ${this.formatDateTime(task.start_at)}</div>
-              <div><strong>Échéance:</strong> ${this.formatDateTime(task.due_at)}</div>
-              <div><strong>Créé par:</strong> ${task.creator_first_name} ${task.creator_last_name}</div>
-              ${task.updater_first_name ? `<div><strong>Modifié par:</strong> ${task.updater_first_name} ${task.updater_last_name}</div>` : ''}
+              <div><strong>Urgency:</strong> <span class="task-urgency ${task.urgency}">${this.getUrgencyLabel(task.urgency)}</span></div>
+              <div><strong>Status:</strong> ${this.getStatusLabel(task.status)}</div>
+              <div><strong>Start:</strong> ${this.formatDateTime(task.start_at)}</div>
+              <div><strong>Due:</strong> ${this.formatDateTime(task.due_at)}</div>
+              <div><strong>Created by:</strong> ${task.creator_first_name} ${task.creator_last_name}</div>
+              ${task.updater_first_name ? `<div><strong>Updated by:</strong> ${task.updater_first_name} ${task.updater_last_name}</div>` : ''}
             </div>
           </div>
           
           ${task.linked_tickets?.length > 0 ? `
             <div class="task-detail-section">
-              <h4>Tickets liés</h4>
+              <h4>Linked tickets</h4>
               <div class="linked-tickets">
                 ${task.linked_tickets.map(ticket => `
                   <div class="linked-ticket">
@@ -569,20 +687,18 @@ class KanbanManager {
         <div id="attachmentsTab" class="tab-content">
           <div class="task-detail-section">
             <div class="section-header">
-              <h4>Pièces jointes</h4>
-              <button class="btn btn-primary btn-sm" onclick="kanbanManager.showUploadArea()">
-                📎 Ajouter
+              <h4>Attachments</h4>
+              <button class="btn btn-primary btn-sm" data-action="toggle-upload">
+                📎 Add
               </button>
             </div>
             
             <div id="uploadArea" class="upload-area" style="display: none;">
               <div class="upload-zone" id="uploadZone">
                 <div class="upload-icon">📁</div>
-                <p>Glissez-déposez vos fichiers ici ou cliquez pour sélectionner</p>
+                <p>Drag and drop your files here or click to select</p>
                 <input type="file" id="fileInput" multiple style="display: none;">
-                <button class="btn btn-secondary btn-sm" onclick="document.getElementById('fileInput').click()">
-                  Parcourir
-                </button>
+                <button class="btn btn-secondary btn-sm" data-action="browse-files">Browse</button>
               </div>
             </div>
             
@@ -594,32 +710,30 @@ class KanbanManager {
         
         <div id="commentsTab" class="tab-content">
           <div class="task-detail-section">
-            <h4>Discussion</h4>
+            <h4>Comments</h4>
             
             <div class="comment-form">
               <div class="comment-input-wrapper">
-                <textarea id="commentInput" placeholder="Tapez votre commentaire... Utilisez @nom pour mentionner quelqu'un" 
+                <textarea id="commentInput" placeholder="Type your comment... Use @name to mention someone" 
                   rows="3" class="comment-textarea"></textarea>
                 <div id="mentionSuggestions" class="mention-suggestions" style="display: none;"></div>
               </div>
               <div class="comment-actions">
-                <button class="btn btn-primary btn-sm" onclick="kanbanManager.addComment()">
-                  Envoyer
-                </button>
+                <button class="btn btn-primary btn-sm" data-action="send-comment">Send</button>
               </div>
             </div>
             
             <div id="commentsList" class="comments-list">
-              <div class="loading-comments">Chargement des commentaires...</div>
+              <div class="loading-comments">Loading comments...</div>
             </div>
           </div>
         </div>
         
         <div id="activityTab" class="tab-content">
           <div class="task-detail-section">
-            <h4>Historique d'activité</h4>
+            <h4>Activity history</h4>
             <div id="activityList" class="activity-list">
-              <div class="loading-activity">Chargement de l'activité...</div>
+              <div class="loading-activity">Loading activity...</div>
             </div>
           </div>
         </div>
@@ -649,6 +763,36 @@ class KanbanManager {
     
     // Setup mention autocomplete
     this.setupMentionAutocomplete();
+
+    // Attachments actions delegation
+    const attachmentsList = document.getElementById('attachmentsList');
+    if (attachmentsList) {
+      attachmentsList.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-action]');
+        if (!btn) return;
+        const id = btn.dataset.id;
+        if (btn.dataset.action === 'download-attachment' && id) {
+          this.downloadAttachment(id);
+        } else if (btn.dataset.action === 'delete-attachment' && id) {
+          this.deleteAttachment(id);
+        }
+      });
+    }
+
+    // Comment actions delegation
+    const commentsList = document.getElementById('commentsList');
+    if (commentsList) {
+      commentsList.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-action]');
+        if (!btn) return;
+        const id = btn.dataset.id;
+        if (btn.dataset.action === 'edit-comment' && id) {
+          this.editComment(id);
+        } else if (btn.dataset.action === 'delete-comment' && id) {
+          this.deleteComment(id);
+        }
+      });
+    }
   }
 
   switchTaskDetailTab(tabName) {
@@ -663,17 +807,17 @@ class KanbanManager {
 
   getUrgencyLabel(urgency) {
     const labels = {
-      'urgent': 'Urgente',
-      'high': 'Haute',
-      'medium': 'Moyenne',
-      'low': 'Basse'
+      'urgent': 'Urgent',
+      'high': 'High',
+      'medium': 'Medium',
+      'low': 'Low'
     };
     return labels[urgency] || urgency;
   }
 
   renderAttachments(attachments) {
     if (!attachments || attachments.length === 0) {
-      return '<div class="no-attachments">Aucune pièce jointe</div>';
+      return '<div class="no-attachments">No attachments</div>';
     }
     
     return attachments.map(attachment => `
@@ -684,18 +828,14 @@ class KanbanManager {
             <div class="attachment-name">${this.escapeHtml(attachment.filename)}</div>
             <div class="attachment-meta">
               ${this.formatFileSize(attachment.size)} • 
-              Ajouté par ${attachment.uploader_first_name} ${attachment.uploader_last_name} • 
+              Added by ${attachment.uploader_first_name} ${attachment.uploader_last_name} • 
               ${this.formatDateTime(attachment.created_at)}
             </div>
           </div>
         </div>
         <div class="attachment-actions">
-          <button class="btn btn-sm btn-secondary" onclick="kanbanManager.downloadAttachment(${attachment.id})">
-            💾 Télécharger
-          </button>
-          <button class="btn btn-sm btn-danger" onclick="kanbanManager.deleteAttachment(${attachment.id})">
-            🗑️ Supprimer
-          </button>
+          <button class="btn btn-sm btn-secondary" data-action="download-attachment" data-id="${attachment.id}">💾 Download</button>
+          <button class="btn btn-sm btn-danger" data-action="delete-attachment" data-id="${attachment.id}">🗑️ Delete</button>
         </div>
       </div>
     `).join('');
@@ -723,7 +863,7 @@ class KanbanManager {
       });
       
       if (!uploadZone || !fileInput) {
-        console.warn('Éléments upload non trouvés, retry dans 500ms');
+        console.warn('Upload elements not found, retrying in 500ms');
         // Retry si les éléments ne sont pas encore créés
         setTimeout(() => this.setupUploadDragDrop(), 500);
         return;
@@ -737,7 +877,7 @@ class KanbanManager {
       
       // Rendre la zone cliquable aussi
       newUploadZone.addEventListener('click', () => {
-        console.log('Click sur upload zone');
+        console.log('Click on upload zone');
         newFileInput.click();
       });
       
@@ -745,14 +885,14 @@ class KanbanManager {
         e.preventDefault();
         e.stopPropagation();
         newUploadZone.classList.add('drag-over');
-        console.log('Drag over détecté');
+        console.log('Drag over detected');
       });
       
       newUploadZone.addEventListener('dragleave', (e) => {
         e.preventDefault();
         e.stopPropagation();
         newUploadZone.classList.remove('drag-over');
-        console.log('Drag leave détecté');
+        console.log('Drag leave detected');
       });
       
       newUploadZone.addEventListener('drop', (e) => {
@@ -760,17 +900,17 @@ class KanbanManager {
         e.stopPropagation();
         newUploadZone.classList.remove('drag-over');
         const files = Array.from(e.dataTransfer.files);
-        console.log('Drop détecté - Fichiers déposés:', files.map(f => f.name));
+        console.log('Drop detected - Files:', files.map(f => f.name));
         if (files.length > 0 && this.currentTaskDetail) {
           this.uploadFiles(files);
         } else {
-          console.warn('Pas de fichiers ou pas de tâche sélectionnée');
+          console.warn('No files or no selected task');
         }
       });
       
       newFileInput.addEventListener('change', (e) => {
         const files = Array.from(e.target.files);
-        console.log('Fichiers sélectionnés:', files.map(f => f.name));
+        console.log('Files selected:', files.map(f => f.name));
         this.uploadFiles(files);
       });
     }, 100);
@@ -788,33 +928,33 @@ class KanbanManager {
   }
 
   async uploadFiles(files) {
-    console.log('uploadFiles appelé avec:', files.length, 'fichiers');
-    console.log('Tâche courante:', this.currentTaskDetail?.id);
+    console.log('uploadFiles called with:', files.length, 'files');
+    console.log('Current task:', this.currentTaskDetail?.id);
     
     if (!this.currentTaskDetail) {
-      console.error('Pas de tâche sélectionnée');
-      this.showError('Veuillez sélectionner une tâche');
+      console.error('No task selected');
+      this.showError('Please select a task');
       return;
     }
     
     const uploadArea = document.getElementById('uploadArea');
     if (uploadArea) {
-      uploadArea.innerHTML = '<div class="uploading">Upload en cours...</div>';
+      uploadArea.innerHTML = '<div class="uploading">Uploading...</div>';
     }
     
     try {
       for (const file of files) {
-        console.log('Upload du fichier:', file.name);
+        console.log('Uploading file:', file.name);
         await this.uploadFile(file);
       }
       
       // Recharger les pièces jointes
       await this.refreshTaskAttachments();
-      this.showSuccess('Fichiers uploadés avec succès');
+      this.showSuccess('Files uploaded successfully');
       
     } catch (error) {
-      console.error('Erreur upload:', error);
-      this.showError(`Erreur lors de l'upload: ${error.message}`);
+      console.error('Upload error:', error);
+      this.showError(`Upload error: ${error.message}`);
     }
   }
 
@@ -822,7 +962,7 @@ class KanbanManager {
     const formData = new FormData();
     formData.append('attachment', file); // Correction: 'attachment' au lieu de 'file'
     
-    console.log('Upload fichier:', file.name, 'taille:', file.size);
+    console.log('Upload file:', file.name, 'size:', file.size);
     
     const response = await fetch(`/api/dev/tasks/${this.currentTaskDetail.id}/attachments`, {
       method: 'POST',
@@ -834,8 +974,8 @@ class KanbanManager {
     
     if (!response.ok) {
       const error = await response.text();
-      console.error('Erreur upload response:', error);
-      throw new Error(`Erreur upload: ${response.status}`);
+      console.error('Upload error response:', error);
+      throw new Error(`Upload error: ${response.status}`);
     }
     
     return response.json();
@@ -861,7 +1001,7 @@ class KanbanManager {
         this.resetUploadArea();
       }
     } catch (error) {
-      console.error('Erreur refresh attachments:', error);
+      console.error('Error refreshing attachments:', error);
     }
   }
 
@@ -871,11 +1011,9 @@ class KanbanManager {
       uploadArea.innerHTML = `
         <div class="upload-zone" id="uploadZone">
           <div class="upload-icon">📁</div>
-          <p>Glissez-déposez vos fichiers ici ou cliquez pour sélectionner</p>
+                <p>Drag and drop your files here or click to select</p>
           <input type="file" id="fileInput" multiple style="display: none;">
-          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('fileInput').click()">
-            Parcourir
-          </button>
+                <button class="btn btn-secondary btn-sm" data-action="browse-files">Browse</button>
         </div>
       `;
       uploadArea.style.display = 'none';
@@ -906,13 +1044,13 @@ class KanbanManager {
         window.URL.revokeObjectURL(url);
       }
     } catch (error) {
-      console.error('Erreur téléchargement:', error);
-      this.showError('Erreur lors du téléchargement');
+      console.error('Download error:', error);
+      this.showError('Error during download');
     }
   }
 
   async deleteAttachment(attachmentId) {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette pièce jointe ?')) return;
+    if (!confirm('Are you sure you want to delete this attachment?')) return;
     
     try {
       const response = await fetch(`/api/dev/attachments/${attachmentId}`, {
@@ -927,8 +1065,8 @@ class KanbanManager {
         this.showSuccess('Pièce jointe supprimée');
       }
     } catch (error) {
-      console.error('Erreur suppression:', error);
-      this.showError('Erreur lors de la suppression');
+      console.error('Delete error:', error);
+      this.showError('Error during deletion');
     }
   }
 
@@ -945,6 +1083,8 @@ class KanbanManager {
     });
 
     commentInput.addEventListener('keydown', (e) => {
+      // Prevent bubbling to global handlers (e.g., Escape)
+      e.stopPropagation();
       // Gérer d'abord les mentions
       this.handleCommentKeydown(e);
 
@@ -1018,6 +1158,7 @@ class KanbanManager {
       }
     } else if (e.key === 'Escape') {
       this.hideMentionSuggestions();
+      e.stopPropagation();
     }
   }
 
@@ -1037,14 +1178,15 @@ class KanbanManager {
       
       this.renderMentionSuggestions(filtered);
     } catch (error) {
-      console.error('Erreur chargement utilisateurs:', error);
+      console.error('Error loading users:', error);
     }
   }
 
   async getProjectUsers() {
     if (!this.currentProject) return [];
     
-    const response = await fetch(`/api/dev/projects/${this.currentProject.id}/developers`, {
+    // Use members endpoint (admins + assigned developers)
+    const response = await fetch(`/api/dev/projects/${this.currentProject.id}/members`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
@@ -1067,18 +1209,31 @@ class KanbanManager {
       return;
     }
     
-    suggestions.innerHTML = users.map((user, index) => `
+    const escapeAttr = (s) => String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    suggestions.innerHTML = users.map((user, index) => {
+      const fullName = `${user.first_name} ${user.last_name}`;
+      const safeName = escapeAttr(fullName);
+      const initials = `${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}`;
+      return `
       <div class="suggestion-item ${index === 0 ? 'active' : ''}" 
            data-user-id="${user.id}" 
-           data-user-name="${user.first_name} ${user.last_name}"
-           onclick="kanbanManager.insertMention(${user.id}, '${user.first_name} ${user.last_name}')">
-        <div class="user-avatar">${user.first_name[0]}${user.last_name[0]}</div>
+           data-user-name="${safeName}">
+        <div class="user-avatar">${escapeAttr(initials)}</div>
         <div class="user-info">
-          <div class="user-name">${user.first_name} ${user.last_name}</div>
-          <div class="user-role">${user.role}</div>
+          <div class="user-name">${safeName}</div>
+          <div class="user-role">${escapeAttr(user.role)}</div>
         </div>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
+
+    // Delegate click to avoid inline handlers and quoting issues
+    suggestions.onclick = (ev) => {
+      const item = ev.target.closest('.suggestion-item');
+      if (!item) return;
+      const userId = Number(item.dataset.userId);
+      const userName = item.dataset.userName;
+      this.insertMention(userId, userName);
+    };
     
     suggestions.style.display = 'block';
   }
@@ -1144,8 +1299,8 @@ class KanbanManager {
         this.showSuccess('Commentaire ajouté');
       }
     } catch (error) {
-      console.error('Erreur ajout commentaire:', error);
-      this.showError('Erreur lors de l\'ajout du commentaire');
+      console.error('Error adding comment:', error);
+      this.showError('Error adding comment');
     }
   }
 
@@ -1170,7 +1325,7 @@ class KanbanManager {
 
   async loadTaskComments(taskId) {
     try {
-      console.log('Chargement commentaires pour tâche:', taskId);
+      console.log('Loading comments for task:', taskId);
       
       const response = await fetch(`/api/dev/tasks/${taskId}/comments`, {
         headers: {
@@ -1186,11 +1341,11 @@ class KanbanManager {
         this.renderComments(result.data || []);
       } else {
         const error = await response.text();
-        console.error('Erreur API commentaires:', error);
+        console.error('Comments API error:', error);
         this.renderComments([]);
       }
     } catch (error) {
-      console.error('Erreur chargement commentaires:', error);
+      console.error('Error loading comments:', error);
       this.renderComments([]);
     }
   }
@@ -1200,7 +1355,7 @@ class KanbanManager {
     if (!commentsList) return;
     
     if (comments.length === 0) {
-      commentsList.innerHTML = '<div class="no-comments">Aucun commentaire</div>';
+      commentsList.innerHTML = '<div class="no-comments">No comments</div>';
       return;
     }
     
@@ -1215,14 +1370,14 @@ class KanbanManager {
             </div>
           </div>
           <div class="comment-actions">
-            ${comment.can_edit ? `<button class="btn-link" onclick="kanbanManager.editComment(${comment.id})">Modifier</button>` : ''}
-            ${comment.can_delete ? `<button class="btn-link text-danger" onclick="kanbanManager.deleteComment(${comment.id})">Supprimer</button>` : ''}
+            ${comment.can_edit ? `<button class="btn-link" data-action="edit-comment" data-id="${comment.id}">Edit</button>` : ''}
+            ${comment.can_delete ? `<button class="btn-link text-danger" data-action="delete-comment" data-id="${comment.id}">Delete</button>` : ''}
           </div>
         </div>
         <div class="comment-body">
           ${this.formatCommentBody(comment.body)}
         </div>
-        ${comment.edited ? '<div class="comment-edited">Modifié</div>' : ''}
+        ${comment.edited ? '<div class="comment-edited">Edited</div>' : ''}
       </div>
     `).join('');
   }
@@ -1238,7 +1393,7 @@ class KanbanManager {
   }
 
   async deleteComment(commentId) {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce commentaire ?')) return;
+    if (!confirm('Are you sure you want to delete this comment?')) return;
     
     try {
       const response = await fetch(`/api/dev/comments/${commentId}`, {
@@ -1253,14 +1408,14 @@ class KanbanManager {
         this.showSuccess('Commentaire supprimé');
       }
     } catch (error) {
-      console.error('Erreur suppression commentaire:', error);
-      this.showError('Erreur lors de la suppression');
+      console.error('Error deleting comment:', error);
+      this.showError('Error during deletion');
     }
   }
 
   async loadTaskActivity(taskId) {
     try {
-      console.log('Chargement activité pour tâche:', taskId);
+      console.log('Loading activity for task:', taskId);
       
       const response = await fetch(`/api/dev/tasks/${taskId}/activity`, {
         headers: {
@@ -1268,19 +1423,19 @@ class KanbanManager {
         }
       });
       
-      console.log('Réponse activité:', response.status);
+      console.log('Activity response:', response.status);
       
       if (response.ok) {
         const result = await response.json();
-        console.log('Données activité reçues:', result);
+        console.log('Activity data received:', result);
         this.renderActivity(result.data || []);
       } else {
         const error = await response.text();
-        console.error('Erreur API activité:', error);
+        console.error('Activity API error:', error);
         this.renderActivity([]);
       }
     } catch (error) {
-      console.error('Erreur chargement activité:', error);
+      console.error('Error loading activity:', error);
       this.renderActivity([]);
     }
   }
@@ -1290,7 +1445,7 @@ class KanbanManager {
     if (!activityList) return;
     
     if (activities.length === 0) {
-      activityList.innerHTML = '<div class="no-activity">Aucune activité</div>';
+      activityList.innerHTML = '<div class="no-activity">No activity</div>';
       return;
     }
     
@@ -1348,7 +1503,7 @@ class KanbanManager {
     if (!this.currentTaskDetail) return;
     
     const currentDesc = this.currentTaskDetail.description || '';
-    const newDesc = prompt('Modifier la description:', currentDesc);
+    const newDesc = prompt('Edit description:', currentDesc);
     
     if (newDesc !== null && newDesc !== currentDesc) {
       try {
@@ -1363,24 +1518,24 @@ class KanbanManager {
         
         if (response.ok) {
           this.currentTaskDetail.description = newDesc;
-          document.getElementById('taskDescription').textContent = newDesc || 'Aucune description';
-          this.showSuccess('Description mise à jour');
+          document.getElementById('taskDescription').textContent = newDesc || 'No description';
+          this.showSuccess('Description updated');
           await this.loadTaskActivity(this.currentTaskDetail.id);
         }
       } catch (error) {
-        console.error('Erreur mise à jour description:', error);
-        this.showError('Erreur lors de la mise à jour');
+        console.error('Description update error:', error);
+        this.showError('Error during update');
       }
     }
   }
 
   showCreateTaskModal(task = null) {
     const isEdit = !!task;
-    const modalTitle = isEdit ? 'Modifier la tâche' : 'Nouvelle tâche';
+    const modalTitle = isEdit ? 'Edit Task' : 'New Task';
     
     // Vérifier qu'un projet est sélectionné
     if (!this.currentProject) {
-      alert('Veuillez sélectionner un projet pour créer une tâche.');
+      alert('Please select a project to create a task.');
       return;
     }
     
@@ -1389,12 +1544,12 @@ class KanbanManager {
         <div class="modal-content">
           <div class="modal-header">
             <h3>${modalTitle}</h3>
-            <button class="modal-close" onclick="kanbanManager.closeTaskModal()">&times;</button>
+            <button class="modal-close" data-action="close-modal">&times;</button>
           </div>
           
           <form id="taskForm" class="modal-body">
             <div class="form-group">
-              <label for="taskTitle">Titre *</label>
+              <label for="taskTitle">Title *</label>
               <input type="text" id="taskTitle" name="title" value="${isEdit ? this.escapeHtml(task.title) : ''}" required>
             </div>
             
@@ -1405,17 +1560,17 @@ class KanbanManager {
             
             <div class="form-row">
               <div class="form-group">
-                <label for="taskUrgency">Urgence *</label>
+                <label for="taskUrgency">Urgency *</label>
                 <select id="taskUrgency" name="urgency" required>
-                  <option value="low" ${isEdit && task.urgency === 'low' ? 'selected' : ''}>Faible (96h)</option>
-                  <option value="medium" ${isEdit && task.urgency === 'medium' ? 'selected' : ''}>Normale (72h)</option>
-                  <option value="high" ${isEdit && task.urgency === 'high' ? 'selected' : ''}>Élevée (48h)</option>
-                  <option value="urgent" ${isEdit && task.urgency === 'urgent' ? 'selected' : ''}>Urgente (24h)</option>
+                  <option value="low" ${isEdit && task.urgency === 'low' ? 'selected' : ''}>Low (96h)</option>
+                  <option value="medium" ${isEdit && task.urgency === 'medium' ? 'selected' : ''}>Medium (72h)</option>
+                  <option value="high" ${isEdit && task.urgency === 'high' ? 'selected' : ''}>High (48h)</option>
+                  <option value="urgent" ${isEdit && task.urgency === 'urgent' ? 'selected' : ''}>Urgent (24h)</option>
                 </select>
               </div>
               
               <div class="form-group">
-                <label for="taskStatus">Statut *</label>
+                <label for="taskStatus">Status *</label>
                 <select id="taskStatus" name="status" required>
                   <option value="todo_back" ${isEdit && task.status === 'todo_back' ? 'selected' : ''}>To-do Back</option>
                   <option value="todo_front" ${isEdit && task.status === 'todo_front' ? 'selected' : ''}>To-do Front</option>
@@ -1427,15 +1582,15 @@ class KanbanManager {
             </div>
             
             <div class="form-group">
-              <label for="taskStartDate">Date de début</label>
+              <label for="taskStartDate">Start date</label>
               <input type="datetime-local" id="taskStartDate" name="start_at" 
                      value="${isEdit ? this.formatDateTimeLocal(task.start_at) : this.formatDateTimeLocal(new Date())}">
             </div>
             
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" onclick="kanbanManager.closeTaskModal()">Annuler</button>
+              <button type="button" class="btn btn-secondary" data-action="close-modal">Cancel</button>
               <button type="submit" class="btn btn-primary">
-                ${isEdit ? 'Modifier' : 'Créer'}
+                ${isEdit ? 'Update' : 'Create'}
               </button>
             </div>
           </form>
@@ -1455,7 +1610,7 @@ class KanbanManager {
       }
     });
     
-    // Focus sur le titre
+    // Focus on title
     setTimeout(() => {
       document.getElementById('taskTitle').focus();
     }, 100);
@@ -1471,7 +1626,7 @@ class KanbanManager {
       
       const form = document.getElementById('taskForm');
       if (!form) {
-        throw new Error('Formulaire introuvable');
+        throw new Error('Form not found');
       }
       
       const formData = new FormData(form);
@@ -1496,15 +1651,15 @@ class KanbanManager {
       if (response.ok) {
         await this.loadTasks(this.currentProject.id);
         this.closeTaskModal();
-        this.showSuccess('Tâche créée avec succès');
+        this.showSuccess('Task created successfully');
       } else {
         const error = await response.json();
-        console.error('Erreur API:', error);
-        this.showError(error.message || 'Erreur lors de la création');
+        console.error('API error:', error);
+        this.showError(error.message || 'Error during creation');
       }
     } catch (error) {
-      console.error('Erreur création tâche:', error);
-      this.showError('Erreur lors de la création de la tâche');
+      console.error('Task creation error:', error);
+      this.showError('Error while creating task');
     } finally {
       this.showLoading(false);
     }
@@ -1529,14 +1684,14 @@ class KanbanManager {
       if (response.ok) {
         await this.loadTasks(this.currentProject.id);
         this.closeTaskModal();
-        this.showSuccess('Tâche modifiée avec succès');
+        this.showSuccess('Task updated successfully');
       } else {
         const error = await response.json();
-        throw new Error(error.message || 'Erreur lors de la modification');
+        throw new Error(error.message || 'Error while updating');
       }
     } catch (error) {
-      console.error('Erreur modification tâche:', error);
-      this.showError('Erreur lors de la modification de la tâche');
+      console.error('Task update error:', error);
+      this.showError('Error while updating task');
     } finally {
       this.showLoading(false);
     }
@@ -1559,6 +1714,10 @@ class KanbanManager {
   }
 
   handleAdminAction(action) {
+    // Bloquer toute action admin pour les non-admins
+    if (!this.currentUser || this.currentUser.role !== 'admin') {
+      return;
+    }
     this.hideAdminViews();
     document.getElementById('kanbanView').style.display = 'none';
     document.getElementById('welcomeView').style.display = 'none';
@@ -1590,7 +1749,7 @@ class KanbanManager {
 
   getAdminActionTitle(action) {
     const titles = {
-      'all-projects': 'Tous les projets',
+      'all-projects': 'All projects',
       'archived-projects': 'Projets archivés', 
       'manage-developers': 'Gestion des développeurs'
     };
@@ -1603,7 +1762,7 @@ class KanbanManager {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       
-      if (!response.ok) throw new Error('Erreur lors du chargement des projets');
+      if (!response.ok) throw new Error('Error while loading projects');
       
       const result = await response.json();
       const projects = result.data || [];
@@ -1611,21 +1770,21 @@ class KanbanManager {
       this.renderAllProjects(projects);
       
     } catch (error) {
-      console.error('Erreur loadAllProjects:', error);
+      console.error('loadAllProjects error:', error);
       document.getElementById('allProjectsList').innerHTML = 
-        '<div class="error">Erreur lors du chargement des projets</div>';
+        '<div class="error">Error while loading projects</div>';
     }
   }
   
   renderAllProjects(projects) {
     const container = document.getElementById('allProjectsList');
     
-    // Cacher le bouton "Nouvelle tâche" car aucun projet spécifique n'est sélectionné
+    // Hide the "New Task" button because no specific project is selected
     document.getElementById('createTaskBtn').style.display = 'none';
     document.getElementById('projectSettingsBtn').style.display = 'none';
     
     if (projects.length === 0) {
-      container.innerHTML = '<div class="info">Aucun projet actif trouvé</div>';
+      container.innerHTML = '<div class="info">No active projects found</div>';
       return;
     }
     
@@ -1642,26 +1801,26 @@ class KanbanManager {
               <div class="project-stats">
                 <div class="stat">
                   <span class="stat-value">${project.task_count || 0}</span>
-                  <span class="stat-label">Tâches</span>
+                  <span class="stat-label">Tasks</span>
                 </div>
                 <div class="stat">
                   <span class="stat-value">${project.developer_count || 0}</span>
-                  <span class="stat-label">Développeurs</span>
+                  <span class="stat-label">Developers</span>
                 </div>
               </div>
               
               <div class="project-dates">
                 <p>Créé le ${this.formatDate(project.created_at)}</p>
                 ${project.updated_at !== project.created_at ? 
-                  `<p>Modifié le ${this.formatDate(project.updated_at)}</p>` : ''
+                  `<p>Updated on ${this.formatDate(project.updated_at)}</p>` : ''
                 }
               </div>
               
               <div class="project-actions">
-                <button class="btn btn-primary" onclick="kanbanManager.selectProject(${project.id})">
+                <button class="btn btn-primary" data-action="select-project" data-project-id="${project.id}">
                   Voir les tâches
                 </button>
-                <button class="btn btn-warning" onclick="kanbanManager.archiveProject(${project.id})">
+                <button class="btn btn-warning" data-action="archive-project" data-project-id="${project.id}">
                   Archiver
                 </button>
               </div>
@@ -1680,7 +1839,7 @@ class KanbanManager {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       
-      if (!response.ok) throw new Error('Erreur lors du chargement des projets archivés');
+      if (!response.ok) throw new Error('Error while loading archived projects');
       
       const result = await response.json();
       const projects = result.data || [];
@@ -1688,21 +1847,21 @@ class KanbanManager {
       this.renderArchivedProjects(projects);
       
     } catch (error) {
-      console.error('Erreur loadArchivedProjects:', error);
+      console.error('loadArchivedProjects error:', error);
       document.getElementById('archivedProjectsList').innerHTML = 
-        '<div class="error">Erreur lors du chargement des projets archivés</div>';
+        '<div class="error">Error while loading archived projects</div>';
     }
   }
   
   renderArchivedProjects(projects) {
     const container = document.getElementById('archivedProjectsList');
     
-    // Cacher le bouton "Nouvelle tâche" car aucun projet spécifique n'est sélectionné
+    // Hide the "New Task" button because no specific project is selected
     document.getElementById('createTaskBtn').style.display = 'none';
     document.getElementById('projectSettingsBtn').style.display = 'none';
     
     if (projects.length === 0) {
-      container.innerHTML = '<div class="info">Aucun projet archivé trouvé</div>';
+      container.innerHTML = '<div class="info">No archived projects found</div>';
       return;
     }
     
@@ -1721,11 +1880,11 @@ class KanbanManager {
               <div class="project-stats">
                 <div class="stat">
                   <span class="stat-value">${project.task_count || 0}</span>
-                  <span class="stat-label">Tâches</span>
+                  <span class="stat-label">Tasks</span>
                 </div>
                 <div class="stat">
                   <span class="stat-value">${project.developer_count || 0}</span>
-                  <span class="stat-label">Développeurs</span>
+                  <span class="stat-label">Developers</span>
                 </div>
               </div>
               
@@ -1737,10 +1896,10 @@ class KanbanManager {
               </div>
               
               <div class="project-actions">
-                <button class="btn btn-secondary" onclick="kanbanManager.selectProject(${project.id})" disabled>
+                <button class="btn btn-secondary" data-action="select-project" data-project-id="${project.id}" disabled>
                   Lecture seule
                 </button>
-                <button class="btn btn-success" onclick="kanbanManager.restoreProject(${project.id})">
+                <button class="btn btn-success" data-action="restore-project" data-project-id="${project.id}">
                   Restaurer
                 </button>
               </div>
@@ -1760,7 +1919,7 @@ class KanbanManager {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       
-      if (!response.ok) throw new Error('Erreur lors du chargement des développeurs');
+      if (!response.ok) throw new Error('Error while loading developers');
       
       const result = await response.json();
       const developers = result.data || [];
@@ -1779,21 +1938,21 @@ class KanbanManager {
       this.renderDevelopersManagement(developers, projects);
       
     } catch (error) {
-      console.error('Erreur loadDevelopersManagement:', error);
+      console.error('loadDevelopersManagement error:', error);
       document.getElementById('developersList').innerHTML = 
-        '<div class="error">Erreur lors du chargement des développeurs</div>';
+        '<div class="error">Error while loading developers</div>';
     }
   }
   
   renderDevelopersManagement(developers, projects) {
     const container = document.getElementById('developersList');
     
-    // Cacher le bouton "Nouvelle tâche" car aucun projet spécifique n'est sélectionné
+    // Hide the "New Task" button because no specific project is selected
     document.getElementById('createTaskBtn').style.display = 'none';
     document.getElementById('projectSettingsBtn').style.display = 'none';
     
     if (developers.length === 0) {
-      container.innerHTML = '<div class="info">Aucun développeur trouvé</div>';
+      container.innerHTML = '<div class="info">No developers found</div>';
       return;
     }
     
@@ -1820,21 +1979,19 @@ class KanbanManager {
                     dev.assigned_projects.split(',').map(project => 
                       `<span class="project-tag">${project.trim()}</span>`
                     ).join('') : 
-                    '<span class="no-projects">Aucun projet assigné</span>'
+        '<span class="no-projects">No assigned projects</span>'
                   }
                 </div>
               </div>
               
               <div class="developer-actions">
                 <select class="project-selector" data-user-id="${dev.id}">
-                  <option value="">Assigner à un projet...</option>
+                  <option value="">Assign to a project...</option>
                   ${projects.map(project => 
                     `<option value="${project.id}">${project.name}</option>`
                   ).join('')}
                 </select>
-                <button class="btn-assign" onclick="kanbanManager.assignToProject(${dev.id})">
-                  Assigner
-                </button>
+                <button class="btn-assign" data-action="assign-dev" data-user-id="${dev.id}">Assign</button>
               </div>
             </div>
           `).join('')}
@@ -1850,7 +2007,7 @@ class KanbanManager {
     const projectId = selector.value;
     
     if (!projectId) {
-      this.showError('Veuillez sélectionner un projet');
+      this.showError('Please select a project');
       return;
     }
     
@@ -1865,15 +2022,15 @@ class KanbanManager {
       });
       
       if (response.ok) {
-        this.showSuccess('Développeur assigné au projet');
+        this.showSuccess('Developer assigned to project');
         this.loadDevelopersManagement(); // Recharger la liste
       } else {
         const error = await response.json();
-        this.showError(error.message || 'Erreur lors de l\'assignation');
+        this.showError(error.message || 'Error while assigning');
       }
     } catch (error) {
-      console.error('Erreur assignation:', error);
-      this.showError('Erreur lors de l\'assignation');
+      console.error('Assignation error:', error);
+      this.showError('Error while assigning');
     }
   }
 
@@ -1887,19 +2044,35 @@ class KanbanManager {
     const labels = {
       todo_back: 'To-do Back',
       todo_front: 'To-do Front', 
-      in_progress: 'En cours',
-      ready_for_review: 'Prêt pour review',
-      done: 'Terminé'
+      in_progress: 'In Progress',
+      ready_for_review: 'Ready for Review',
+      done: 'Done'
     };
     return labels[status] || status;
   }
 
   formatDate(date) {
-    return new Date(date).toLocaleDateString('fr-FR');
+    try {
+      return new Date(date).toLocaleDateString('fr-FR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        timeZone: 'Europe/Paris'
+      });
+    } catch (e) { return String(date); }
   }
 
   formatDateTime(datetime) {
-    return new Date(datetime).toLocaleString('fr-FR');
+    try {
+      return new Date(datetime).toLocaleString('fr-FR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Europe/Paris'
+      });
+    } catch (e) { return String(datetime); }
   }
 
   escapeHtml(text) {
@@ -1950,7 +2123,7 @@ class KanbanManager {
   }
 
   async archiveProject(projectId) {
-    if (!confirm('Êtes-vous sûr de vouloir archiver ce projet ? Il passera en lecture seule.')) {
+    if (!confirm('Are you sure you want to archive this project? It will become read-only.')) {
         return;
     }
 
@@ -1964,23 +2137,23 @@ class KanbanManager {
         });
 
         if (!response.ok) {
-            throw new Error('Erreur lors de l\'archivage du projet');
+            throw new Error('Error while archiving project');
         }
 
-        this.showNotification('Projet archivé avec succès', 'success');
+        this.showNotification('Project archived successfully', 'success');
         
         // Recharger les listes de projets
         this.loadAllProjects();
         this.loadArchivedProjects();
         
     } catch (error) {
-        console.error('Erreur archiveProject:', error);
-        this.showNotification('Erreur lors de l\'archivage du projet', 'error');
+        console.error('archiveProject error:', error);
+        this.showNotification('Error while archiving project', 'error');
     }
   }
 
   async restoreProject(projectId) {
-    if (!confirm('Êtes-vous sûr de vouloir restaurer ce projet ?')) {
+    if (!confirm('Are you sure you want to restore this project?')) {
         return;
     }
 
@@ -1994,10 +2167,10 @@ class KanbanManager {
         });
 
         if (!response.ok) {
-            throw new Error('Erreur lors de la restauration du projet');
+            throw new Error('Error while restoring project');
         }
 
-        this.showNotification('Projet restauré avec succès', 'success');
+        this.showNotification('Project restored successfully', 'success');
         
         // Recharger les listes de projets
         this.loadAllProjects();
@@ -2005,8 +2178,8 @@ class KanbanManager {
         this.loadProjects(); // Recharger aussi la sidebar
         
     } catch (error) {
-        console.error('Erreur restoreProject:', error);
-        this.showNotification('Erreur lors de la restauration du projet', 'error');
+        console.error('restoreProject error:', error);
+        this.showNotification('Error while restoring project', 'error');
     }
   }
 }

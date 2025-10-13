@@ -13,8 +13,7 @@
     <link rel="stylesheet" href="/assets/css/client.css?v=1757355956">
     <link rel="stylesheet" href="/assets/css/unified-modals.css?v=1757355956">
     <link rel="stylesheet" href="/assets/css/error-message.css?v=1757355956">
-    <!-- Icônes Heroicons -->
-    <script src="https://unpkg.com/heroicons@1.0.6/outline/index.js"></script>
+    <!-- Icônes Heroicons supprimées (CSP) -->
 </head>
 <body>
     <div class="app-layout">
@@ -130,6 +129,7 @@
     <!-- Modals will be injected here -->
     <div id="modalContainer"></div>
 
+    <script src="/assets/js/debug.js"></script>
     <script src="/assets/js/timezone-utils.js?v=1757350256"></script>
     <script src="/assets/js/business-hours.js?v=1757350256"></script>
     <script src="/assets/js/config-service.js?v=1757350256"></script>
@@ -139,22 +139,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="/assets/js/pdf-generator.js?v=1757350256"></script>
     <script src="/assets/js/client-invoices.js?v=1757350256"></script>
-    
-    <script>
-        // Initialiser l'application
-        let clientInvoicesApp;
-        document.addEventListener('DOMContentLoaded', function() {
-            clientInvoicesApp = new ClientInvoicesApp();
-        });
-
-        // Logout functionality
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', function() {
-                localStorage.removeItem('token');
-                window.location.href = '/connexion.html';
-            });
-        }
-    </script>
+    <!-- Inline scripts supprimés (CSP). Bootstrap géré dans client-invoices.js -->
 </body>
 </html>

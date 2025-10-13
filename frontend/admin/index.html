@@ -3,21 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Espace Agence - Administration</title>
+    <title>Shape SAV - Administration</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
 
     <!-- Meta tags Open Graph -->
     <meta property="og:title" content="Shape SAV - Administration">
-    <meta property="og:description" content="Espace d'administration Shape SAV pour la gestion des clients, tickets et projets.">
+    <meta property="og:description" content="Shape SAV admin area for managing clients, tickets and projects.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://sav.shape-conseil.fr/admin/">
 
     <!-- Meta tags Twitter -->
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="Shape SAV - Administration">
-    <meta name="twitter:description" content="Espace d'administration Shape SAV pour la gestion des clients, tickets et projets.">
+    <meta name="twitter:description" content="Shape SAV admin area for managing clients, tickets and projects.">
 
     <!-- Theme Shape Design System -->
     <link rel="stylesheet" href="/styles/theme-shape.css">
@@ -51,12 +51,25 @@
                     <a href="#projects" class="sidebar__nav-item" data-tab="projects">
                         <span class="sidebar__nav-text">Projets</span>
                     </a>
+                    <a href="#developers" class="sidebar__nav-item" data-tab="developers" id="developersTabLink" style="display:none;">
+                        <span class="sidebar__nav-text">Développeurs</span>
+                    </a>
                     <a href="#clients" class="sidebar__nav-item" data-tab="clients">
                         <span class="sidebar__nav-text">Clients</span>
                     </a>
                     <a href="#invoices" class="sidebar__nav-item" data-tab="invoices">
                         <span class="sidebar__nav-text">Facturation</span>
                     </a>
+                </div>
+
+                <!-- Dev section (admins only) -->
+                <div class="sidebar__nav-section" id="devSidebarSection" style="display:none; margin-top: 12px;">
+                    <div class="sidebar__nav-item" id="devSidebarToggle" role="button" tabindex="0">
+                        <span class="sidebar__nav-text">Dev</span>
+                    </div>
+                    <div id="devProjectList" class="sidebar__submenu" style="display:none; margin-left: 0;">
+                        <!-- Active projects will be injected here for admins -->
+                    </div>
                 </div>
             </nav>
 
@@ -65,11 +78,11 @@
                     <div class="sidebar__user-avatar" id="sidebarUserAvatar">A</div>
                     <div class="sidebar__user-info">
                         <div class="sidebar__user-name" id="currentUser">Admin</div>
-                        <div class="sidebar__user-role">Administrateur</div>
+                        <div class="sidebar__user-role">Administrator</div>
                     </div>
                 </div>
                 <button id="logoutBtn" class="sidebar__logout-btn">
-                    <span>Déconnexion</span>
+                    <span>Se déconnecter</span>
                 </button>
             </div>
         </aside>
@@ -77,7 +90,7 @@
         <!-- Main Content -->
         <div class="main-content" id="mainContent">
             <header class="main-header">
-                <h1 class="main-title">Espace Agence</h1>
+                <h1 class="main-title">Shape SAV</h1>
                 <div class="main-header-actions" id="mainHeaderActions"></div>
             </header>
 
@@ -88,15 +101,15 @@
                         <div class="stats-grid">
                             <div class="stat-card">
                                 <div class="stat-number" id="totalTickets">-</div>
-                                <div class="stat-label">Total des Tickets</div>
+                            <div class="stat-label">Tickets au total</div>
                             </div>
                             <div class="stat-card urgent">
                                 <div class="stat-number" id="urgentTickets">-</div>
-                                <div class="stat-label">Tickets Urgents</div>
+                            <div class="stat-label">Tickets urgents</div>
                             </div>
                             <div class="stat-card warning">
                                 <div class="stat-number" id="totalClients">-</div>
-                                <div class="stat-label">Clients</div>
+                            <div class="stat-label">Clients</div>
                             </div>
                             <div class="stat-card success">
                                 <div class="stat-number" id="resolvedTickets">-</div>
@@ -132,6 +145,13 @@
                     <div id="projects" class="tab-content">
                         <div id="projectsList" class="data-table-container">
                             <div class="loading">Chargement des projets...</div>
+                        </div>
+                    </div>
+
+                    <!-- Developers Tab (admin only) -->
+                    <div id="developers" class="tab-content">
+                        <div id="developersList" class="data-table-container">
+                            <div class="loading">Chargement des développeurs...</div>
                         </div>
                     </div>
 
@@ -215,8 +235,9 @@
     <!-- Modals will be injected here -->
     <div id="modalContainer"></div>
 
+    <script src="/assets/js/debug.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <!-- Sortable is optional; CSP blocks external sources. admin.js falls back to native DnD when Sortable is unavailable. -->
     <script src="/assets/js/auth-utils.js"></script>
     <script src="/assets/js/timezone-utils.js"></script>
     <script src="/assets/js/business-hours.js"></script>

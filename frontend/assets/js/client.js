@@ -1,3 +1,5 @@
+// Logs activés par défaut; utilisez ?debug=1 pour mode verbeux
+
 class ClientApp {
   constructor() {
     this.currentUser = null;
@@ -8,7 +10,6 @@ class ClientApp {
   }
 
   init() {
-    console.log('ClientApp: Initializing...');
     this.checkAuth();
     this.setupEventListeners();
   }
@@ -212,7 +213,7 @@ class ClientApp {
   }
 
   switchTab(tabName) {
-    console.log('ClientApp: Switching to tab:', tabName);
+    
     
     // Update navigation
     document.querySelectorAll('.nav-tab').forEach(tab => {
@@ -227,7 +228,7 @@ class ClientApp {
     document.getElementById(tabName).classList.add('active');
 
     this.currentTab = tabName;
-    console.log('ClientApp: Tab switched successfully to', tabName);
+    
 
     // Load data for the tab
     switch (tabName) {
@@ -252,7 +253,7 @@ class ClientApp {
   }
 
   async loadOverview() {
-    console.log('Loading overview - simple version');
+    
     // Simple overview - no complex stats needed
   }
 
@@ -645,7 +646,7 @@ class ClientApp {
       'in_progress': 'En cours de traitement',
       'waiting_client': 'En attente de votre retour',
       'resolved': 'Résolu',
-      'closed': 'Fermé'
+      'closed': 'Résolu'
     };
     return labels[status] || status;
   }
@@ -653,7 +654,8 @@ class ClientApp {
   getPriorityLabel(priority) {
     const labels = {
       'low': 'Faible',
-      'normal': 'Normale',
+      'normal': 'Moyenne',
+      'medium': 'Moyenne',
       'high': 'Élevée',
       'urgent': 'Urgente'
     };
@@ -727,7 +729,7 @@ class ClientApp {
               <label class="form-label" for="ticketPriority">Priorité *</label>
               <select id="ticketPriority" name="priority" class="form-input" required>
                 <option value="low">Faible - Pas urgent</option>
-                <option value="normal" selected>Normale - Dans les temps</option>
+                <option value="normal" selected>Moyenne - Dans les temps</option>
                 <option value="high">Élevée - Assez urgent</option>
                 <option value="urgent">Urgente - Très urgent</option>
               </select>

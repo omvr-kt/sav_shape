@@ -1,3 +1,5 @@
+// Logs activés par défaut; utilisez ?debug=1 pour mode verbeux
+
 class OverviewApp {
   constructor() {
     this.currentUser = null;
@@ -7,7 +9,6 @@ class OverviewApp {
   }
 
   init() {
-    console.log('OverviewApp: Initializing...');
     this.checkAuth();
     this.setupEventListeners();
   }
@@ -136,13 +137,13 @@ class OverviewApp {
   }
 
   getStatusLabel(status) {
-    const labels = {
-      'open': 'Ouvert',
-      'in_progress': 'En cours',
-      'waiting_client': 'En attente',
-      'resolved': 'Résolu',
-      'closed': 'Fermé'
-    };
+  const labels = {
+    'open': 'Ouvert',
+    'in_progress': 'En cours',
+    'waiting_client': 'En attente',
+    'resolved': 'Résolu',
+    'closed': 'Résolu'
+  };
     return labels[status] || status;
   }
 
@@ -166,7 +167,4 @@ class OverviewApp {
 }
 
 // Initialize app when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('DOM loaded - initializing OverviewApp');
-  window.overviewApp = new OverviewApp();
-});
+document.addEventListener('DOMContentLoaded', () => { window.overviewApp = new OverviewApp(); });

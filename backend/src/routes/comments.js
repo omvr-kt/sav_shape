@@ -78,6 +78,22 @@ router.post('/ticket/:ticket_id', verifyToken, validateTicketId, validateComment
     };
 
     const comment = await Comment.create(commentData);
+    // Mentions @email parsing
+    try {
+      const { db } = require('../utils/database');
+      const mentionMatches = (content.match(/@([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/g) || [])
+        .map(m => m.slice(1).toLowerCase());
+      const unique = [...new Set(mentionMatches)];
+      console.log('[mentions] parsed from comment:', unique);
+      for (const email of unique) {
+        const user = await User.findByEmail(email);
+        if (user) {
+          await db.run('INSERT INTO ticket_comment_mentions (comment_id, mentioned_user_id) VALUES (?, ?)', [comment.id, user.id]);
+        }
+      }
+    } catch (mErr) {
+      console.warn('[mentions] parse error:', mErr?.message);
+    }
 
     if (!isInternal) {
       await Ticket.update(ticketId, { 

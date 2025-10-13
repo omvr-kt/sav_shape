@@ -147,6 +147,22 @@ body.modal-open {
   margin-bottom: 2rem;
 }
 
+/* Admin Dev submenu styles */
+#devProjectList {
+  padding-left: 0;
+}
+#devProjectList .sidebar__dev-project {
+  display: block;
+  padding: 6px var(--space-4);
+  padding-left: calc(var(--space-4) + 8px);
+  color: inherit;
+  text-decoration: none;
+  border-radius: 6px;
+}
+#devProjectList .sidebar__dev-project:hover {
+  background: var(--color-neutral-100);
+}
+
 .stat-card {
   background: var(--white);
   padding: 1.5rem;
@@ -1749,13 +1765,17 @@ input[type="checkbox"] {
   overflow: hidden;
 }
 
+/* Supprimer tout padding top dans l'onglet kanban */
+#projectKanban.tab-content {
+  padding-top: 0 !important;
+}
+
+/* Plus de header Kanban (pour éviter l'espace inutile) */
 .kanban-header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem 0;
-  border-bottom: 1px solid var(--border-color);
-  margin-bottom: 1rem;
+  display: none;
+  padding: 0;
+  margin: 0;
+  border: 0;
 }
 
 .kanban-header h2 {
@@ -1764,10 +1784,11 @@ input[type="checkbox"] {
 
 .kanban-board {
   display: flex;
-  gap: 1rem;
-  height: calc(100% - 80px);
+  gap: 12px;
+  height: 100%;
   overflow-x: auto;
-  padding-bottom: 1rem;
+  padding-top: 0;
+  padding-bottom: 8px;
 }
 
 .kanban-column {
@@ -1913,4 +1934,23 @@ body.dragging {
 
 body.dragging .task-card {
   cursor: grabbing;
+}
+/* Tickets table overrides: give more space to title */
+.tickets-table td {
+  max-width: none !important;
+}
+.tickets-table td:first-child {
+  width: 40%;
+  white-space: normal;
+}
+.tickets-table td:nth-child(2) { /* Projet */
+  width: 20%;
+}
+.tickets-table td:nth-child(3),
+.tickets-table td:nth-child(4),
+.tickets-table td:nth-child(5) {
+  width: 10%;
+}
+.tickets-table td:nth-child(6) { /* Actions */
+  width: 10%;
 }

@@ -33,6 +33,7 @@ router.get('/', verifyToken, requireAdmin, async (req, res) => {
 // Liste de tous les utilisateurs (pour mentions) pour admin et équipe
 router.get('/all', verifyToken, requireTeamOrAdmin, async (req, res) => {
   try {
+    console.log('[users/all] requested by:', req.user?.id, req.user?.role);
     const users = await User.findAll({});
     // Ne retourner que les champs utiles
     const sanitized = users.map(u => ({
@@ -42,9 +43,10 @@ router.get('/all', verifyToken, requireTeamOrAdmin, async (req, res) => {
       last_name: u.last_name,
       role: u.role
     }));
+    console.log('[users/all] returning users:', sanitized.length);
     res.json({ success: true, data: { users: sanitized } });
   } catch (error) {
-    console.error('Get all users error:', error);
+    console.error('[users/all] error:', error);
     res.status(500).json({ success: false, message: 'Erreur lors de la récupération des utilisateurs' });
   }
 });
@@ -209,13 +211,42 @@ router.put('/:id', verifyToken, validateId, async (req, res) => {
       });
     }
 
+    // Gestion du changement de mot de passe via cet endpoint (admin seulement)
+    if (updates && updates.password) {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ success: false, message: 'Accès non autorisé' });
+      }
+      if (typeof updates.password !== 'string' || updates.password.length < 6) {
+        return res.status(400).json({ success: false, message: 'Le mot de passe doit contenir au moins 6 caractères' });
+      }
+      await User.updatePassword(userId, updates.password);
+      delete updates.password;
+    }
+
+    // Seuls les admins peuvent changer le rôle
     if (req.user.role !== 'admin') {
       delete updates.is_active;
       delete updates.role;
       delete updates.confidential_file;
     }
 
-    const updatedUser = await User.update(userId, updates);
+    // Vérifier l'unicité de l'email si demandé
+    if (updates.email && updates.email !== user.email) {
+      const existingUser = await User.findByEmail(updates.email);
+      if (existingUser && existingUser.id !== userId) {
+        return res.status(409).json({ success: false, message: 'Un utilisateur avec cet email existe déjà' });
+      }
+    }
+
+    let updatedUser = null;
+    try {
+      updatedUser = Object.keys(updates).length ? await User.update(userId, updates) : await User.findById(userId);
+    } catch (err) {
+      if (String(err && err.message) === 'No valid fields to update') {
+        return res.status(400).json({ success: false, message: 'Aucun champ valide à mettre à jour' });
+      }
+      throw err;
+    }
 
     res.json({
       success: true,

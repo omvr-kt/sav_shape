@@ -50,3 +50,14 @@ document.addEventListener('DOMContentLoaded', initSidebarUser);
 
 // Rendre la fonction disponible globalement
 window.initSidebarUser = initSidebarUser;
+
+// Lier le bouton de déconnexion sans inline script (CSP)
+document.addEventListener('DOMContentLoaded', () => {
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      try { localStorage.removeItem('token'); } catch (e) {}
+      window.location.href = '/connexion.html';
+    });
+  }
+});

@@ -101,7 +101,7 @@
                                 <div style="font-size: 16px; color: var(--color-text); margin-top: 4px;">Il y a 2 heures</div>
                             </div>
                             <div>
-                                <div style="font-size: 12px; font-weight: 600; color: var(--color-muted); text-transform: uppercase; letter-spacing: 0.05em;">Assigné à</div>
+                                <div style="font-size: 12px; font-weight: 600; color: var(--color-muted); text-transform: uppercase; letter-spacing: 0.05em;"></div>
                                 <div style="font-size: 16px; color: var(--color-text); margin-top: 4px;">Thomas Martin</div>
                             </div>
                             <div>
@@ -212,13 +212,8 @@
     <!-- Overlay mobile -->
     
     <script src="/assets/js/api.js?v=1757350256"></script>
-    <script>
-
-        // Logout functionality
-        document.getElementById('logoutBtn').addEventListener('click', function() {
-            localStorage.removeItem('token');
-            window.location.href = '/connexion.html';
-        });
+    <script src="/assets/js/sidebar-user.js?v=1757350256"></script>
+    <!-- Inline scripts supprimés pour conformité CSP -->
 
         // Load user info
         function loadUserInfo() {
@@ -391,21 +386,13 @@
             return formatDateTime(dateString);
         }
         
-        // Gestion des dropdowns
-        document.querySelectorAll('.dropdown').forEach(dropdown => {
-            const toggle = dropdown.querySelector('.dropdown-toggle');
-            
-            toggle.addEventListener('click', (e) => {
-                e.preventDefault();
-                dropdown.classList.toggle('active');
-            });
-            
-            // Fermer si on clique ailleurs
-            document.addEventListener('click', (e) => {
-                if (!dropdown.contains(e.target)) {
-                    dropdown.classList.remove('active');
-                }
-            });
+        // Gestion simple des dropdowns
+        document.addEventListener('click', (e) => {
+          const toggle = e.target.closest('.dropdown-toggle');
+          document.querySelectorAll('.dropdown').forEach(d => {
+            if (toggle && d.contains(toggle)) d.classList.toggle('active');
+            else if (!d.contains(e.target)) d.classList.remove('active');
+          });
         });
 
         // File attachment functionality
@@ -584,6 +571,6 @@
                 submitBtn.textContent = originalText;
             }
         });
-    </script>
+    
 </body>
 </html>

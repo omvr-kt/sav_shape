@@ -1,3 +1,5 @@
+// Logs activés par défaut; utilisez ?debug=1 pour mode verbeux
+
 class ClientInvoicesApp {
   constructor() {
     this.currentUser = null;
@@ -14,7 +16,6 @@ class ClientInvoicesApp {
   }
 
   async checkAuth() {
-    console.log('=== checkAuth called ===');
     const token = localStorage.getItem('token');
     
     if (!token) {
@@ -23,9 +24,7 @@ class ClientInvoicesApp {
     }
 
     try {
-      console.log('Getting user profile...');
       const response = await api.getProfile();
-      console.log('Profile response:', response);
       this.currentUser = response.data.user;
       
       if (this.currentUser.role !== 'client') {
@@ -131,7 +130,6 @@ class ClientInvoicesApp {
 
 
   async loadInvoices() {
-    console.log('=== loadInvoices called ===');
     const container = document.getElementById('invoicesList');
     if (!container) {
       console.error('invoicesList container not found');
@@ -141,7 +139,6 @@ class ClientInvoicesApp {
     container.innerHTML = '<div class="loading">Chargement de vos factures...</div>';
 
     try {
-      console.log('Current user:', this.currentUser);
       
       if (!this.currentUser || !this.currentUser.id) {
         container.innerHTML = '<div class="error-message">Utilisateur non connecté</div>';
@@ -149,10 +146,7 @@ class ClientInvoicesApp {
       }
       
       // Charger les factures du client connecté
-      console.log('Récupération factures pour client ID:', this.currentUser.id);
-      console.log('Current user object:', this.currentUser);
       const response = await api.getClientInvoices(this.currentUser.id);
-      console.log('Réponse API factures:', response);
       
       if (response.data && response.data.invoices) {
         this.invoices = response.data.invoices;
@@ -166,7 +160,6 @@ class ClientInvoicesApp {
       console.error('Error details:', error.message, error.stack);
       container.innerHTML = `<div class="error-message">Erreur lors du chargement des factures: ${error.message}</div>`;
     }
-    console.log('=== loadInvoices finished ===');
   }
 
 
@@ -200,7 +193,8 @@ class ClientInvoicesApp {
             month: '2-digit', 
             year: 'numeric',
             hour: '2-digit',
-            minute: '2-digit'
+            minute: '2-digit',
+            timeZone: 'Europe/Paris'
           });
         } catch (e) {
           return dateStr;
@@ -243,10 +237,7 @@ class ClientInvoicesApp {
     // Ajouter les event listeners
     container.querySelectorAll('[data-action="view-invoice"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        console.log('Button clicked:', e.currentTarget);
-        console.log('Dataset:', e.currentTarget.dataset);
         const invoiceId = parseInt(e.currentTarget.dataset.invoiceId);
-        console.log('Invoice ID:', invoiceId);
         this.viewInvoice(invoiceId);
       });
     });
@@ -268,8 +259,7 @@ class ClientInvoicesApp {
     const labels = {
       'sent': 'Envoyée',
       'paid': 'Payée',
-      'overdue': 'En retard',
-      'cancelled': 'Annulée'
+      'overdue': 'En retard'
     };
     return labels[status] || status;
   }
@@ -278,8 +268,7 @@ class ClientInvoicesApp {
     const labels = {
       'sent': 'Reçue',
       'paid': 'Payée',
-      'overdue': 'En retard',
-      'cancelled': 'Annulée'
+      'overdue': 'En retard'
     };
     return labels[status] || status;
   }
@@ -288,8 +277,7 @@ class ClientInvoicesApp {
     const colors = {
       'sent': '#2563eb',
       'paid': '#10b981',
-      'overdue': '#dc2626',
-      'cancelled': '#ef4444'
+      'overdue': '#dc2626'
     };
     return colors[status] || '#6b7280';
   }
@@ -317,16 +305,13 @@ class ClientInvoicesApp {
 
 
   async viewInvoice(invoiceId) {
-    console.log('viewInvoice called with ID:', invoiceId);
     try {
       const invoice = this.invoices.find(i => i.id === invoiceId);
-      console.log('Found invoice:', invoice);
       if (!invoice) {
         console.error('Invoice not found');
         return;
       }
 
-      console.log('Creating modal...');
       const modal = this.createModal(`Facture ${invoice.invoice_number}`, `
         <div class="invoice-view">
           <!-- En-tête de la facture -->
@@ -652,7 +637,7 @@ class ClientInvoicesApp {
     doc.setTextColor(...darkColor);
     doc.setFontSize(8);
     doc.text('Merci pour votre confiance !', 20, 270);
-    doc.text('En cas de question, contactez-nous à omar@shape-conseil.fr', 20, 275);
+    doc.text('En cas de question, contactez-nous à contact@shape-conseil.fr', 20, 275);
     
     // Télécharger le PDF
     doc.save(`Facture-${invoice.invoice_number}.pdf`);
@@ -663,14 +648,10 @@ class ClientInvoicesApp {
   }
 
   createModal(title, content, size = 'normal') {
-    console.log('createModal called with:', { title, size });
     
     // Supprimer le modal existant s'il y en a un
     const existingModal = document.getElementById('modal');
-    if (existingModal) {
-      console.log('Removing existing modal');
-      existingModal.remove();
-    }
+    if (existingModal) existingModal.remove();
 
     const modalSizeClass = size === 'large' ? 'modal-large' : '';
     
@@ -691,9 +672,7 @@ class ClientInvoicesApp {
       </div>
     `;
 
-    console.log('Appending modal to body');
     document.body.appendChild(modal);
-    console.log('Modal appended, element:', modal);
     
     // ULTRA FIX - Capturer la position du scroll et bloquer le défilement
     const scrollY = window.scrollY || window.pageYOffset;
@@ -716,15 +695,7 @@ class ClientInvoicesApp {
     modal.querySelector('.modal-close').addEventListener('click', () => this.closeModal());
     
     // Vérifier que le modal est visible
-    setTimeout(() => {
-      const modalInDOM = document.getElementById('modal');
-      console.log('Modal in DOM after timeout:', modalInDOM);
-      console.log('Modal computed style:', window.getComputedStyle(modalInDOM).display);
-      console.log('Modal z-index:', window.getComputedStyle(modalInDOM).zIndex);
-      console.log('Modal position:', window.getComputedStyle(modalInDOM).position);
-      console.log('Body children count:', document.body.children.length);
-      console.log('Modal is last child:', document.body.lastElementChild === modalInDOM);
-    }, 100);
+    setTimeout(() => {}, 100);
     
     return modal;
   }
@@ -776,7 +747,7 @@ class ClientInvoicesApp {
   }
 }
 
-// Initialiser l'application quand le DOM est chargé
+// Bootstrap sans inline script (CSP-friendly)
 document.addEventListener('DOMContentLoaded', () => {
-  window.clientInvoicesApp = new ClientInvoicesApp();
+  try { window.clientInvoicesApp = new ClientInvoicesApp(); } catch (e) { /* silenced by debug.js */ }
 });

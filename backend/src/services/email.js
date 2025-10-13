@@ -177,9 +177,10 @@ class EmailService {
 
   formatPriority(priority) {
     const priorityMap = {
-      'urgent': 'Urgent',
+      'urgent': 'Urgente',
       'high': 'Élevée',
-      'normal': 'Normale',
+      'normal': 'Moyenne',
+      'medium': 'Moyenne',
       'low': 'Faible'
     };
     return priorityMap[priority] || priority;

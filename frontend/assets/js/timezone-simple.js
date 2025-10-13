@@ -13,12 +13,10 @@
         try {
             let date;
             
-            // Si format YYYY-MM-DD HH:mm:ss (sans timezone), traiter comme UTC
-            if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(dateString)) {
-                date = new Date(dateString + 'Z');
-            } else {
-                date = new Date(dateString);
-            }
+            // Si format SQLite (YYYY-MM-DD HH:mm:ss) ou ISO sans décalage explicite,
+            // interpréter tel quel (naïf) et afficher en Europe/Paris.
+            // Évite les doubles conversions et les décalages +2h observés.
+            date = new Date(dateString);
             
             if (isNaN(date.getTime())) return dateString;
             

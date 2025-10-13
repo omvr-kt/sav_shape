@@ -344,67 +344,8 @@
 
     <!-- Overlay mobile -->
     
+    <script src="/assets/js/debug.js"></script>
     <script src="/assets/js/api.js?v=1757350256"></script>
-    <script>
-
-        // Logout functionality
-        document.getElementById('logoutBtn').addEventListener('click', function() {
-            localStorage.removeItem('token');
-            window.location.href = '/connexion.html';
-        });
-
-        // Load user info
-        function loadUserInfo() {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                window.location.href = '/connexion.html';
-                return;
-            }
-            
-            try {
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                document.getElementById('sidebarUserName').textContent = payload.email || 'Utilisateur';
-                document.getElementById('sidebarUserAvatar').textContent = (payload.email || 'U').charAt(0).toUpperCase();
-            } catch (e) {
-                console.error('Token invalide', e);
-                window.location.href = '/connexion.html';
-            }
-        }
-
-        loadUserInfo();
-        
-        // Gestion des dropdowns
-        document.querySelectorAll('.dropdown').forEach(dropdown => {
-            const toggle = dropdown.querySelector('.dropdown-toggle');
-            
-            toggle.addEventListener('click', (e) => {
-                e.preventDefault();
-                dropdown.classList.toggle('active');
-            });
-            
-            // Fermer si on clique ailleurs
-            document.addEventListener('click', (e) => {
-                if (!dropdown.contains(e.target)) {
-                    dropdown.classList.remove('active');
-                }
-            });
-        });
-        
-        // Animation au hover des actions rapides
-        document.querySelectorAll('.card-body a[href]').forEach(link => {
-            link.addEventListener('mouseenter', function() {
-                this.style.transform = 'translateX(4px)';
-                this.style.background = 'var(--color-border)';
-            });
-            
-            link.addEventListener('mouseleave', function() {
-                this.style.transform = 'translateX(0)';
-                this.style.background = 'var(--color-bg)';
-            });
-        });
-        
-        // Initialiser le badge tickets dans la sidebar
-        initTicketBadge();
-    </script>
+    <script src="/assets/js/sidebar-user.js?v=1757350256"></script>
 </body>
 </html>

@@ -10,6 +10,11 @@ async function addDeveloperRole() {
   console.log('🔧 Ajout du rôle developer...');
   
   try {
+    // Nettoyer une éventuelle table temporaire restante d'une exécution précédente
+    await new Promise((resolve) => {
+      db.run('DROP TABLE IF EXISTS users_temp', () => resolve());
+    });
+
     // Il faut recréer la table users avec la nouvelle contrainte
     // D'abord, créer une nouvelle table temporaire
     await new Promise((resolve, reject) => {

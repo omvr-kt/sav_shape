@@ -29,7 +29,7 @@ function formatParisDate(date, options = {}) {
     return new Intl.DateTimeFormat('fr-FR', formatOptions).format(parsedDate);
   } catch (error) {
     console.error('Erreur formatage date:', error);
-    return parsedDate.toLocaleString('fr-FR');
+    return parsedDate.toLocaleString('fr-FR', { timeZone: 'Europe/Paris' });
   }
 }
 

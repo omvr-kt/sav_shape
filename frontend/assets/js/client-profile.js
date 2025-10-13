@@ -1,3 +1,5 @@
+// Logs activés par défaut; utilisez ?debug=1 pour mode verbeux
+
 class ProfileApp {
   constructor() {
     this.currentUser = null;

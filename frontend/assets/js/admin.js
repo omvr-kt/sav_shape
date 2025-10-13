@@ -38,14 +38,24 @@ class AdminApp {
     try {
       const response = await api.getProfile();
       this.currentUser = response.data.user;
-      
-      if (this.currentUser.role !== 'admin' && this.currentUser.role !== 'team') {
-        alert('Accès non autorisé - Vous n\'êtes pas administrateur');
+
+      // Handle access by role: admins/team get full UI; developers get Kanban-only within admin UI
+      if (this.currentUser.role !== 'admin' && this.currentUser.role !== 'team' && this.currentUser.role !== 'developer') {
+        alert('Accès non autorisé');
         window.location.href = '/connexion.html';
         return;
       }
 
       this.showMainApp();
+
+      // Configure restricted UI for developers (centralized Kanban experience)
+      if (this.currentUser.role === 'developer') {
+        try {
+          await this.setupDeveloperUI();
+        } catch (e) {
+          console.error('Erreur configuration UI développeur:', e);
+        }
+      }
     } catch (error) {
       console.error('Profile load error:', error);
       // Token invalide, rediriger vers la connexion
@@ -54,35 +64,199 @@ class AdminApp {
     }
   }
 
+  async setupDeveloperUI() {
+    // Hide non-project tabs in the sidebar
+    const allowedTab = 'projects';
+    document.querySelectorAll('nav.sidebar__nav [data-tab]')
+      .forEach(el => { if (el.dataset.tab !== allowedTab) el.style.display = 'none'; });
+
+    // Hide tab contents except projects and kanban container
+    const hideIds = ['dashboard', 'tickets', 'clients', 'invoices'];
+    hideIds.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+    const projectsTab = document.getElementById('projects');
+    if (projectsTab) projectsTab.style.display = 'block';
+
+    // Update header title
+    const titleEl = document.querySelector('.main-title');
+    if (titleEl) titleEl.textContent = 'Gestion des projets';
+
+    // Load developer-accessible projects from dev API
+    try {
+      const resp = await fetch('/api/dev/projects', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
+      if (resp.ok) {
+        const data = await resp.json();
+        this.projects = data.data || [];
+      } else {
+        this.projects = [];
+      }
+    } catch (e) {
+      console.warn('Load dev projects failed:', e);
+      this.projects = [];
+    }
+
+    // Build developer projects sidebar shortcuts
+    this.setupDeveloperProjectSidebar();
+
+    // If only one project assigned, go straight to its Kanban; otherwise show the projects list
+    const assigned = this.projects || [];
+    if (assigned.length === 1) {
+      await this.viewProject(assigned[0].id);
+      return;
+    }
+
+    // Multiple (or zero) projects: land on projects table filtered to developer's projects
+    // Ensure Projects tab is active and content is rendered
+    this.switchTab('projects');
+  }
+
+  setupDeveloperProjectSidebar() {
+    try {
+      const section = document.getElementById('devSidebarSection');
+      const list = document.getElementById('devProjectList');
+      const toggle = document.getElementById('devSidebarToggle');
+      const projectsLink = document.querySelector('nav.sidebar__nav [data-tab="projects"]');
+      if (!section || !list) return;
+
+      // Show section for developers
+      section.style.display = 'block';
+      // Hide the collapsible header; developer sees fixed links only
+      if (toggle) toggle.style.display = 'none';
+
+      const projects = Array.isArray(this.projects) ? this.projects : [];
+      if (!projects.length) {
+        list.innerHTML = '<div style="color:#6b7280; padding:6px 0;">Aucun projet</div>';
+        return;
+      }
+
+      // Ensure the list is visible for developers and positioned directly under "Projets"
+      list.style.display = 'block';
+      list.style.marginLeft = '0';
+      list.classList.remove('sidebar__submenu');
+      if (projectsLink && projectsLink.parentNode) {
+        projectsLink.insertAdjacentElement('afterend', list);
+      }
+
+      list.innerHTML = projects.map(p => `
+        <a href="#" class="sidebar__nav-item sidebar__dev-project" data-project-id="${p.id}">
+          <span class="sidebar__nav-text">${p.name}</span>
+        </a>
+      `).join('');
+
+      list.querySelectorAll('.sidebar__dev-project').forEach(a => {
+        a.addEventListener('click', async (e) => {
+          e.preventDefault();
+          const pid = parseInt(a.getAttribute('data-project-id'), 10);
+          if (!Number.isFinite(pid)) return;
+          // Ensure we have the project list (already in this.projects)
+          await this.viewProject(pid);
+        });
+      });
+    } catch (err) {
+      console.warn('Dev sidebar setup failed:', err);
+    }
+  }
+
   showMainApp() {
     // App is now visible by default with sidebar structure
     document.getElementById('currentUser').textContent = 
       `${this.currentUser.first_name} ${this.currentUser.last_name}`;
+    // Update avatar initial
+    const avatarEl = document.getElementById('sidebarUserAvatar');
+    if (avatarEl) {
+      const initial = (this.currentUser.first_name || this.currentUser.email || 'U').charAt(0).toUpperCase();
+      avatarEl.textContent = initial;
+    }
+    // Update role label (keep admin UI French outside Kanban)
+    const roleEl = document.querySelector('.sidebar__user-role');
+    if (roleEl) {
+      const roleLabels = { admin: 'Administrateur', team: 'Équipe', developer: 'Développeur', client: 'Client' };
+      roleEl.textContent = roleLabels[this.currentUser.role] || this.currentUser.role;
+    }
+
+    // For developers, switch role + logout label to English
+    if (this.currentUser.role === 'developer') {
+      if (roleEl) roleEl.textContent = 'Developer';
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (logoutBtn) {
+        const span = logoutBtn.querySelector('span');
+        if (span) span.textContent = 'Log out';
+      }
+    }
     
     // Afficher le lien Kanban Dev pour admins et développeurs
     const devKanbanLink = document.getElementById('devKanbanLink');
-    console.log('Lien Kanban Dev trouvé:', devKanbanLink);
-    console.log('Rôle utilisateur:', this.currentUser.role);
     if (devKanbanLink && (this.currentUser.role === 'admin' || this.currentUser.role === 'developer')) {
       devKanbanLink.style.display = 'block';
-      console.log('Lien Kanban Dev affiché');
     } else if (devKanbanLink) {
       devKanbanLink.style.display = 'none';
-      console.log('Lien Kanban Dev caché');
     }
     
+    // Afficher l'onglet Developers pour les admins uniquement
+    const devTabLink = document.getElementById('developersTabLink');
+    if (devTabLink) {
+      if (this.currentUser.role === 'admin') devTabLink.style.display = 'block';
+      else devTabLink.style.display = 'none';
+    }
+
     // Set initial title based on current tab
     this.updateTitle();
+
+    // Dev sidebar section for admins: list active projects
+    if (this.currentUser.role === 'admin') {
+      this.setupAdminDevSidebar();
+    } else {
+      const devSection = document.getElementById('devSidebarSection');
+      if (devSection) devSection.style.display = 'none';
+    }
+  }
+
+  async setupAdminDevSidebar() {
+    const section = document.getElementById('devSidebarSection');
+    const list = document.getElementById('devProjectList');
+    if (!section || !list) return;
+    section.style.display = 'block';
+    list.innerHTML = '<div class="loading" style="padding:6px 0;">Loading…</div>';
+    try {
+      const res = await api.getProjects({ status: 'active' });
+      const projects = (res?.data?.projects || []).filter(p => p.status === 'active');
+      if (!projects.length) {
+        list.innerHTML = '<div style="color:#6b7280; padding:6px 0;">No active projects</div>';
+        return;
+      }
+      list.innerHTML = projects.map(p => `
+        <a href="#" class="sidebar__nav-item sidebar__dev-project" data-project-id="${p.id}">
+          <span class="sidebar__nav-text">${p.name}</span>
+        </a>
+      `).join('');
+      list.querySelectorAll('.sidebar__dev-project').forEach(a => {
+        a.addEventListener('click', async (e) => {
+          e.preventDefault();
+          const pid = parseInt(a.getAttribute('data-project-id'), 10);
+          if (!Number.isFinite(pid)) return;
+          // Ensure project cache and open Kanban
+          try {
+            if (!this.projects || !this.projects.length) {
+              const res2 = await api.getProjects();
+              this.projects = res2?.data?.projects || [];
+            }
+          } catch (e2) { this.projects = this.projects || []; }
+          await this.viewProject(pid);
+        });
+      });
+    } catch (err) {
+      list.innerHTML = '<div style="color:#b91c1c; padding:6px 0;">Failed to load projects</div>';
+    }
   }
 
   updateTitle() {
     // Title mapping for each tab
     const tabTitles = {
       'dashboard': 'Tableau de bord',
-      'tickets': 'Gestion des Tickets',
-      'projects': 'Gestion des Projets',
-      'clients': 'Gestion des Clients',
-      'invoices': 'Gestion de la Facturation'
+      'tickets': 'Gestion des tickets',
+      'projects': 'Gestion des projets',
+      'developers': 'Gestion des développeurs',
+      'clients': 'Gestion des clients',
+      'invoices': 'Facturation'
     };
 
     const mainTitle = document.querySelector('.main-title');
@@ -109,24 +283,27 @@ class AdminApp {
             <option value="">Tous les statuts</option>
             <option value="open">Ouvert</option>
             <option value="in_progress">En cours</option>
-            <option value="waiting_client">Attente client</option>
+            <option value="waiting_client">En attente client</option>
             <option value="resolved">Résolu</option>
           </select>
           <select id="priorityFilter" class="filter-select">
             <option value="">Toutes les priorités</option>
-            <option value="urgent">Urgent</option>
+            <option value="urgent">Urgente</option>
             <option value="high">Élevée</option>
-            <option value="normal">Normale</option>
+            <option value="normal">Moyenne</option>
             <option value="low">Faible</option>
           </select>
-          <button id="refreshTickets" class="btn btn-secondary btn-sm">Actualiser</button>
+          <button id="newTicketBtn" class="btn btn-primary">+ Nouveau ticket</button>
         </div>
       `,
       'projects': `
-        <button id="addProjectBtn" class="btn btn-primary">+ Nouveau Projet</button>
+        <button id="addProjectBtn" class="btn btn-primary">+ Nouveau projet</button>
+      `,
+      'developers': `
+        <button id="addDeveloperBtn" class="btn btn-primary">+ Nouveau développeur</button>
       `,
       'clients': `
-        <button id="addClientBtn" class="btn btn-primary">+ Nouveau Client</button>
+        <button id="addClientBtn" class="btn btn-primary">+ Nouveau client</button>
       `,
       'invoices': `
         <div class="header-filters">
@@ -135,15 +312,12 @@ class AdminApp {
             <option value="sent">Envoyée</option>
             <option value="paid">Payée</option>
             <option value="overdue">En retard</option>
-            <option value="cancelled">Annulée</option>
           </select>
-          <button id="refreshInvoices" class="btn btn-secondary btn-sm">Actualiser</button>
-          <button id="newInvoiceBtn" class="btn btn-primary">+ Nouvelle Facture</button>
+          <button id="newInvoiceBtn" class="btn btn-primary">+ Nouvelle facture</button>
         </div>
       `,
       'project-kanban': `
-        <button id="backToProjectsBtn" class="btn btn-secondary">← Retour aux projets</button>
-        <button id="createTaskBtn" class="btn btn-primary">+ Nouvelle tâche</button>
+        <button id="createTaskBtn" class="btn btn-primary">+ New Task</button>
       `
     };
 
@@ -153,6 +327,14 @@ class AdminApp {
       
       // Re-bind event listeners for the new elements
       this.bindHeaderActionEvents();
+
+      // Restrict actions for developer role (no project/invoice/ticket creation buttons)
+      if (this.currentUser && this.currentUser.role === 'developer') {
+        headerActions.querySelector('#addProjectBtn')?.remove();
+        headerActions.querySelector('#newInvoiceBtn')?.remove();
+        headerActions.querySelector('#addDeveloperBtn')?.remove();
+        headerActions.querySelector('#newTicketBtn')?.remove();
+      }
     }
   }
 
@@ -160,12 +342,13 @@ class AdminApp {
     // Rebind events for moved elements
     const statusFilter = document.getElementById('statusFilter');
     const priorityFilter = document.getElementById('priorityFilter');
-    const refreshTickets = document.getElementById('refreshTickets');
     const addProjectBtn = document.getElementById('addProjectBtn');
+    const addDeveloperBtn = document.getElementById('addDeveloperBtn');
     const addClientBtn = document.getElementById('addClientBtn');
     const newInvoiceBtn = document.getElementById('newInvoiceBtn');
     const invoiceStatusFilter = document.getElementById('invoiceStatusFilter');
-    const refreshInvoices = document.getElementById('refreshInvoices');
+    const newTicketBtn = document.getElementById('newTicketBtn');
+    const developersTabLink = document.querySelector('[data-tab="developers"]');
 
     if (statusFilter) {
       statusFilter.addEventListener('change', () => this.loadTickets());
@@ -173,11 +356,11 @@ class AdminApp {
     if (priorityFilter) {
       priorityFilter.addEventListener('change', () => this.loadTickets());
     }
-    if (refreshTickets) {
-      refreshTickets.addEventListener('click', () => this.loadTickets());
-    }
     if (addProjectBtn) {
       addProjectBtn.addEventListener('click', () => this.showAddProjectModal());
+    }
+    if (addDeveloperBtn) {
+      addDeveloperBtn.addEventListener('click', () => this.showAddDeveloperModal());
     }
     if (addClientBtn) {
       addClientBtn.addEventListener('click', () => this.showAddClientModal());
@@ -185,11 +368,276 @@ class AdminApp {
     if (newInvoiceBtn) {
       newInvoiceBtn.addEventListener('click', () => this.showNewInvoiceModal());
     }
+    if (newTicketBtn) {
+      newTicketBtn.addEventListener('click', () => this.showAddTicketModal());
+    }
     if (invoiceStatusFilter) {
       invoiceStatusFilter.addEventListener('change', () => this.loadInvoices());
     }
-    if (refreshInvoices) {
-      refreshInvoices.addEventListener('click', () => this.loadInvoices());
+    if (developersTabLink) {
+      developersTabLink.addEventListener('click', (e) => {
+        this.switchTab('developers');
+        this.loadDevelopers();
+      });
+    }
+  }
+
+  // === DEVELOPERS MANAGEMENT ===
+  async loadDevelopers() {
+    const container = document.getElementById('developersList');
+    if (!container) return;
+    container.innerHTML = '<div class="loading">Chargement des développeurs...</div>';
+    try {
+      const resp = await fetch('/api/dev/developers', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }});
+      if (!resp.ok) throw new Error('load_failed');
+      const data = await resp.json();
+      const devs = data.data || [];
+      this.renderDevelopersTable(devs);
+    } catch (e) {
+      container.innerHTML = '<div class="error-message">Erreur lors du chargement des développeurs</div>';
+    }
+  }
+
+  renderDevelopersTable(developers) {
+    const container = document.getElementById('developersList');
+    if (!container) return;
+    if (!developers || developers.length === 0) {
+      container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">👨‍💻</div><p>Aucun développeur</p></div>';
+      return;
+    }
+    const table = `
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Email</th>
+            <th>Actif</th>
+            <th>Projets</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${developers.map(d => {
+            const fullName = `${d.first_name || ''} ${d.last_name || ''}`.trim();
+            const projects = d.assigned_projects || '';
+            const ids = (d.assigned_project_ids || '')
+              .split(',')
+              .map(s => parseInt(s, 10))
+              .filter(n => Number.isFinite(n));
+            return `
+              <tr data-dev-id="${d.id}" data-project-ids="${ids.join(',')}">
+                <td>${fullName || '-'}</td>
+                <td>${d.email}</td>
+                <td>${d.is_active ? 'Oui' : 'Non'}</td>
+                <td>${projects || '-'}</td>
+                <td>
+                  <div class="action-buttons">
+                    <button class="btn-action btn-edit" data-action="edit-dev" data-id="${d.id}">Éditer</button>
+                    <button class="btn-action btn-secondary" data-action="assign-dev" data-id="${d.id}">Assigner projets</button>
+                  </div>
+                </td>
+              </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+    container.innerHTML = table;
+    container.querySelectorAll('[data-action="edit-dev"]').forEach(btn => {
+      btn.addEventListener('click', () => this.showEditDeveloperModal(parseInt(btn.dataset.id, 10)));
+    });
+    container.querySelectorAll('[data-action="assign-dev"]').forEach(btn => {
+      btn.addEventListener('click', () => this.showAssignDeveloperModal(parseInt(btn.dataset.id, 10)));
+    });
+  }
+
+  async showAddDeveloperModal() {
+    const modal = this.createModal('Nouveau développeur', `
+      <form id="devForm" class="form">
+        <div class="form-group">
+          <label class="form-label">Prénom</label>
+          <input type="text" name="first_name" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nom</label>
+          <input type="text" name="last_name" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" name="email" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mot de passe</label>
+          <input type="password" name="password" class="form-input" minlength="6" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Actif</label>
+          <select name="is_active" class="form-input">
+            <option value="1" selected>Oui</option>
+            <option value="0">Non</option>
+          </select>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary cancel-btn">Annuler</button>
+          <button type="submit" class="btn btn-primary">Créer</button>
+        </div>
+      </form>
+    `);
+    const form = document.getElementById('devForm');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const payload = {
+        first_name: fd.get('first_name'),
+        last_name: fd.get('last_name'),
+        email: fd.get('email'),
+        password: fd.get('password'),
+        role: 'developer',
+        is_active: fd.get('is_active') === '1'
+      };
+      try {
+        await api.createUser(payload);
+        this.closeModal();
+        await this.loadDevelopers();
+        this.showNotification('Développeur créé', 'success');
+      } catch (err) {
+        this.showNotification(err.message || 'Erreur création développeur', 'error');
+      }
+    });
+  }
+
+  async showEditDeveloperModal(devId) {
+    try {
+      const res = await api.getUser(devId);
+      const user = res.data.user;
+      const modal = this.createModal('Éditer développeur', `
+        <form id="devEditForm" class="form">
+          <input type="hidden" name="id" value="${user.id}">
+          <div class="form-group">
+            <label class="form-label">Prénom</label>
+            <input type="text" name="first_name" class="form-input" value="${user.first_name || ''}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nom</label>
+            <input type="text" name="last_name" class="form-input" value="${user.last_name || ''}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-input" value="${user.email}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nouveau mot de passe (optionnel)</label>
+            <input type="password" name="password" class="form-input" minlength="6" placeholder="Laisser vide pour ne pas changer">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Actif</label>
+            <select name="is_active" class="form-input">
+              <option value="1" ${user.is_active ? 'selected' : ''}>Oui</option>
+              <option value="0" ${!user.is_active ? 'selected' : ''}>Non</option>
+            </select>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary cancel-btn">Annuler</button>
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+          </div>
+        </form>
+      `);
+
+      // Bind edit-client button (CSP-safe)
+      const modalEl = document.getElementById('modal');
+      if (modalEl) {
+        const editBtn = modalEl.querySelector('[data-action="edit-client"]');
+        if (editBtn) {
+          editBtn.addEventListener('click', (e) => {
+            const cid = parseInt(e.currentTarget.dataset.clientId);
+            this.editClient(cid);
+            this.closeModal();
+          });
+        }
+      }
+      const form = document.getElementById('devEditForm');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fd = new FormData(form);
+        const update = {
+          first_name: fd.get('first_name'),
+          last_name: fd.get('last_name'),
+          email: fd.get('email'),
+          is_active: fd.get('is_active') === '1',
+          role: 'developer'
+        };
+        if (fd.get('password')) update.password = fd.get('password');
+        try {
+          await api.updateUser(user.id, update);
+          this.closeModal();
+          await this.loadDevelopers();
+          this.showNotification('Développeur mis à jour', 'success');
+        } catch (err) {
+          this.showNotification(err.message || 'Erreur mise à jour', 'error');
+        }
+      });
+    } catch (err) {
+      this.showNotification('Échec chargement développeur', 'error');
+    }
+  }
+
+  async showAssignDeveloperModal(devId) {
+    try {
+      // Get all projects
+      const projectsResp = await api.getProjects();
+      const allProjects = projectsResp.data.projects || [];
+      // Get current assigned IDs from the row dataset
+      const row = document.querySelector(`#developersList tr[data-dev-id="${devId}"]`);
+      const assignedIds = (row?.dataset.projectIds || '')
+        .split(',')
+        .map(s => parseInt(s, 10))
+        .filter(n => Number.isFinite(n));
+
+      const modal = this.createModal('Assigner projets', `
+        <div style="max-height:60vh; overflow:auto;">
+          <form id="assignForm">
+            ${allProjects.map(p => `
+              <label style="display:flex; align-items:center; gap:8px; padding:6px 0;">
+                <input type="checkbox" name="project_${p.id}" ${assignedIds.includes(p.id) ? 'checked' : ''}>
+                <span>${p.name}</span>
+              </label>
+            `).join('')}
+          </form>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-secondary cancel-btn">Annuler</button>
+          <button id="saveAssignBtn" class="btn btn-primary">Enregistrer</button>
+        </div>
+      `);
+      const saveBtn = document.getElementById('saveAssignBtn');
+      saveBtn.addEventListener('click', async () => {
+        const form = document.getElementById('assignForm');
+        const selected = allProjects.filter(p => form.querySelector(`[name="project_${p.id}"]`)?.checked).map(p => p.id);
+        const toAdd = selected.filter(id => !assignedIds.includes(id));
+        const toRemove = assignedIds.filter(id => !selected.includes(id));
+        try {
+          // Apply changes sequentially to keep it simple
+          for (const pid of toAdd) {
+            await fetch(`/api/dev/projects/${pid}/developers`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+              body: JSON.stringify({ user_id: devId })
+            });
+          }
+          for (const pid of toRemove) {
+            await fetch(`/api/dev/projects/${pid}/developers/${devId}`, {
+              method: 'DELETE',
+              headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            });
+          }
+          this.closeModal();
+          await this.loadDevelopers();
+          this.showNotification('Assignations mises à jour', 'success');
+        } catch (err) {
+          this.showNotification('Erreur lors de la mise à jour des assignations', 'error');
+        }
+      });
+    } catch (err) {
+      this.showNotification('Échec chargement projets', 'error');
     }
   }
 
@@ -203,26 +651,23 @@ class AdminApp {
     document.querySelectorAll('.sidebar__nav-item').forEach(tab => {
       tab.addEventListener('click', (e) => {
         // Ne pas empêcher le comportement par défaut pour le lien Kanban Dev
-        if (tab.id === 'devKanbanLink') {
-          console.log('Clic sur Kanban Dev - navigation autorisée vers:', tab.href);
+        if (tab.id === 'devKanbanLink') return;
+        // Toggle Dev submenu (admin only)
+        if (tab.id === 'devSidebarToggle') {
+          e.preventDefault();
+          const list = document.getElementById('devProjectList');
+          if (list) list.style.display = list.style.display === 'none' ? 'block' : 'none';
           return;
         }
         
-        console.log('Clic sur onglet:', tab.dataset.tab);
+        const tabName = tab.dataset?.tab;
+        if (!tabName) return;
         e.preventDefault();
-        const tabName = tab.dataset.tab;
         this.switchTab(tabName);
       });
     });
 
-    // Refresh buttons
-    document.getElementById('refreshTickets')?.addEventListener('click', () => {
-      this.loadTickets();
-    });
-
-    document.getElementById('refreshInvoices')?.addEventListener('click', () => {
-      this.loadInvoices();
-    });
+    // Boutons d'actualisation supprimés (tickets et facturation)
 
     // Add buttons - removed duplicates as they are handled in setupEventListeners()
 
@@ -252,22 +697,8 @@ class AdminApp {
   }
 
   switchTab(tabName) {
-    // Reset kanban view if currently in project kanban mode
+    // Leaving Kanban view: just clear currentProject; rely on classes for visibility
     if (this.currentTab === 'project-kanban') {
-      const projectKanban = document.getElementById('projectKanban');
-      const projectsList = document.getElementById('projects');
-      
-      if (projectKanban) {
-        projectKanban.style.display = 'none';
-      }
-      
-      // Only show projects list if we're switching to the projects tab
-      if (projectsList && tabName === 'projects') {
-        projectsList.style.display = 'block';
-      } else if (projectsList) {
-        projectsList.style.display = 'none';
-      }
-      
       this.currentProject = null;
     }
 
@@ -280,8 +711,14 @@ class AdminApp {
     // Update content
     document.querySelectorAll('.tab-content').forEach(content => {
       content.classList.remove('active');
+      // Clear any inline display overrides
+      content.style.display = '';
     });
-    document.getElementById(tabName).classList.add('active');
+    const target = document.getElementById(tabName);
+    if (target) {
+      target.classList.add('active');
+      target.style.display = '';
+    }
 
     this.currentTab = tabName;
 
@@ -304,6 +741,9 @@ class AdminApp {
         break;
       case 'invoices':
         this.loadInvoices();
+        break;
+      case 'developers':
+        this.loadDevelopers();
         break;
     }
   }
@@ -393,14 +833,12 @@ class AdminApp {
 
       if (statusFilter) filters.status = statusFilter;
       if (priorityFilter) filters.priority = priorityFilter;
+      // Par défaut, ne pas afficher les tickets résolus
+      if (!statusFilter) filters.exclude_status = 'resolved';
 
-      console.log('Admin - Chargement tickets avec filtres:', filters);
       const response = await api.getTickets(filters);
-      console.log('Admin - Réponse API tickets:', response);
       
       if (response.data && response.data.tickets) {
-        console.log('Admin - Nombre de tickets reçus:', response.data.tickets.length);
-        console.log('Admin - Détail des tickets:', response.data.tickets.map(t => ({id: t.id, title: t.title, status: t.status})));
         this.renderTicketsTable(response.data.tickets);
       } else {
         console.error('Invalid response format:', response);
@@ -424,11 +862,10 @@ class AdminApp {
     const sortedTickets = this.sortTicketsForAdmin(tickets);
 
     const tableHTML = `
-      <table class="data-table">
+      <table class="data-table tickets-table">
         <thead>
           <tr>
             <th>Titre</th>
-            <th>Client</th>
             <th>Projet</th>
             <th>Priorité</th>
             <th>Statut</th>
@@ -439,8 +876,7 @@ class AdminApp {
         <tbody>
           ${sortedTickets.map(ticket => `
             <tr>
-              <td>${ticket.title}</td>
-              <td>${ticket.client_company || ticket.client_first_name + ' ' + ticket.client_last_name}</td>
+              <td style="white-space: normal;">${ticket.title}</td>
               <td>${ticket.project_name}</td>
               <td><span class="status-badge ${api.getPriorityClass(ticket.priority)}">${api.formatPriority(ticket.priority)}</span></td>
               <td><span class="status-badge ${api.getStatusClass(ticket.status)}">${api.formatStatus(ticket.status)}</span></td>
@@ -482,15 +918,24 @@ class AdminApp {
 
   async loadProjects() {
     const container = document.getElementById('projectsList');
-    container.innerHTML = '<div class="loading">Chargement des projets...</div>';
+    container.innerHTML = '<div class="loading">Loading projects...</div>';
 
     try {
-      const response = await api.getProjects();
-      this.projects = response.data.projects; // Stocker les projets pour utilisation dans viewProject
-      this.renderProjectsTable(response.data.projects);
+      if (this.currentUser && this.currentUser.role === 'developer') {
+        // Developers: only their assigned projects via dev API
+        const resp = await fetch('/api/dev/projects', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
+        if (!resp.ok) throw new Error('load_failed');
+        const data = await resp.json();
+        this.projects = data.data || [];
+        this.renderProjectsTable(this.projects);
+      } else {
+        const response = await api.getProjects();
+        this.projects = response.data.projects; // Stocker les projets pour utilisation dans viewProject
+        this.renderProjectsTable(response.data.projects);
+      }
     } catch (error) {
       console.error('Projects load error:', error);
-      container.innerHTML = '<div class="error-message">Erreur lors du chargement des projets</div>';
+      container.innerHTML = '<div class="error-message">Error while loading projects</div>';
     }
   }
 
@@ -498,7 +943,7 @@ class AdminApp {
     const container = document.getElementById('projectsList');
     
     if (projects.length === 0) {
-      container.innerHTML = '<div class="empty-state"><div class="empty-state-icon"></div><p>Aucun projet trouvé</p></div>';
+      container.innerHTML = '<div class="empty-state"><div class="empty-state-icon"></div><p>No projects found</p></div>';
       return;
     }
 
@@ -518,14 +963,14 @@ class AdminApp {
           ${projects.map(project => `
             <tr>
               <td>${project.name}</td>
-              <td>${project.client_company || project.client_first_name + ' ' + project.client_last_name}</td>
+              <td>${project.client_company || (((project.client_first_name || '') + ' ' + (project.client_last_name || '')).trim()) || '-'}</td>
               <td><span class="status-badge status-${project.status}">${project.status}</span></td>
-              <td>${project.ticket_count || 0} (${project.active_ticket_count || 0} actifs)</td>
-              <td>${api.formatDate(project.created_at)}</td>
+              <td>${('ticket_count' in project ? (project.ticket_count || 0) : 0)} (${project.active_ticket_count || 0} actifs)</td>
+              <td>${project.created_at ? api.formatDate(project.created_at) : '-'}</td>
               <td>
                 <div class="action-buttons">
                   <button class="btn-action btn-view" data-project-id="${project.id}" data-action="view-project"> Voir</button>
-                  <button class="btn-action btn-edit" data-project-id="${project.id}" data-action="edit-project"> Éditer</button>
+                  ${this.currentUser && this.currentUser.role === 'developer' ? '' : `<button class="btn-action btn-edit" data-project-id="${project.id}" data-action="edit-project"> Éditer</button>`}
                 </div>
               </td>
             </tr>
@@ -584,7 +1029,6 @@ class AdminApp {
             <th>Email</th>
             <th>Entreprise</th>
             <th>Projets</th>
-            <th>Tickets</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -595,10 +1039,8 @@ class AdminApp {
               <td>${client.email}</td>
               <td>${client.company || '-'}</td>
               <td>${client.project_count || 0}</td>
-              <td>${client.ticket_count || 0}</td>
               <td>
                 <div class="action-buttons">
-                  <button class="btn-action btn-view" data-client-id="${client.id}" data-action="view-client"> Voir</button>
                   <button class="btn-action btn-edit" data-client-id="${client.id}" data-action="edit-client"> Éditer</button>
                 </div>
               </td>
@@ -611,15 +1053,7 @@ class AdminApp {
     container.innerHTML = tableHTML;
     
     // Event listeners pour les boutons d'action des clients
-    const viewClientButtons = document.querySelectorAll('[data-action="view-client"]');
     const editClientButtons = document.querySelectorAll('[data-action="edit-client"]');
-    
-    viewClientButtons.forEach(button => {
-      button.addEventListener('click', (e) => {
-        const clientId = parseInt(e.target.dataset.clientId);
-        this.viewClient(clientId);
-      });
-    });
     
     editClientButtons.forEach(button => {
       button.addEventListener('click', (e) => {
@@ -636,6 +1070,22 @@ class AdminApp {
       const response = await api.getTicket(id);
       const ticket = response.data.ticket;
       const comments = response.data.comments || [];
+      // Charger les membres du projet pour mentions (admin + devs du projet)
+      let mentionMembers = [];
+      try {
+        const mres = await api.getProjectMembers(ticket.project_id);
+        mentionMembers = mres.data || [];
+      } catch (e) { /* silent */ }
+      const emailToName = {};
+      mentionMembers.forEach(u => { emailToName[(u.email||'').toLowerCase()] = `${u.first_name||''} ${u.last_name||''}`.trim() || u.email; });
+      const highlightMentions = (text) => {
+        const escaped = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        return escaped.replace(/@([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/g, (m, email)=>{
+          const key = (email||'').toLowerCase();
+          const name = emailToName[key] || email;
+          return `<span style=\"color:#C9A33A; font-weight:700;\">${name}</span>`;
+        }).replace(/\n/g,'<br>');
+      };
       
       // Charger les pièces jointes pour chaque commentaire
       for (let comment of comments) {
@@ -643,7 +1093,7 @@ class AdminApp {
           const attachmentsResponse = await api.getCommentAttachments(comment.id);
           comment.attachments = attachmentsResponse.success ? attachmentsResponse.data.attachments : [];
         } catch (error) {
-          console.warn(`Erreur chargement pièces jointes pour commentaire ${comment.id}:`, error);
+          /* silent */
           comment.attachments = [];
         }
       }
@@ -662,35 +1112,24 @@ class AdminApp {
                 <span class="meta-value">${ticket.client_company || ticket.client_first_name + ' ' + ticket.client_last_name}</span>
               </div>
               <div class="meta-row">
-                <span class="meta-label">Statut:</span>
-                <span class="status-badge status-${ticket.status}">${this.getStatusLabel(ticket.status)}</span>
-              </div>
-              <div class="meta-row">
                 <span class="meta-label">Priorité:</span>
-                <span class="priority-badge priority-${ticket.priority}">${this.getPriorityLabel(ticket.priority)}</span>
+                <span class="priority-badge priority-${ticket.priority}">${this.getPriorityLabelFR(ticket.priority)}</span>
               </div>
+              <!-- Sélecteur de statut déplacé ici, à la place de l'assignation -->
               <div class="meta-row">
-                <span class="meta-label">Créé le:</span>
-                <span class="meta-value">${api.formatDateTime(ticket.created_at)}</span>
-              </div>
-              ${ticket.assigned_to ? `
-                <div class="meta-row">
-                  <span class="meta-label">Assigné à:</span>
-                  <span class="meta-value">${ticket.assigned_to_name}</span>
+                <span class="meta-label">Statut:</span>
+                <div class="meta-value" style="display:flex; gap:8px; align-items:center;">
+                  <select id="ticketStatus" class="form-input-sm">
+                    <option value="open" ${ticket.status === 'open' ? 'selected' : ''}>Ouvert</option>
+                    <option value="in_progress" ${ticket.status === 'in_progress' ? 'selected' : ''}>En cours</option>
+                    <option value="waiting_client" ${ticket.status === 'waiting_client' ? 'selected' : ''}>En attente client</option>
+                    <option value="resolved" ${ticket.status === 'resolved' ? 'selected' : ''}>Résolu</option>
+                  </select>
+                  <button type="button" class="btn btn-sm btn-primary update-ticket-status" data-ticket-id="${id}">
+                    Mettre à jour
+                  </button>
                 </div>
-              ` : ''}
-            </div>
-            
-            <div class="ticket-actions">
-              <select id="ticketStatus" class="form-input-sm">
-                <option value="open" ${ticket.status === 'open' ? 'selected' : ''}>Ouvert</option>
-                <option value="in_progress" ${ticket.status === 'in_progress' ? 'selected' : ''}>En cours</option>
-                <option value="waiting_client" ${ticket.status === 'waiting_client' ? 'selected' : ''}>En attente client</option>
-                <option value="resolved" ${ticket.status === 'resolved' ? 'selected' : ''}>Résolu</option>
-              </select>
-              <button type="button" class="btn btn-sm btn-primary update-ticket-status" data-ticket-id="${id}">
-                Mettre à jour
-              </button>
+              </div>
             </div>
           </div>
           
@@ -720,7 +1159,7 @@ class AdminApp {
             </div>
           ` : ''}
           
-          <!-- Pièces jointes -->
+          <!-- Attachments -->
           ${ticket.attachments && ticket.attachments.length > 0 ? `
             <div class="ticket-attachments">
               <h4>Pièces jointes</h4>
@@ -742,7 +1181,10 @@ class AdminApp {
           <div class="ticket-linked-tasks" style="margin: 16px 0;">
             <h4 style="font-size: 16px; font-weight: 600; color: #1f2937; margin-bottom: 12px;">Tâches liées</h4>
             <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
-              <input type="text" id="ticketTaskSearch" placeholder="Rechercher une tâche du projet..." style="flex:1;" />
+              <div id="ticketTaskSearchWrap" style="position:relative; flex:1;">
+                <input type="text" id="ticketTaskSearch" placeholder="Rechercher une tâche du projet..." style="width:100%;" />
+                <div id="ticketTaskSuggestions" style="position:absolute; left:0; right:0; top: calc(100% + 4px); z-index:10000;"></div>
+              </div>
               <button class="btn btn-secondary" id="ticketTaskLinkBtn">Lier</button>
             </div>
             <div id="ticketLinkedTasks" style="border:1px solid #e5e7eb; border-radius:6px; padding:8px; min-height:40px;">
@@ -752,7 +1194,7 @@ class AdminApp {
 
           <!-- Conversation avec le client -->
           <div class="ticket-comments" style="margin-bottom: 20px;">
-            <h4 style="font-size: 16px; font-weight: 600; color: #1f2937; margin-bottom: 16px;">Conversation avec le client (${comments.length})</h4>
+            <h4 style="font-size: 16px; font-weight: 600; color: #1f2937; margin-bottom: 16px;">Conversation avec le client</h4>
             
             <div class="comments-list" id="commentsList" style="max-height: 400px; overflow-y: auto; padding: 16px; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 8px;">
               ${comments.map(comment => {
@@ -780,12 +1222,7 @@ class AdminApp {
                         </span>
                       </div>
                       <div style="background: ${isFromClient ? '#ffffff' : '#0e2433'}; color: ${isFromClient ? '#374151' : 'white'}; padding: 12px 16px; border-radius: 12px; ${isFromClient ? 'border-bottom-left-radius: 4px;' : 'border-bottom-right-radius: 4px;'} box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: ${isFromClient ? '1px solid #e5e7eb' : 'none'};">
-                        <div style="line-height: 1.4; font-size: 14px;">
-                          ${comment.content
-                            .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-                            .replace(/@([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/g,'<span style="color:#2563eb; font-weight:600;">@$1</span>')
-                            .replace(/\n/g, '<br>')}
-                        </div>
+                        <div style="line-height: 1.4; font-size: 14px;">${highlightMentions(comment.content || '')}</div>
                         ${this.renderAttachments(comment.attachments, isFromClient)}
                         ${comment.is_internal ? '<div style="margin-top: 6px; padding: 2px 6px; background: rgba(255,255,255,0.2); border-radius: 4px; font-size: 11px;">Message interne</div>' : ''}
                       </div>
@@ -796,15 +1233,12 @@ class AdminApp {
             </div>
           </div>
             
-            <!-- Ajouter un commentaire -->
+            <!-- Ajouter un commentaire (mentions désactivées dans les tickets) -->
             <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-top: 20px;">
               <h3 style="font-size: 16px; font-weight: 600; color: #1f2937; margin: 0 0 16px 0;">Ajouter un commentaire</h3>
               <form id="addCommentForm">
-                <textarea id="commentContent" name="content" placeholder="Écrivez votre commentaire ou question ici... (@email pour mentionner)" 
+                <textarea id="commentContent" name="content" placeholder="Écrivez votre commentaire ou question ici..." 
                           style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; line-height: 1.5; resize: vertical; min-height: 80px; font-family: inherit;" required></textarea>
-                <div id="mentionSuggestions" style="display:none; position: relative;">
-                  <div id="mentionList" style="position:absolute; z-index:10; background:white; border:1px solid #e5e7eb; border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,0.08); padding:6px; max-height:160px; overflow:auto; width:100%;"></div>
-                </div>
                 
                 <div style="display: flex; align-items: center; gap: 12px; margin-top: 12px;">
                   <button type="button" id="attachFileBtn" style="display: flex; align-items: center; gap: 6px; background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; font-size: 13px; cursor: pointer;">
@@ -827,7 +1261,7 @@ class AdminApp {
                 </div>
                 
                 <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px;">
-                  <button type="button" class="btn btn-secondary cancel-btn" onclick="adminApp.closeModal()" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 16px; font-size: 14px; cursor: pointer;">
+            <button type="button" class="btn btn-secondary cancel-btn" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 16px; font-size: 14px; cursor: pointer;">
                     Annuler
                   </button>
                   <button type="submit" id="submitCommentBtn" style="background: #0e2433; color: white; border: none; border-radius: 6px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer;">
@@ -838,12 +1272,6 @@ class AdminApp {
             </div>
           </div>
           
-          <div class="modal-actions">
-            <button type="button" class="btn btn-secondary close-modal-btn">Fermer</button>
-            <button type="button" class="btn btn-primary edit-ticket-btn" data-ticket-id="${id}">
-               Modifier le ticket
-            </button>
-          </div>
         </div>
       `, 'large');
       
@@ -854,16 +1282,36 @@ class AdminApp {
       const linkedTasksBox = document.getElementById('ticketLinkedTasks');
       const taskSearchInput = document.getElementById('ticketTaskSearch');
       const taskLinkBtn = document.getElementById('ticketTaskLinkBtn');
+      let linkedTaskIds = new Set();
+      // Autocomplete container for task search
+      let taskSuggestIndex = -1; // keyboard selection index
+      let taskSuggestItems = [];
+      let taskSuggestOpen = false;
+      let taskSuggestionsEl = document.getElementById('ticketTaskSuggestions');
+      if (!taskSuggestionsEl) {
+        const wrap = document.getElementById('ticketTaskSearchWrap');
+        taskSuggestionsEl = document.createElement('div');
+        taskSuggestionsEl.id = 'ticketTaskSuggestions';
+        taskSuggestionsEl.style.position = 'absolute';
+        taskSuggestionsEl.style.left = '0';
+        taskSuggestionsEl.style.right = '0';
+        taskSuggestionsEl.style.top = 'calc(100% + 4px)';
+        taskSuggestionsEl.style.zIndex = '10000';
+        if (wrap) wrap.appendChild(taskSuggestionsEl);
+        else if (taskSearchInput) taskSearchInput.insertAdjacentElement('afterend', taskSuggestionsEl);
+      }
       const loadLinkedTasks = async () => {
         try {
           const r = await api.getTicketLinkedTasks(ticketId);
           const tasks = r.data || [];
+          // Maintenir la liste des IDs de tâches déjà liées pour exclusion dans l'autocomplete
+          linkedTaskIds = new Set(tasks.map(t => t.id));
           if (!tasks.length) { linkedTasksBox.innerHTML = '<div style="color:#6b7280;">Aucune tâche liée</div>'; return; }
           linkedTasksBox.innerHTML = tasks.map(t => `
             <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #eee;">
               <div>
                 <div style="font-weight:600;">#${t.id} — ${t.title}</div>
-                <div style="font-size:12px; color:#6b7280;">${t.status} · ${t.urgency}</div>
+                <div style="font-size:12px; color:#6b7280;">${this.getTaskStatusLabel(t.status)} · ${this.getPriorityLabelFR(t.urgency || 'medium')}</div>
               </div>
               <button class="btn btn-secondary" data-action="unlink-task" data-id="${t.id}">Délier</button>
             </div>
@@ -880,7 +1328,7 @@ class AdminApp {
             }
             this.showNotification('Tâche déliée', 'success');
           }
-          catch { this.showNotification('Échec délier', 'error'); }
+          catch { this.showNotification('Échec de la dissociation', 'error'); }
             });
           });
         } catch { linkedTasksBox.innerHTML = '<div style="color:#b91c1c;">Erreur chargement des tâches liées</div>'; }
@@ -895,16 +1343,161 @@ class AdminApp {
           const projectId = ticket.project_id;
           const res = await fetch(`/api/dev/projects/${projectId}/tasks`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }});
           const data = await res.json();
-          projectTasksCache = (data.data || []).filter(Boolean);
+          // Exclure les tâches terminées (done) et normaliser
+          projectTasksCache = (data.data || [])
+            .filter(Boolean)
+            .filter(t => t && t.status !== 'done');
           return projectTasksCache;
         } catch { return []; }
       };
-      const pickTaskBySearch = async (q) => {
-        const all = await ensureProjectTasks();
-        const norm = (q || '').toLowerCase();
-        const found = all.find(t => String(t.id) === norm) || all.find(t => t.title.toLowerCase().includes(norm));
-        return found ? found.id : null;
+      const normalize = (s) => (s || '').toString().toLowerCase().trim();
+      const scoreTask = (task, q) => {
+        if (!q) return 0;
+        const title = normalize(task.title);
+        const idStr = String(task.id);
+        const qLower = q.toLowerCase();
+        let score = 0;
+        if (idStr === qLower) score += 100;               // ID exact
+        if (idStr.startsWith(qLower)) score += 80;         // ID commence par
+        if (title === qLower) score += 70;                 // Titre exact
+        if (title.startsWith(qLower)) score += 60;         // Titre commence par
+        if (title.includes(qLower)) score += 30;           // Titre contient
+        // Bonus sur statut/urgence
+        const status = normalize(task.status);
+        const urg = normalize(task.urgency || task.priority);
+        if (status.includes(qLower)) score += 10;
+        if (urg.includes(qLower)) score += 5;
+        return score;
       };
+      const filterTasks = async (q) => {
+        const all = (await ensureProjectTasks())
+          // Exclure les tâches déjà liées
+          .filter(t => !linkedTaskIds.has(t.id));
+        if (!q) return all; // sans limite, tout proposé (hors done et hors liées)
+        const results = all
+          .map(t => ({ t, s: scoreTask(t, q) }))
+          .filter(x => x.s > 0)
+          .sort((a, b) => b.s - a.s)
+          .map(x => x.t);
+        return results;
+      };
+      const renderSuggestions = (tasks, query) => {
+        if (!taskSuggestionsEl) return;
+        if (!tasks || tasks.length === 0) {
+          taskSuggestionsEl.innerHTML = '';
+          taskSuggestItems = [];
+          taskSuggestOpen = false;
+          taskSuggestIndex = -1;
+          return;
+        }
+        const listHtml = `
+          <div style="background: white; border: 1px solid #e5e7eb; border-radius: 6px; width: 100%; max-height: 224px; overflow-y: auto; box-shadow: 0 8px 16px rgba(0,0,0,0.08);">
+            ${tasks.map((t, idx) => `
+              <div class="task-suggest-item" data-id="${t.id}" data-index="${idx}"
+                style="padding: 8px 10px; display:flex; justify-content:space-between; align-items:center; cursor: pointer;">
+                <div>
+                  <div style="font-weight:600;">#${t.id} — ${t.title}</div>
+                  <div style="font-size:12px; color:#6b7280;">${this.getTaskStatusLabel(t.status)} · ${this.getPriorityLabelFR(t.urgency || 'medium')}</div>
+                </div>
+                <div style="font-size:12px; color:#9ca3af;">${normalize(t.status)}</div>
+              </div>
+            `).join('')}
+          </div>`;
+        taskSuggestionsEl.innerHTML = listHtml;
+        taskSuggestItems = Array.from(taskSuggestionsEl.querySelectorAll('.task-suggest-item'));
+        taskSuggestOpen = true;
+        taskSuggestIndex = -1;
+        // Hover/active style
+        taskSuggestItems.forEach(el => {
+          el.addEventListener('mouseenter', () => {
+            taskSuggestItems.forEach(i => i.style.background='white');
+            el.style.background = '#f3f4f6';
+          });
+          el.addEventListener('mouseleave', () => {
+            el.style.background = 'white';
+          });
+          el.addEventListener('mousedown', async (e) => {
+            e.preventDefault();
+            const taskId = parseInt(el.dataset.id, 10);
+            await linkTask(taskId);
+          });
+        });
+      };
+      const closeSuggestions = () => {
+        if (taskSuggestionsEl) taskSuggestionsEl.innerHTML = '';
+        taskSuggestOpen = false;
+        taskSuggestIndex = -1;
+        taskSuggestItems = [];
+      };
+      const highlightIndex = (idx) => {
+        if (!taskSuggestOpen || !taskSuggestItems.length) return;
+        taskSuggestItems.forEach(i => i.style.background='white');
+        const el = taskSuggestItems[idx];
+        if (el) el.style.background = '#e5e7eb';
+      };
+      const linkTask = async (taskId) => {
+        try {
+          await api.linkTaskToTicket(ticketId, taskId);
+          await loadLinkedTasks();
+          if (this.currentTab === 'project-kanban' && this.currentProject?.id === ticket.project_id) {
+            await this.loadProjectTasks(ticket.project_id);
+          }
+          this.showNotification('Tâche liée', 'success');
+          closeSuggestions();
+          if (taskSearchInput) taskSearchInput.value = '';
+        } catch {
+          this.showNotification('Échec liaison tâche', 'error');
+        }
+      };
+      const pickTaskBySearch = async (q) => {
+        const results = await filterTasks(q);
+        return results[0] ? results[0].id : null;
+      };
+      // Live suggestions on input
+      if (taskSearchInput) {
+        // Prefetch tasks so first focus can show suggestions instantly
+        ensureProjectTasks().then(() => {}).catch(() => {});
+        taskSearchInput.addEventListener('input', async (e) => {
+          const q = e.target.value.trim();
+          const results = await filterTasks(q);
+          renderSuggestions(results, q);
+        });
+        taskSearchInput.addEventListener('keydown', async (e) => {
+          if (!taskSuggestOpen) return;
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            taskSuggestIndex = (taskSuggestIndex + 1) % taskSuggestItems.length;
+            highlightIndex(taskSuggestIndex);
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            taskSuggestIndex = (taskSuggestIndex - 1 + taskSuggestItems.length) % taskSuggestItems.length;
+            highlightIndex(taskSuggestIndex);
+          } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (taskSuggestIndex >= 0 && taskSuggestItems[taskSuggestIndex]) {
+              const taskId = parseInt(taskSuggestItems[taskSuggestIndex].dataset.id, 10);
+              await linkTask(taskId);
+            } else {
+              const q = e.target.value.trim();
+              const id = await pickTaskBySearch(q);
+              if (id) await linkTask(id);
+            }
+          } else if (e.key === 'Escape') {
+            closeSuggestions();
+          }
+        });
+        // Close suggestions on outside click
+        document.addEventListener('click', (evt) => {
+          const wrap = document.getElementById('ticketTaskSearchWrap');
+          const within = (wrap && wrap.contains(evt.target)) || taskSuggestionsEl.contains(evt.target);
+          if (!within) closeSuggestions();
+        });
+        // Show initial suggestions on focus
+        taskSearchInput.addEventListener('focus', async () => {
+          const results = await filterTasks('');
+          renderSuggestions(results, '');
+        });
+      }
       if (taskLinkBtn && taskSearchInput) {
         taskLinkBtn.addEventListener('click', async () => {
           const q = taskSearchInput.value.trim();
@@ -923,85 +1516,7 @@ class AdminApp {
         });
       }
 
-      // Mention suggestions (@email)
-      const commentTextarea = document.getElementById('commentContent');
-      const mentionBox = document.getElementById('mentionSuggestions');
-      const mentionList = document.getElementById('mentionList');
-      let usersCache = [];
-      const ensureUsers = async () => {
-        if (usersCache.length) return usersCache;
-        try {
-          let res;
-          try {
-            res = await api.getAllUsers();
-          } catch (e) {
-            // fallback admin-only endpoint
-            res = await api.getUsers({});
-          }
-          usersCache = (res.data.users || []);
-          // Trier par nom pour une liste stable
-          usersCache.sort((a,b) => `${a.first_name||''} ${a.last_name||''}`.localeCompare(`${b.first_name||''} ${b.last_name||''}`));
-          return usersCache;
-        } catch { return []; }
-      };
-      const filterUsers = (q) => {
-        q = (q||'').toLowerCase();
-        const list = usersCache.filter(u => {
-          const email = (u.email||'').toLowerCase();
-          const fn = (u.first_name||'').toLowerCase();
-          const ln = (u.last_name||'').toLowerCase();
-          const full = `${fn} ${ln}`.trim();
-          if (!q) return true; // afficher tous si aucun filtre après @
-          return email.includes(q) || fn.includes(q) || ln.includes(q) || full.includes(q);
-        });
-        return list.slice(0,8);
-      };
-      const insertAtCursor = (el, text) => {
-        const start = el.selectionStart || 0;
-        const end = el.selectionEnd || 0;
-        const before = el.value.substring(0, start);
-        const after = el.value.substring(end);
-        el.value = before + text + after;
-        const pos = before.length + text.length;
-        el.setSelectionRange(pos, pos);
-        el.focus();
-      };
-      const closeMention = () => { mentionBox.style.display = 'none'; mentionList.innerHTML=''; };
-      commentTextarea.addEventListener('input', async () => {
-        const val = commentTextarea.value;
-        const caret = commentTextarea.selectionStart || val.length;
-        const upto = val.substring(0, caret);
-        const at = upto.lastIndexOf('@');
-        if (at === -1) { closeMention(); return; }
-        const fragment = upto.substring(at+1);
-        if (/\s/.test(fragment)) { closeMention(); return; }
-        await ensureUsers();
-        const matches = filterUsers(fragment);
-        if (!matches.length) { closeMention(); return; }
-        mentionList.innerHTML = matches.map(u => {
-          const name = `${u.first_name||''} ${u.last_name||''}`.trim() || u.email;
-          return `
-            <div class="mention-item" data-email="${u.email}" style="padding:6px 8px; cursor:pointer; border-radius:4px;">
-              <strong>${name}</strong> <span style=\"color:#6b7280; font-size:12px;\">${u.email}</span>
-            </div>
-          `;
-        }).join('');
-        mentionBox.style.display = 'block';
-        mentionList.querySelectorAll('.mention-item').forEach(item => {
-          item.addEventListener('click', () => {
-            const email = item.dataset.email;
-            // Replace the @fragment with @email
-            const before = val.substring(0, at);
-            const after = val.substring(caret);
-            commentTextarea.value = `${before}@${email} ${after}`;
-            const pos = (before+`@${email} `).length;
-            commentTextarea.setSelectionRange(pos, pos);
-            closeMention();
-            commentTextarea.focus();
-          });
-        });
-      });
-      commentTextarea.addEventListener('blur', () => setTimeout(closeMention, 150));
+      // Mentions are disabled in ticket comments (UI autocomplete removed)
 
       // File attachment functionality
       let selectedFiles = [];
@@ -1039,18 +1554,26 @@ class AdminApp {
         this.updateFileDisplay(selectedFiles, selectedFilesSection, selectedFilesList);
         fileInput.value = ''; // Clear input for next selection
       });
+
+      // Delegate clicks for attachment download links (CSP-safe)
+      const commentsListEl = document.getElementById('commentsList');
+      if (commentsListEl) {
+        commentsListEl.addEventListener('click', (e) => {
+          const link = e.target.closest('a.attachment-download');
+          if (link) {
+            e.preventDefault();
+            const attId = parseInt(link.dataset.attachmentId);
+            if (!isNaN(attId)) this.downloadAttachment(attId);
+          }
+        });
+      }
       
       document.getElementById('addCommentForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         await this.addComment(ticketId, e.target, selectedFiles);
       });
       
-      // Event listener pour le bouton éditer (le bouton fermer est géré par createModal)
-      document.querySelector('.edit-ticket-btn').addEventListener('click', (e) => {
-        const ticketId = parseInt(e.target.dataset.ticketId);
-        this.closeModal();
-        this.editTicket(ticketId);
-      });
+      // Le bouton "modifier le ticket" n'est plus présent dans cette modale
       
       // Event listener pour le bouton de mise à jour du statut
       document.querySelector('.update-ticket-status')?.addEventListener('click', (e) => {
@@ -1150,19 +1673,35 @@ class AdminApp {
       'in_progress': ' En cours',
       'waiting_client': 'En attente client',
       'resolved': ' Résolu',
-      'closed': ' Fermé'
+      // Afficher "Résolu" pour les tickets fermés
+      'closed': ' Résolu'
     };
     return labels[status] || status;
   }
 
-  getPriorityLabel(priority) {
+  // Libellés FR pour priorités (Tickets et affichage côté Tickets)
+  getPriorityLabelFR(priority) {
     const labels = {
       'low': ' Faible',
-      'normal': ' Normale',
+      'normal': ' Moyenne',
+      'medium': ' Moyenne',
       'high': 'Élevée',
       'urgent': ' Urgente'
     };
     return labels[priority] || priority;
+  }
+
+  // Libellés FR pour les statuts de tâches (Kanban) lorsqu'affichés dans la modale Ticket
+  getTaskStatusLabel(status) {
+    const labels = {
+      'todo_back': 'À faire (Back)',
+      'todo_front': 'À faire (Front)',
+      'todo': 'À faire',
+      'in_progress': 'En cours',
+      'ready_for_review': 'Prêt pour relecture',
+      'done': 'Terminé'
+    };
+    return labels[status] || status;
   }
 
   formatFileSize(bytes) {
@@ -1178,9 +1717,6 @@ class AdminApp {
       const response = await api.getTicket(id);
       const ticket = response.data.ticket;
       
-      // Charger les utilisateurs pour l'assignation
-      const usersResponse = await api.getUsers({ role: 'team,admin' });
-      const users = usersResponse.data.users || [];
       
       const modal = this.createModal(`Modifier Ticket - ${ticket.title}`, `
         <form id="editTicketForm" class="form">
@@ -1203,7 +1739,7 @@ class AdminApp {
               <label class="form-label" for="editTicketPriority">Priorité</label>
               <select id="editTicketPriority" name="priority" class="form-input">
                 <option value="low" ${ticket.priority === 'low' ? 'selected' : ''}> Faible</option>
-                <option value="normal" ${ticket.priority === 'normal' ? 'selected' : ''}> Normale</option>
+                <option value="normal" ${ticket.priority === 'normal' ? 'selected' : ''}> Moyenne</option>
                 <option value="high" ${ticket.priority === 'high' ? 'selected' : ''}>Élevée</option>
                 <option value="urgent" ${ticket.priority === 'urgent' ? 'selected' : ''}> Urgente</option>
               </select>
@@ -1220,18 +1756,6 @@ class AdminApp {
             </div>
           </div>
           
-          <div class="form-group">
-            <label class="form-label" for="editTicketAssigned">Assigné à</label>
-            <select id="editTicketAssigned" name="assigned_to" class="form-input">
-              <option value="">Non assigné</option>
-              ${users.map(user => `
-                <option value="${user.id}" ${user.id === ticket.assigned_to ? 'selected' : ''}>
-                  ${user.first_name} ${user.last_name} (${user.role})
-                </option>
-              `).join('')}
-            </select>
-          </div>
-          
           <div class="ticket-info">
             <p><strong>Projet :</strong> ${ticket.project_name}</p>
             <p><strong>Client :</strong> ${ticket.client_company || ticket.client_first_name + ' ' + ticket.client_last_name}</p>
@@ -1239,7 +1763,7 @@ class AdminApp {
           </div>
           
           <div class="form-actions">
-            <button type="button" class="btn btn-secondary cancel-btn" onclick="adminApp.closeModal()">Annuler</button>
+            <button type="button" class="btn btn-secondary cancel-btn">Annuler</button>
             <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
           </div>
         </form>
@@ -1263,8 +1787,7 @@ class AdminApp {
       title: formData.get('title').trim(),
       description: formData.get('description').trim(),
       priority: formData.get('priority'),
-      status: formData.get('status'),
-      assigned_to: formData.get('assigned_to') || null
+      status: formData.get('status')
     };
 
 
@@ -1328,15 +1851,11 @@ class AdminApp {
       const descTextarea = editForm.querySelector('textarea[name="description"]');
       const statusSelect = editForm.querySelector('select[name="status"]');
       const prioritySelect = editForm.querySelector('select[name="priority"]');
-      const assignSelect = editForm.querySelector('select[name="assigned_to"]');
       
       if (titleInput && updateData.title) titleInput.value = updateData.title;
       if (descTextarea && updateData.description) descTextarea.value = updateData.description;
       if (statusSelect && updateData.status) statusSelect.value = updateData.status;
       if (prioritySelect && updateData.priority) prioritySelect.value = updateData.priority;
-      if (assignSelect && updateData.hasOwnProperty('assigned_to')) {
-        assignSelect.value = updateData.assigned_to || '';
-      }
     }
   }
 
@@ -1344,42 +1863,53 @@ class AdminApp {
     try {
       const project = this.projects.find(p => p.id === id);
       if (!project) {
-        this.showNotification('Projet non trouvé', 'error');
+        this.showNotification('Projet introuvable', 'error');
         return;
       }
 
       // Stocker le projet actuel
       this.currentProject = project;
 
-      // Cacher la liste des projets et afficher le kanban
-      document.getElementById('projects').style.display = 'none';
-      document.getElementById('projectKanban').style.display = 'block';
+      // Update sidebar active state: highlight the selected Dev project link
+      document.querySelectorAll('.sidebar__nav-item').forEach(el => el.classList.remove('sidebar__nav-item--active'));
+      const devLink = document.querySelector(`#devProjectList .sidebar__dev-project[data-project-id="${id}"]`);
+      if (devLink) {
+        devLink.classList.add('sidebar__nav-item--active');
+        // Ensure submenu is visible
+        const devList = document.getElementById('devProjectList');
+        if (devList && devList.style.display === 'none') devList.style.display = 'block';
+      }
       
-      // Changer l'état du tab pour afficher les bons boutons dans le header
+      // Activate Kanban tab (visibility handled by CSS classes)
+      document.querySelectorAll('.tab-content').forEach(el => { el.classList.remove('active'); el.style.display = ''; });
+      const kanbanEl = document.getElementById('projectKanban');
+      if (kanbanEl) { kanbanEl.classList.add('active'); kanbanEl.style.display = ''; }
+      
+      // Switch tab state to show proper header buttons
       this.currentTab = 'project-kanban';
       this.updateHeaderActions();
       
-      // Mettre à jour les titres (un seul affichage en haut)
+      // Update title: show project name only
       const titleEl = document.querySelector('.main-title');
-      if (titleEl) titleEl.textContent = `Projet : ${project.name}`;
+      if (titleEl) titleEl.textContent = project.name;
       
-      // Pré-initialiser le drag & drop et les clics pour éviter d'attendre le chargement réseau
+      // Pre-initialize drag & drop and clicks
       this.setupTaskClickHandlers();
       this.initKanbanDragDrop();
 
-      // Afficher l'état de chargement visuel
+      // Show visual loading state
       this.setKanbanLoading(true);
 
-      // Charger les tâches du projet (les instances Sortable prendront en compte les éléments insérés)
+      // Load tasks for project
       await this.loadProjectTasks(id);
       this.setKanbanLoading(false);
       
-      // Configurer les événements du kanban (header)
+      // Configure kanban header events
       this.setupKanbanEvents(id);
       
     } catch (error) {
-      console.error('Erreur viewProject:', error);
-      this.showNotification('Erreur lors de l\'affichage du projet', 'error');
+      console.error('viewProject error:', error);
+      this.showNotification('Error displaying project', 'error');
     }
   }
 
@@ -1393,7 +1923,7 @@ class AdminApp {
         if (!column.querySelector('.kanban-loading')) {
           const placeholder = document.createElement('div');
           placeholder.className = 'kanban-loading';
-          placeholder.textContent = 'Chargement…';
+          placeholder.textContent = 'Loading…';
           column.prepend(placeholder);
         }
       } else {
@@ -1405,21 +1935,21 @@ class AdminApp {
 
   async loadProjectTasks(projectId) {
     try {
-      console.log('Chargement des tâches pour le projet:', projectId);
+      
       const response = await fetch(`/api/dev/projects/${projectId}/tasks`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       
-      console.log('Réponse du serveur:', response.status, response.statusText);
+      
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Erreur serveur:', errorText);
-        throw new Error(`Erreur lors du chargement des tâches: ${response.status}`);
+        console.error('Server error:', errorText);
+        throw new Error(`Error loading tasks: ${response.status}`);
       }
       
       const result = await response.json();
-      console.log('Tâches chargées:', result);
+      
       const tasks = result.data || [];
       
       // Vider toutes les colonnes
@@ -1429,9 +1959,11 @@ class AdminApp {
         document.getElementById(`count-${status}`).textContent = '0';
       });
       
-      // Mapping des statuts de la base vers les colonnes kanban
+      // Mapping des statuts DB -> colonnes kanban (identité pour tout, avec compat pour ancien 'todo')
       const statusMapping = {
-        'todo': 'todo_back',
+        'todo_back': 'todo_back',
+        'todo_front': 'todo_front',
+        'todo': 'todo_back', // compat ancien
         'in_progress': 'in_progress', 
         'ready_for_review': 'ready_for_review',
         'done': 'done'
@@ -1442,7 +1974,7 @@ class AdminApp {
       columns.forEach(status => tasksByStatus[status] = []);
       
       tasks.forEach(task => {
-        const kanbanStatus = statusMapping[task.status] || 'todo_back';
+        const kanbanStatus = statusMapping[task.status] || task.status || 'todo_back';
         if (tasksByStatus[kanbanStatus]) {
           tasksByStatus[kanbanStatus].push(task);
         }
@@ -1484,7 +2016,7 @@ class AdminApp {
   }
 
   setupTaskClickHandlers() {
-    console.log('Configuration des event listeners pour les tâches...');
+    
     
     // Event delegation pour les clics sur les tâches
     const kanbanBoard = document.getElementById('projectKanban');
@@ -1494,20 +2026,20 @@ class AdminApp {
         const taskCard = e.target.closest('.task-card');
         if (taskCard && !e.target.closest('button')) {
           const taskId = taskCard.dataset.taskId;
-          console.log('Clic sur tâche:', taskId);
+          
           this.openTaskModal(taskId);
         }
       };
       
       kanbanBoard.addEventListener('click', this.taskClickHandler);
       this.taskClickHandlerAttached = true;
-      console.log('Event listeners attachés');
+      
     }
   }
 
   async openTaskModal(taskId) {
     try {
-      console.log('Ouverture modal pour tâche:', taskId);
+      
       
       // Récupérer les détails de la tâche
       const response = await fetch(`/api/dev/tasks/${taskId}`, {
@@ -1520,25 +2052,34 @@ class AdminApp {
       
       const result = await response.json();
       const task = result.data;
+      this.currentTaskProjectId = task.project_id;
+      // Préparer les membres du projet pour mentions
+      let taskMentionMembers = [];
+      try {
+        const mres = await api.getProjectMembers(task.project_id);
+        taskMentionMembers = mres.data || [];
+      } catch(e) { /* silent */ }
+      const taskEmailToName = {};
+      taskMentionMembers.forEach(u => { taskEmailToName[(u.email||'').toLowerCase()] = `${u.first_name||''} ${u.last_name||''}`.trim() || u.email; });
       
       // Créer et afficher le modal en respectant unified-modals.css
       const modalHtml = `
         <div class="modal" id="taskModal" role="dialog" aria-modal="true">
           <div class="modal-content">
             <div class="modal-header">
-              <h3 class="modal-title">Détails de la tâche</h3>
-              <button class="modal-close" type="button" aria-label="Fermer">&times;</button>
+              <h3 class="modal-title">Task details</h3>
+              <button class="modal-close" type="button" aria-label="Close">&times;</button>
             </div>
             <div class="task-detail-tabs">
-              <button class="tab-btn active" data-tab="details">Détails</button>
+              <button class="tab-btn active" data-tab="details">Details</button>
               <button class="tab-btn" data-tab="discussions">Discussions</button>
-              <button class="tab-btn" data-tab="attachments">Pièces jointes</button>
-              <button class="tab-btn" data-tab="tickets">Tickets liés</button>
+              <button class="tab-btn" data-tab="attachments">Attachments</button>
+              <button class="tab-btn" data-tab="tickets">Linked tickets</button>
             </div>
             <div class="modal-body">
               <section id="taskTab-details" class="task-tab active">
                 <div class="form-group">
-                  <label>Titre</label>
+                  <label>Title</label>
                   <input type="text" id="taskTitle" value="${task.title}">
                 </div>
                 <div class="form-group">
@@ -1546,31 +2087,34 @@ class AdminApp {
                   <textarea id="taskDescription">${task.description || ''}</textarea>
                 </div>
                 <div class="form-group">
-                  <label>Statut</label>
+                  <label>Status</label>
                   <select id="taskStatus">
-                    <option value="todo_back" ${task.status === 'todo_back' ? 'selected' : ''}>À faire (Back)</option>
-                    <option value="todo_front" ${task.status === 'todo_front' ? 'selected' : ''}>À faire (Front)</option>
-                    <option value="in_progress" ${task.status === 'in_progress' ? 'selected' : ''}>En cours</option>
-                    <option value="ready_for_review" ${task.status === 'ready_for_review' ? 'selected' : ''}>Prêt pour révision</option>
-                    <option value="done" ${task.status === 'done' ? 'selected' : ''}>Terminé</option>
+                    <option value="todo_back" ${task.status === 'todo_back' ? 'selected' : ''}>To-do (Back)</option>
+                    <option value="todo_front" ${task.status === 'todo_front' ? 'selected' : ''}>To-do (Front)</option>
+                    <option value="in_progress" ${task.status === 'in_progress' ? 'selected' : ''}>In progress</option>
+                    <option value="ready_for_review" ${task.status === 'ready_for_review' ? 'selected' : ''}>Ready for review</option>
+                    <option value="done" ${task.status === 'done' ? 'selected' : ''}>Done</option>
                   </select>
                 </div>
                 <div class="form-group">
-                  <label>Priorité</label>
+                  <label>Priority</label>
                   <select id="taskUrgency">
-                    <option value="low" ${task.urgency === 'low' ? 'selected' : ''}>Faible</option>
-                    <option value="medium" ${task.urgency === 'medium' ? 'selected' : ''}>Moyenne</option>
-                    <option value="high" ${task.urgency === 'high' ? 'selected' : ''}>Élevée</option>
-                    <option value="urgent" ${task.urgency === 'urgent' ? 'selected' : ''}>Urgente</option>
+                    <option value="low" ${task.urgency === 'low' ? 'selected' : ''}>Low</option>
+                    <option value="medium" ${task.urgency === 'medium' ? 'selected' : ''}>Medium</option>
+                    <option value="high" ${task.urgency === 'high' ? 'selected' : ''}>High</option>
+                    <option value="urgent" ${task.urgency === 'urgent' ? 'selected' : ''}>Urgent</option>
                   </select>
                 </div>
               </section>
               <section id="taskTab-discussions" class="task-tab" hidden>
-                <div id="taskComments" class="comments-list" style="max-height: 360px; overflow-y: auto; padding: 12px; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 12px;">Chargement…</div>
+                <div id="taskComments" class="comments-list" style="max-height: 360px; overflow-y: auto; padding: 12px; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 12px;">Loading…</div>
                 <form id="taskCommentForm" class="form-inline">
-                  <textarea id="taskCommentBody" placeholder="Votre message…" rows="3" required style="width:100%;"></textarea>
+                  <textarea id="taskCommentBody" placeholder="Your message… (@ to mention)" rows="3" required style="width:100%;"></textarea>
+                  <div id="taskMentionSuggestions" style="display:none; position: relative;">
+                    <div id="taskMentionList" style="position:absolute; z-index:10; background:white; border:1px solid #e5e7eb; border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,0.08); padding:6px; max-height:160px; overflow:auto; width:100%;"></div>
+                  </div>
                   <div style="margin-top:8px; display:flex; gap:8px; justify-content:flex-end;">
-                    <button type="submit" class="btn btn-primary">Envoyer</button>
+                    <button type="submit" class="btn btn-primary">Send</button>
                   </div>
                 </form>
               </section>
@@ -1578,19 +2122,19 @@ class AdminApp {
               <section id="taskTab-attachments" class="task-tab" hidden>
                 <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
                   <input type="file" id="taskAttachmentInput" multiple />
-                  <button class="btn btn-primary" id="taskAttachmentUploadBtn">Uploader</button>
+                  <button class="btn btn-primary" id="taskAttachmentUploadBtn">Upload</button>
                 </div>
-                <div id="taskAttachments" style="min-height:120px;">Chargement…</div>
+                <div id="taskAttachments" style="min-height:120px;">Loading…</div>
               </section>
               <section id="taskTab-tickets" class="task-tab" hidden>
                 <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:8px;">
                   <div style="display:flex; gap:8px; align-items:center;">
-                    <input type="text" id="linkTicketSearch" placeholder="Rechercher ticket (titre, numéro, ID)" />
-                    <button class="btn btn-primary" id="linkTicketBtn">Lier</button>
+                    <input type="text" id="linkTicketSearch" placeholder="Search ticket (title, number, ID)" />
+                    <button class="btn btn-primary" id="linkTicketBtn">Link</button>
                   </div>
                   <div id="linkTicketResults" style="border:1px solid #e5e7eb; border-radius:6px; max-height:220px; overflow:auto; display:none;"></div>
                 </div>
-                <div id="taskTickets" style="min-height:120px;">Chargement…</div>
+                <div id="taskTickets" style="min-height:120px;">Loading…</div>
               </section>
             </div>
             <div class="modal-footer">
@@ -1656,6 +2200,70 @@ class AdminApp {
           await this.loadTaskComments(taskId);
         });
       }
+
+      // Mentions (@) in task discussions
+      try {
+        const taskTextarea = modalEl.querySelector('#taskCommentBody');
+        const taskMentionBox = modalEl.querySelector('#taskMentionSuggestions');
+        const taskMentionList = modalEl.querySelector('#taskMentionList');
+        let usersCacheTask = [];
+        const ensureUsersTask = async () => {
+          if (usersCacheTask.length) return usersCacheTask;
+          try {
+            const pid = this.currentTaskProjectId;
+            if (!pid) { return []; }
+            const res = await api.getProjectMembers(pid);
+            usersCacheTask = (res?.data || []);
+            console.debug('[task-mentions] project members loaded:', usersCacheTask.length);
+            usersCacheTask.sort((a,b)=>`${a.first_name||''} ${a.last_name||''}`.localeCompare(`${b.first_name||''} ${b.last_name||''}`));
+            return usersCacheTask;
+          } catch(err){ console.error('[task-mentions] load members error:', err); return []; }
+        };
+        const filterUsersTask = (q) => {
+          q=(q||'').toLowerCase();
+          const list = usersCacheTask.filter(u=>{
+            const email=(u.email||'').toLowerCase();
+            const fn=(u.first_name||'').toLowerCase();
+            const ln=(u.last_name||'').toLowerCase();
+            const full=`${fn} ${ln}`.trim();
+            if(!q) return true;
+            return email.includes(q)||fn.includes(q)||ln.includes(q)||full.includes(q);
+          });
+          return list.slice(0,8);
+        };
+        const closeTaskMention=()=>{ if(taskMentionBox){ taskMentionBox.style.display='none'; taskMentionList.innerHTML=''; } };
+        taskTextarea?.addEventListener('input', async ()=>{
+          const val=taskTextarea.value; const caret=taskTextarea.selectionStart||val.length; const upto=val.substring(0,caret);
+          const at=upto.lastIndexOf('@'); if(at===-1){ closeTaskMention(); return; }
+          const fragment=upto.substring(at+1); if(/\s/.test(fragment)){ closeTaskMention(); return; }
+          console.debug('[task-mentions] detected "@" at', at, 'fragment="'+fragment+'"');
+          await ensureUsersTask();
+          const matches=filterUsersTask(fragment);
+          console.debug('[task-mentions] matches:', matches.length);
+          if(!matches.length){ closeTaskMention(); return; }
+          taskMentionList.innerHTML = matches.map(u=>{
+            const name=`${u.first_name||''} ${u.last_name||''}`.trim()||u.email;
+            return `<div class=\"mention-item\" data-email=\"${u.email}\" style=\"padding:6px 8px; cursor:pointer; border-radius:4px;\"><strong>${name}</strong> <span style=\\"color:#6b7280; font-size:12px;\\">${u.email}</span></div>`;
+          }).join('');
+          taskMentionBox.style.display='block';
+          // Prevent clicks inside the suggestion box from bubbling to modal overlay
+          taskMentionList.addEventListener('mousedown', (e)=>{ e.stopPropagation(); });
+          taskMentionList.querySelectorAll('.mention-item').forEach(item=>{
+            // Use mousedown to avoid textarea blur clearing the list before click
+            item.addEventListener('mousedown',(ev)=>{
+              ev.preventDefault(); ev.stopPropagation();
+              const email=item.dataset.email; const before=val.substring(0,at); const after=val.substring(caret);
+              taskTextarea.value=`${before}@${email} ${after}`;
+              const pos=(before+`@${email} `).length; taskTextarea.setSelectionRange(pos,pos);
+              closeTaskMention();
+              // Re-focus the textarea to keep modal open and continue typing
+              setTimeout(()=>taskTextarea.focus(), 0);
+              console.debug('[task-mentions] selected:', email);
+            });
+          });
+        });
+        taskTextarea?.addEventListener('blur', ()=>{ console.debug('[task-mentions] blur -> close'); setTimeout(closeTaskMention,150); });
+      } catch(e){ /* silent */ }
 
       // Attachment upload
       const uploadBtn = modalEl.querySelector('#taskAttachmentUploadBtn');
@@ -1748,15 +2356,29 @@ class AdminApp {
     const container = document.querySelector('#taskModal #taskComments');
     if (!container) return;
     try {
+      // Préparer mapping email->nom pour mentions selon le projet courant
+      let emailToName = {};
+      if (this.currentTaskProjectId) {
+        try {
+          const mres = await api.getProjectMembers(this.currentTaskProjectId);
+          (mres.data||[]).forEach(u => { emailToName[(u.email||'').toLowerCase()] = `${u.first_name||''} ${u.last_name||''}`.trim() || u.email; });
+        } catch(e) { /* silent */ }
+      }
+      const highlight = (text) => {
+        const escaped = (text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        return escaped.replace(/@([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/g, (m, email)=>{
+          const key=(email||'').toLowerCase(); const name=emailToName[key]||email; return `<span style=\"color:#C9A33A; font-weight:700;\">${name}</span>`;
+        }).replace(/\n/g,'<br>');
+      };
       const res = await fetch(`/api/dev/tasks/${taskId}/comments`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }});
       if (!res.ok) throw new Error('Erreur chargement commentaires');
       const data = await res.json();
       const comments = data.data || [];
-      if (comments.length === 0) { container.innerHTML = '<div style="color:#6b7280;">Aucun message</div>'; return; }
+      if (comments.length === 0) { container.innerHTML = '<div style="color:#6b7280;">No messages</div>'; return; }
       container.innerHTML = comments.map(c => `
         <div class="comment-item" style="margin-bottom:12px;">
           <div style="font-weight:600; font-size:13px; color:#111827;">${c.author_first_name || ''} ${c.author_last_name || ''} <span style="color:#6b7280; font-weight:400;">(${api.formatDateTime ? api.formatDateTime(c.created_at) : c.created_at})</span></div>
-          <div style="white-space:pre-wrap; font-size:13px; color:#374151;">${(c.body || '').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+          <div style="white-space:pre-wrap; font-size:13px; color:#374151;">${highlight(c.body || '')}</div>
         </div>
       `).join('');
       container.scrollTop = container.scrollHeight;
@@ -1782,7 +2404,7 @@ class AdminApp {
       if (!res.ok) throw new Error('Erreur activité');
       const data = await res.json();
       const items = data.data || [];
-      if (items.length === 0) { container.innerHTML = '<div style="color:#6b7280;">Aucune activité</div>'; return; }
+      if (items.length === 0) { container.innerHTML = '<div style="color:#6b7280;">No activity</div>'; return; }
       container.innerHTML = items.map(a => `
         <div class="activity-item" style="padding:8px 0; border-bottom:1px solid #eee; font-size:13px;">
           <div style="color:#111827; font-weight:600;">${a.action || a.type || 'activité'}</div>
@@ -1803,7 +2425,7 @@ class AdminApp {
       if (!res.ok) throw new Error('Erreur pièces jointes');
       const data = await res.json();
       const files = data.data || [];
-      if (files.length === 0) { container.innerHTML = '<div style="color:#6b7280;">Aucune pièce jointe</div>'; return; }
+      if (files.length === 0) { container.innerHTML = '<div style="color:#6b7280;">No attachments</div>'; return; }
       container.innerHTML = `
         <div class="attachments-list">
           ${files.map(f => `
@@ -1979,7 +2601,7 @@ class AdminApp {
         await this.loadProjectTasks(this.currentProject.id);
       }
       
-      this.showNotification('Tâche mise à jour avec succès', 'success');
+      this.showNotification('Task updated successfully', 'success');
       
     } catch (error) {
       console.error('Erreur sauvegarde tâche:', error);
@@ -2253,8 +2875,8 @@ class AdminApp {
       
       // Mapper les colonnes kanban vers les statuts DB
       const statusMapping = {
-        'todo_back': 'todo',
-        'todo_front': 'todo',
+        'todo_back': 'todo_back',
+        'todo_front': 'todo_front',
         'in_progress': 'in_progress',
         'ready_for_review': 'ready_for_review',
         'done': 'done'
@@ -2275,7 +2897,7 @@ class AdminApp {
       if (response.ok) {
         // Succès: pas de reload, maintenir l'état optimiste
         this.updateKanbanCounts();
-        this.showNotification('Tâche déplacée', 'success');
+        this.showNotification('Task moved', 'success');
       } else {
         throw new Error('Erreur lors du déplacement');
       }
@@ -2295,7 +2917,7 @@ class AdminApp {
   }
 
   setupKanbanEvents(projectId) {
-    console.log('setupKanbanEvents appelé avec projectId:', projectId);
+    
     
     // Utiliser event delegation pour les boutons du header qui peuvent être recréés
     const headerActions = document.getElementById('mainHeaderActions');
@@ -2305,97 +2927,94 @@ class AdminApp {
       
       // Créer le handler avec le projectId en closure
       this.kanbanHeaderClickHandler = (e) => {
-        if (e.target.id === 'backToProjectsBtn') {
-          console.log('Clic sur retour aux projets');
-          document.getElementById('projectKanban').style.display = 'none';
-          document.getElementById('projects').style.display = 'block';
-          document.querySelector('.main-title').textContent = 'Espace Agence';
-          this.currentProject = null;
-          this.currentTab = 'projects';
-          this.updateHeaderActions();
-        } else if (e.target.id === 'createTaskBtn') {
-          console.log('Clic sur nouvelle tâche, projectId:', projectId);
+        if (e.target.id === 'createTaskBtn') {
+          
           this.showCreateTaskModal(projectId);
         }
       };
       
       // Attacher l'event listener
       headerActions.addEventListener('click', this.kanbanHeaderClickHandler);
-      console.log('Event delegation configurée pour les boutons du header');
+      
     }
   }
 
   getPriorityLabel(priority) {
     const labels = {
-      'low': 'Faible',
-      'medium': 'Moyenne',
-      'high': 'Haute',
-      'urgent': 'Urgente'
+      'low': 'Low',
+      'medium': 'Medium',
+      'high': 'High',
+      'urgent': 'Urgent'
     };
     return labels[priority] || priority;
   }
 
   async showCreateTaskModal(projectId) {
-    console.log('showCreateTaskModal appelée avec projectId:', projectId);
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>Nouvelle tâche</h3>
-          <button class="modal-close">&times;</button>
-        </div>
-        <div class="modal-body">
-          <form id="createTaskForm">
-            <div class="form-group">
-              <label>Titre *</label>
-              <input type="text" id="taskTitle" required>
-            </div>
-            <div class="form-group">
-              <label>Description</label>
-              <textarea id="taskDescription"></textarea>
-            </div>
-            <div class="form-group">
-              <label>Priorité</label>
-              <select id="taskPriority">
-                <option value="low">Faible</option>
-                <option value="medium">Moyenne</option>
-                <option value="high">Haute</option>
-                <option value="urgent">Urgente</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Statut</label>
-              <select id="taskStatus">
-                <option value="todo_back">To-do Back</option>
-                <option value="todo_front">To-do Front</option>
-                <option value="in_progress">In Progress</option>
-              </select>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary modal-close">Annuler</button>
-          <button type="submit" class="btn btn-primary" form="createTaskForm">Créer</button>
-        </div>
-      </div>
-    `;
     
-    document.body.appendChild(modal);
-    
-    // Événements
-    modal.querySelectorAll('.modal-close').forEach(btn => {
-      btn.onclick = () => modal.remove();
+    const modalHtml = `
+      <div class="modal" id="createTaskModal" role="dialog" aria-modal="true">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>New Task</h3>
+            <button class="modal-close" type="button" aria-label="Close">&times;</button>
+          </div>
+          <div class="modal-body">
+            <form id="createTaskForm">
+              <div class="form-group">
+                <label>Title *</label>
+                <input type="text" id="taskTitle" required>
+              </div>
+              <div class="form-group">
+                <label>Description</label>
+                <textarea id="taskDescription"></textarea>
+              </div>
+              <div class="form-group">
+                <label>Priority</label>
+                <select id="taskPriority">
+                  <option value="low">Low</option>
+                  <option value="medium" selected>Medium</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Status</label>
+                <select id="taskStatus">
+                  <option value="todo_back" selected>To-do (Back)</option>
+                  <option value="todo_front">To-do (Front)</option>
+                  <option value="in_progress">In progress</option>
+                </select>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-close-modal>Cancel</button>
+            <button class="btn btn-primary" id="createTaskSubmitBtn">Create</button>
+          </div>
+        </div>
+      </div>`;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    document.documentElement.classList.add('modal-open');
+    document.body.classList.add('modal-open');
+    const modalEl = document.getElementById('createTaskModal');
+    const close = () => {
+      modalEl?.remove();
+      document.documentElement.classList.remove('modal-open');
+      document.body.classList.remove('modal-open');
+    };
+    modalEl.querySelector('.modal-close')?.addEventListener('click', close);
+    modalEl.querySelector('[data-close-modal]')?.addEventListener('click', close);
+    modalEl.addEventListener('click', (e) => { if (!e.target.closest('.modal-content')) close(); });
+    const escHandler = (e) => { if (e.key === 'Escape') { close(); window.removeEventListener('keydown', escHandler); } };
+    window.addEventListener('keydown', escHandler);
+
+    const submitBtn = modalEl.querySelector('#createTaskSubmitBtn');
+    submitBtn.addEventListener('click', async () => {
+      const formEl = modalEl.querySelector('#createTaskForm');
+      if (!formEl.reportValidity()) return;
+      await this.createTask(projectId, modalEl);
     });
-    
-    modal.onclick = (e) => {
-      if (e.target === modal) modal.remove();
-    };
-    
-    document.getElementById('createTaskForm').onsubmit = async (e) => {
-      e.preventDefault();
-      await this.createTask(projectId, modal);
-    };
   }
 
   async createTask(projectId, modal) {
@@ -2419,15 +3038,15 @@ class AdminApp {
         })
       });
       
-      if (!response.ok) throw new Error('Erreur lors de la création de la tâche');
+      if (!response.ok) throw new Error('Error while creating task');
       
-      this.showNotification('Tâche créée avec succès', 'success');
+      this.showNotification('Task created successfully', 'success');
       modal.remove();
       await this.loadProjectTasks(projectId);
       
     } catch (error) {
-      console.error('Erreur createTask:', error);
-      this.showNotification('Erreur lors de la création de la tâche', 'error');
+      console.error('createTask error:', error);
+      this.showNotification('Error while creating task', 'error');
     }
   }
 
@@ -2480,8 +3099,8 @@ class AdminApp {
           </div>
           
           <div class="modal-actions">
-            <button type="button" class="btn btn-secondary" onclick="adminApp.closeModal()">Fermer</button>
-            <button type="button" class="btn btn-primary" onclick="adminApp.editClient(${client.id}); adminApp.closeModal();">Modifier</button>
+            <button type="button" class="btn btn-secondary cancel-btn">Fermer</button>
+            <button type="button" class="btn btn-primary" data-action="edit-client" data-client-id="${client.id}">Modifier</button>
           </div>
         </div>
       `);
@@ -2498,6 +3117,10 @@ class AdminApp {
         api.getProject(id),
         api.getClients()
       ]);
+
+      // Charger le client du projet pour préremplir les notes internes existantes
+      const clientResponse = await api.getUser(projectResponse.data.project.client_id);
+      const projectClient = clientResponse.data.user;
       
       const project = projectResponse.data.project;
       const clients = clientsResponse.data.clients;
@@ -2505,6 +3128,7 @@ class AdminApp {
       const modal = this.createModal('Modifier Projet', `
         <form id="editProjectForm" class="form">
           <input type="hidden" name="id" value="${project.id}">
+          <input type="hidden" name="client_id" value="${project.client_id}">
           
           <div class="form-group">
             <label class="form-label" for="editProjectClient">Client *</label>
@@ -2562,6 +3186,18 @@ class AdminApp {
             </div>
           </div>
 
+          <div class="form-group">
+            <label class="form-label" for="editProjectInternalNotes">Notes internes / Informations confidentielles</label>
+            <textarea id="editProjectInternalNotes" name="internal_notes"
+                     class="form-input" rows="4"
+                     placeholder="Notes internes, identifiants, informations sensibles...">${(() => {
+                       if (projectClient && projectClient.confidential_file_decrypted && !this.hasValidFile(projectClient.confidential_file_decrypted)) {
+                         return projectClient.confidential_file_decrypted;
+                       }
+                       return '';
+                     })()}</textarea>
+          </div>
+
           
           ${project.status !== 'archived' ? `
             <div class="form-warning">
@@ -2570,7 +3206,7 @@ class AdminApp {
           ` : ''}
           
           <div class="form-actions">
-            <button type="button" class="btn btn-secondary cancel-btn" onclick="adminApp.closeModal()">Annuler</button>
+            <button type="button" class="btn btn-secondary cancel-btn">Annuler</button>
             <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
           </div>
         </form>
@@ -2618,6 +3254,7 @@ class AdminApp {
   async handleEditProject(form) {
     const formData = new FormData(form);
     const projectId = formData.get('id');
+    const clientId = formData.get('client_id');
     
     const updateData = {
       name: formData.get('name').trim(),
@@ -2638,6 +3275,16 @@ class AdminApp {
       submitBtn.textContent = 'Enregistrement...';
 
       const response = await api.updateProject(projectId, updateData);
+
+      // Mettre à jour les notes internes/confidentielles au niveau du client associé
+      const internalNotes = formData.get('internal_notes');
+      if (clientId != null && internalNotes != null) {
+        try {
+          await api.updateUser(clientId, { confidential_file: internalNotes });
+        } catch (e) {
+          console.warn('Mise à jour des notes internes échouée:', e);
+        }
+      }
       
       if (response.success) {
         this.showNotification('Projet modifié avec succès', 'success');
@@ -2735,7 +3382,7 @@ class AdminApp {
           </div>
           
           <div class="form-actions">
-            <button type="button" class="btn btn-secondary cancel-btn" onclick="adminApp.closeModal()">
+            <button type="button" class="btn btn-secondary cancel-btn">
               Annuler
             </button>
             <button type="button" class="btn btn-danger" id="confirmDeleteProjectBtn" disabled>
@@ -2794,7 +3441,7 @@ class AdminApp {
       }
       
       // Log pour audit
-      console.log(`[AUDIT] Projet supprimé : ${project.name} (ID: ${id}) par ${this.currentUser.email}`);
+      
       
     } catch (error) {
       this.showNotification(error.message || 'Erreur lors de la suppression', 'error');
@@ -2831,9 +3478,7 @@ class AdminApp {
       const response = await api.getUser(id);
       const client = response.data.user;
       
-      // Charger les règles SLA du client
-      const slaResponse = await api.getSLARules({ client_id: id });
-      const slaRules = slaResponse.data.sla_rules || [];
+      // Les règles SLA ne sont plus configurées au niveau du client
       
       const modal = this.createModal('Modifier Client', `
         <form id="editClientForm" class="form">
@@ -2883,63 +3528,9 @@ class AdminApp {
             </div>
           </div>
           
-          <div class="form-info" style="padding:10px; border:1px dashed #e5e7eb; border-radius:6px; background:#fafafa;">
-            <small>Note: Les documents "Devis" et "Cahier des charges" sont désormais gérés au niveau du projet (voir l'édition du projet).</small>
-          </div>
+          
 
-          <div class="form-group">
-            <label class="form-label" for="editClientSpecifications">Cahier des charges</label>
-            ${(() => {
-              // Si c'est un fichier uploadé (JSON)
-              if (this.hasValidFile(client.confidential_file_decrypted)) {
-                try {
-                  const fileData = JSON.parse(client.confidential_file_decrypted);
-                  return `
-                    <div class="file-display" style="padding: 10px; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-background);">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <div>
-                          <span style="font-weight: 500;">📄 ${fileData.name || 'Fichier'}</span>
-                          <small style="display: block; color: var(--color-muted); margin-top: 4px;">Cahier des charges uploadé</small>
-                        </div>
-                        <button type="button" class="btn btn-sm btn--primary" onclick="adminApp.downloadConfidentialFile('${encodeURIComponent(client.confidential_file_decrypted)}')">
-                          Télécharger
-                        </button>
-                      </div>
-                    </div>
-                    <div style="margin-top: 10px;">
-                      <label for="editClientSpecifications">Remplacer le fichier :</label>
-                      <input type="file" id="editClientSpecifications" name="confidential_file" class="form-input">
-                    </div>
-                  `;
-                } catch {
-                  // Ancien format texte - ne pas afficher comme fichier
-                  return `
-                    <input type="file" id="editClientSpecifications" name="confidential_file" class="form-input">
-                    <small class="form-text text-muted">Aucun cahier des charges uploadé</small>
-                  `;
-                }
-              } else {
-                return `
-                  <input type="file" id="editClientSpecifications" name="confidential_file" class="form-input">
-                  <small class="form-text text-muted">Aucun cahier des charges uploadé</small>
-                `;
-              }
-            })()}
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="editClientNotes">Notes internes / Informations confidentielles</label>
-            <textarea id="editClientNotes" name="internal_notes"
-                     class="form-input" rows="4"
-                     placeholder="Notes internes, identifiants, informations sensibles...">${(() => {
-                       // Si confidential_file contient du texte simple (pas un fichier JSON)
-                       if (client.confidential_file_decrypted && !this.hasValidFile(client.confidential_file_decrypted)) {
-                         return client.confidential_file_decrypted;
-                       }
-                       return '';
-                     })()}</textarea>
-            <small class="form-text">Ces informations seront chiffrées et stockées de manière sécurisée.</small>
-          </div>
+          
           
           
           <div class="form-section">
@@ -2954,40 +3545,7 @@ class AdminApp {
             </div>
           </div>
           
-          <div class="form-section">
-            <h3> Configuration SLA</h3>
-            <p><small>Définir les délais de réponse et de résolution selon la priorité</small></p>
-            
-            ${['low', 'normal', 'high', 'urgent'].map(priority => {
-              const sla = slaRules.find(s => s.priority === priority);
-              const priorityLabels = {
-                'low': ' Faible',
-                'normal': ' Normale', 
-                'high': 'Élevée',
-                'urgent': ' Urgente'
-              };
-              
-              return `
-                <div class="sla-priority-group">
-                  <h4>${priorityLabels[priority]}</h4>
-                  <div class="form-row">
-                    <div class="form-group">
-                      <label class="form-label">Temps de réponse (heures)</label>
-                      <input type="number" name="sla_${priority}_response" 
-                             class="form-input" min="1" max="720" 
-                             value="${sla ? sla.response_time_hours : this.getDefaultSLATime(priority, 'response')}" required>
-                    </div>
-                    <div class="form-group">
-                      <label class="form-label">Temps de résolution (heures)</label>
-                      <input type="number" name="sla_${priority}_resolution" 
-                             class="form-input" min="1" max="8760" 
-                             value="${sla ? sla.resolution_time_hours : this.getDefaultSLATime(priority, 'resolution')}" required>
-                    </div>
-                  </div>
-                </div>
-              `;
-            }).join('')}
-          </div>
+          
           
           <div class="form-info">
             <p><small> ${client.project_count || 0} projets - ${client.ticket_count || 0} tickets</small></p>
@@ -2995,7 +3553,7 @@ class AdminApp {
           </div>
           
           <div class="form-actions">
-            <button type="button" class="btn btn-secondary cancel-btn" onclick="adminApp.closeModal()">Annuler</button>
+            <button type="button" class="btn btn-secondary cancel-btn">Annuler</button>
             <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
           </div>
         </form>
@@ -3032,23 +3590,7 @@ class AdminApp {
       }
     });
 
-    // Documents (devis / cahier des charges) gérés au niveau projet: plus de traitement côté client
-
-    // Collecter les données SLA
-    const slaData = [];
-    ['low', 'normal', 'high', 'urgent'].forEach(priority => {
-      const responseTime = parseInt(formData.get(`sla_${priority}_response`));
-      const resolutionTime = parseInt(formData.get(`sla_${priority}_resolution`));
-      
-      if (responseTime && resolutionTime) {
-        slaData.push({
-          client_id: parseInt(clientId),
-          priority: priority,
-          response_time_hours: responseTime,
-          resolution_time_hours: resolutionTime
-        });
-      }
-    });
+    // Documents (devis / cahier des charges) désormais gérés au niveau projet: aucun traitement côté client
 
     try {
       const submitBtn = form.querySelector('button[type="submit"]');
@@ -3065,31 +3607,7 @@ class AdminApp {
         this.showNotification('Mot de passe mis à jour', 'info');
       }
       
-      // Mise à jour des règles SLA
-      for (const slaRule of slaData) {
-        try {
-          // Vérifier si une règle existe déjà pour ce client et cette priorité
-          const existingRulesResponse = await api.getClientSLARules(clientId);
-          const existingRule = existingRulesResponse.data.sla_rules?.find(
-            r => r.priority === slaRule.priority
-          );
-          
-          if (existingRule) {
-            // Mettre à jour la règle existante
-            await api.updateSLARule(existingRule.id, {
-              response_time_hours: slaRule.response_time_hours,
-              resolution_time_hours: slaRule.resolution_time_hours
-            });
-          } else {
-            // Créer une nouvelle règle
-            await api.createSLARule(slaRule);
-          }
-        } catch (slaError) {
-          console.error('SLA update error:', slaError);
-        }
-      }
-      
-      this.showNotification('Client et règles SLA modifiés avec succès', 'success');
+      this.showNotification('Client modifié avec succès', 'success');
       this.closeModal();
       this.loadClients();
       
@@ -3261,7 +3779,7 @@ class AdminApp {
           </div>
           
           <div class="form-actions">
-            <button type="button" class="btn btn-secondary cancel-btn" onclick="adminApp.closeModal()">
+            <button type="button" class="btn btn-secondary cancel-btn">
               Annuler
             </button>
             <button type="button" class="btn btn-danger" id="confirmDeleteBtn" disabled>
@@ -3305,7 +3823,7 @@ class AdminApp {
       this.loadClients();
       
       // Log pour audit
-      console.log(`[AUDIT] Client supprimé : ${client.email} (ID: ${id}) par ${this.currentUser.email}`);
+      
       
     } catch (error) {
       this.showNotification(
@@ -3377,7 +3895,7 @@ class AdminApp {
           </div>
           
           <div class="form-actions">
-            <button type="button" class="btn btn-secondary cancel-btn" onclick="adminApp.closeModal()">Annuler</button>
+            <button type="button" class="btn btn-secondary cancel-btn">Annuler</button>
             <button type="submit" class="btn btn-primary">Enregistrer les SLAs</button>
           </div>
         </form>
@@ -3519,7 +4037,7 @@ class AdminApp {
           </div>
           
           <div class="form-actions">
-            <button type="button" class="btn btn-secondary cancel-btn" onclick="adminApp.closeModal()">Annuler</button>
+            <button type="button" class="btn btn-secondary cancel-btn">Annuler</button>
             <button type="submit" class="btn btn-primary">Créer le Projet</button>
           </div>
         </form>
@@ -3626,7 +4144,7 @@ class AdminApp {
               <label class="form-label" for="ticketPriority">Priorité *</label>
               <select id="ticketPriority" name="priority" class="form-input" required>
                 <option value="low"> Faible</option>
-                <option value="normal" selected> Normale</option>
+                <option value="normal" selected> Moyenne</option>
                 <option value="high">Élevée</option>
                 <option value="urgent"> Urgente</option>
               </select>
@@ -3642,7 +4160,7 @@ class AdminApp {
           </div>
           
           <div class="form-actions">
-            <button type="button" class="btn btn-secondary cancel-btn" onclick="adminApp.closeModal()">Annuler</button>
+            <button type="button" class="btn btn-secondary cancel-btn">Annuler</button>
             <button type="submit" class="btn btn-primary">Créer le Ticket</button>
           </div>
         </form>
@@ -3762,7 +4280,7 @@ class AdminApp {
         
         
         <div class="form-actions">
-          <button type="button" class="btn btn-secondary cancel-btn" onclick="adminApp.closeModal()">Annuler</button>
+          <button type="button" class="btn btn-secondary cancel-btn">Annuler</button>
           <button type="submit" class="btn btn-primary">Créer le Client</button>
         </div>
       </form>
@@ -3770,7 +4288,7 @@ class AdminApp {
 
     document.getElementById('addClientForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      console.log('Form submitted - handleAddClient called');
+      
       await this.handleAddClient(e.target);
     });
   }
@@ -3799,7 +4317,7 @@ class AdminApp {
           </div>
           
           <div class="form-actions">
-            <button type="button" class="btn btn-secondary cancel-btn" onclick="adminApp.closeModal()">Annuler</button>
+            <button type="button" class="btn btn-secondary cancel-btn">Annuler</button>
             <button type="submit" class="btn btn-primary">Continuer</button>
           </div>
         </form>
@@ -3820,7 +4338,7 @@ class AdminApp {
   }
 
   async handleAddClient(form) {
-    console.log('handleAddClient function started');
+    
     const formData = new FormData(form);
     const clientData = {
       first_name: formData.get('first_name').trim(),
@@ -3833,7 +4351,7 @@ class AdminApp {
       role: 'client'
     };
     
-    console.log('Data to send:', clientData);
+    
 
     // Validation
     if (clientData.first_name.length < 2) {
@@ -3862,9 +4380,9 @@ class AdminApp {
       submitBtn.disabled = true;
       submitBtn.textContent = 'Création en cours...';
 
-      console.log('Calling api.createUser...');
+      
       const response = await api.createUser(clientData);
-      console.log('API Response:', response);
+      
       
       if (response.success) {
         const clientId = response.data.user.id;
@@ -4036,7 +4554,7 @@ class AdminApp {
   // Ancienne fonction remplacée par calculateSLATimeRemaining et formatSLADisplay
 
   formatInvoiceSLA(invoice) {
-    if (!invoice.due_date || invoice.status === 'paid' || invoice.status === 'cancelled') {
+    if (!invoice.due_date || invoice.status === 'paid') {
       return '<span class="sla-status sla-good">-</span>';
     }
 
@@ -4175,8 +4693,7 @@ class AdminApp {
     const labels = {
       'sent': ' Envoyée', 
       'paid': ' Payée',
-      'overdue': ' En retard',
-      'cancelled': ' Annulée'
+      'overdue': ' En retard'
     };
     return labels[status] || status;
   }
@@ -4267,7 +4784,7 @@ class AdminApp {
           </div>
           
           <div class="form-actions">
-            <button type="button" class="btn btn-secondary cancel-btn" onclick="adminApp.closeModal()">Annuler</button>
+            <button type="button" class="btn btn-secondary cancel-btn">Annuler</button>
             <button type="submit" class="btn btn-primary">Créer la facture</button>
           </div>
         </form>
@@ -4527,7 +5044,7 @@ class AdminApp {
     doc.setTextColor(...darkColor);
     doc.setFontSize(8);
     doc.text('Merci pour votre confiance !', 20, 270);
-    doc.text('En cas de question, contactez-nous à omar@shape-conseil.fr', 20, 275);
+    doc.text('En cas de question, contactez-nous à contact@shape-conseil.fr', 20, 275);
     
     // Télécharger le PDF
     doc.save(`Facture-${invoice.invoice_number}.pdf`);
@@ -4608,15 +5125,33 @@ class AdminApp {
       </div>
       
       <div class="modal-footer">
-        <button type="button" class="btn btn-primary" onclick="adminApp.downloadInvoicePDF(${invoice.id}); adminApp.closeModal();">
+        <button type="button" class="btn btn-primary" data-action="download-invoice" data-invoice-id="${invoice.id}">
           Télécharger PDF
         </button>
-        <button type="button" class="btn btn-secondary" onclick="adminApp.editInvoice(${invoice.id}); adminApp.closeModal();">
+        <button type="button" class="btn btn-secondary" data-action="edit-invoice" data-invoice-id="${invoice.id}">
           Modifier
         </button>
         <button type="button" class="btn btn-secondary cancel-btn">Fermer</button>
       </div>
     `);
+    // Bind actions to comply with CSP (no inline handlers)
+    const modal = document.getElementById('modal');
+    if (modal) {
+      const downloadBtn = modal.querySelector('[data-action="download-invoice"]');
+      const editBtn = modal.querySelector('[data-action="edit-invoice"]');
+      if (downloadBtn) {
+        downloadBtn.addEventListener('click', () => {
+          this.downloadInvoicePDF(invoice.id);
+          this.closeModal();
+        });
+      }
+      if (editBtn) {
+        editBtn.addEventListener('click', () => {
+          this.editInvoice(invoice.id);
+          this.closeModal();
+        });
+      }
+    }
   }
 
   showEditInvoiceModal(invoice) {
@@ -4654,7 +5189,6 @@ class AdminApp {
               <option value="sent" ${invoice.status === 'sent' ? 'selected' : ''}>Envoyée</option>
               <option value="paid" ${invoice.status === 'paid' ? 'selected' : ''}>Payée</option>
               <option value="overdue" ${invoice.status === 'overdue' ? 'selected' : ''}>En retard</option>
-              <option value="cancelled" ${invoice.status === 'cancelled' ? 'selected' : ''}>Annulée</option>
             </select>
           </div>
           
@@ -4738,14 +5272,12 @@ class AdminApp {
       submitBtn.textContent = 'Enregistrement...';
 
       try {
-        console.log('🔄 Tentative de mise à jour de la facture:', invoice.id);
         const updateData = {
           amount_ht: parseFloat(amountHt.value),
           tva_rate: noTva.checked ? 0 : parseFloat(tvaRate.value),
           description: document.getElementById('editDescription').value,
           status: document.getElementById('editStatus').value
         };
-        console.log('📝 Données à envoyer:', updateData);
         
         await this.updateInvoice(invoice.id, updateData);
         this.closeModal();
@@ -4759,20 +5291,15 @@ class AdminApp {
 
   async updateInvoice(id, data) {
     try {
-      console.log('📤 Envoi de la requête updateInvoice avec ID:', id, 'et données:', data);
       const response = await api.updateInvoice(id, data);
-      console.log('📥 Réponse reçue:', response);
       
       if (response.success) {
-        console.log('✅ Mise à jour réussie');
         this.showNotification('Facture mise à jour avec succès', 'success');
         // Recharger la liste des factures
         if (this.currentTab === 'invoices') {
-          console.log('🔄 Rechargement de la liste des factures');
           this.loadInvoices();
         }
       } else {
-        console.log('⚠️ Réponse non-success:', response);
         this.showNotification('Erreur lors de la mise à jour de la facture', 'error');
       }
     } catch (error) {
@@ -4796,10 +5323,18 @@ class AdminApp {
           <div style="font-weight: 500; font-size: 14px;">${file.name}</div>
           <div style="font-size: 12px; color: #666;">${this.formatFileSize(file.size)}</div>
         </div>
-        <button type="button" onclick="adminApp.removeFile(${index})" 
+        <button type="button" class="remove-selected-file" data-index="${index}"
                 style="background: none; border: none; color: #dc3545; cursor: pointer; padding: 4px; font-size: 16px;">✕</button>
       </div>
     `).join('');
+
+    // Bind remove buttons (CSP-safe)
+    selectedFilesList.querySelectorAll('.remove-selected-file').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const idx = parseInt(e.currentTarget.dataset.index);
+        this.removeFile(idx);
+      });
+    });
   }
 
   removeFile(index) {
@@ -4844,11 +5379,8 @@ class AdminApp {
           return `
             <div style="display: flex; align-items: center; gap: 6px; margin: 4px 0; padding: 6px 8px; background: ${isFromClient ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)'}; border-radius: 4px; font-size: 12px;">
               <span>${fileIcon}</span>
-              <a href="javascript:void(0)" 
-                 onclick="window.adminApp.downloadAttachment(${attachment.id})"
-                 style="color: ${isFromClient ? '#93c5fd' : '#bfdbfe'}; text-decoration: none; font-weight: 500; cursor: pointer;"
-                 onmouseover="this.style.textDecoration='underline'"
-                 onmouseout="this.style.textDecoration='none'">
+              <a href="#" class="attachment-download" data-attachment-id="${attachment.id}"
+                 style="color: ${isFromClient ? '#93c5fd' : '#bfdbfe'}; text-decoration: none; font-weight: 500; cursor: pointer;">
                 ${attachment.original_filename}
               </a>
               <span style="color: ${isFromClient ? '#9ca3af' : '#d1d5db'};">(${fileSize})</span>

@@ -91,7 +91,7 @@ router.post('/tasks/:id/comments', verifyToken, requireAdminOrDev, async (req, r
     
     const commentId = result.id;
     
-    // Ajouter les mentions si fournies
+    // Ajouter les mentions fournies
     if (mentions && Array.isArray(mentions) && mentions.length > 0) {
       for (const userId of mentions) {
         // Vérifier que l'utilisateur mentionné existe et a accès au projet
@@ -106,6 +106,21 @@ router.post('/tasks/:id/comments', verifyToken, requireAdminOrDev, async (req, r
           }
         }
       }
+    }
+    // Parser les mentions @email dans le texte
+    try {
+      const mentionMatches = (body.match(/@([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/g) || [])
+        .map(m => m.slice(1).toLowerCase());
+      const uniqueEmails = [...new Set(mentionMatches)];
+      console.log('[task-mentions] parsed from comment:', uniqueEmails);
+      for (const email of uniqueEmails) {
+        const u = await db.get('SELECT id FROM users WHERE lower(email) = ?', [email]);
+        if (u) {
+          await db.run('INSERT INTO comment_mentions (comment_id, mentioned_user_id) VALUES (?, ?)', [commentId, u.id]);
+        }
+      }
+    } catch (mErr) {
+      console.warn('[task-mentions] parse error:', mErr?.message);
     }
     
     // Log de l'activité

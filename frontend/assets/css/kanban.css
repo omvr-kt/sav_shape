@@ -3,7 +3,8 @@
 .kanban-board {
   display: flex;
   gap: 20px;
-  padding: 20px;
+  /* Réduire l'espace au-dessus des colonnes */
+  padding: 8px 20px 20px;
   overflow-x: auto;
   min-height: calc(100vh - 200px);
 }
@@ -21,7 +22,8 @@
 }
 
 .kanban-column-header {
-  padding: 16px 20px;
+  /* Vertical plus compact pour réduire l'impression d'espace */
+  padding: 12px 16px;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;

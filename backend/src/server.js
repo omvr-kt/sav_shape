@@ -65,9 +65,37 @@ const limiter = rateLimit({
   }
 });
 
-app.use(helmet({
-  contentSecurityPolicy: config.security.useCsp ? undefined : false
-}));
+// Security headers (CSP configured to allow required CDNs when enabled)
+if (config.security.useCsp) {
+  app.use(helmet({
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        "default-src": ["'self'"],
+        // Allow local scripts plus jsPDF and Sortable from CDNs
+        "script-src": [
+          "'self'",
+          "https://cdnjs.cloudflare.com",
+          "https://cdn.jsdelivr.net"
+        ],
+        // Allow inline styles (limited) and Google Fonts stylesheet
+        "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        "img-src": ["'self'", "data:", "blob:"],
+        // Permit Google Fonts host for font files
+        "font-src": ["'self'", "data:", "https://fonts.gstatic.com"],
+        // API calls are same-origin; also allow source map fetches from CDNs
+        "connect-src": ["'self'", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net"],
+        // Lock down the rest
+        "object-src": ["'none'"],
+        "base-uri": ["'self'"],
+        "frame-ancestors": ["'self'"],
+        "form-action": ["'self'"]
+      }
+    }
+  }));
+} else {
+  app.use(helmet({ contentSecurityPolicy: false }));
+}
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
     ? (config.cors.origins.length ? config.cors.origins : false)
@@ -154,12 +182,18 @@ app.get('/client/invoices', (req, res) => {
 });
 
 // Routes développeur
+// Redirect legacy dev Kanban to unified admin interface
 app.get('/dev/kanban', (req, res) => {
-  res.sendFile(path.join(__dirname, '../../frontend/dev/kanban.html'));
+  res.redirect('/admin/');
+});
+
+// Also redirect the old static file path to the unified admin interface (avoids CSP inline script)
+app.get('/dev/kanban.html', (req, res) => {
+  res.redirect('/admin/');
 });
 
 app.get('/dev', (req, res) => {
-  res.redirect('/dev/kanban');
+  res.redirect('/admin/');
 });
 
 app.get('/test-navigation', (req, res) => {

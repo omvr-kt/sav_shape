@@ -28,8 +28,7 @@
     <link rel="stylesheet" href="/assets/css/client.css?v=1757355956">
     <link rel="stylesheet" href="/assets/css/unified-modals.css?v=1757355956">
     <link rel="stylesheet" href="/assets/css/error-message.css?v=1757355956">
-    <!-- Icônes Heroicons -->
-    <script src="https://unpkg.com/heroicons@1.0.6/outline/index.js"></script>
+    <!-- Icônes Heroicons supprimées (CSP) -->
 </head>
 <body>
     <div class="app-layout">
@@ -149,6 +148,7 @@
 
     <!-- Overlay mobile -->
     
+    <script src="/assets/js/debug.js"></script>
     <script src="/assets/js/auth-utils.js"></script>
     <script src="/assets/js/timezone-utils.js?v=1757350256"></script>
     <script src="/assets/js/business-hours.js?v=1757350256"></script>
@@ -157,15 +157,6 @@
     <script src="/assets/js/timezone-simple.js?v=1757350256"></script>
     <script src="/assets/js/sidebar-user.js?v=1757350256"></script>
     <script src="/assets/js/client-tickets.js?v=1757350256"></script>
-    <script>
-        // Logout functionality
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', function() {
-                localStorage.removeItem('token');
-                window.location.href = '/connexion.html';
-            });
-        }
-    </script>
+    <!-- Inline script supprimé (CSP) : la déconnexion est gérée dans client-tickets.js -->
 </body>
 </html>

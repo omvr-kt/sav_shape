@@ -1,3 +1,5 @@
+// Logs activés par défaut; utilisez ?debug=1 pour mode verbeux
+
 class TicketsApp {
   constructor() {
     this.currentUser = null;
@@ -12,18 +14,14 @@ class TicketsApp {
   }
 
   init() {
-    console.log('TicketsApp: Initializing...');
     this.checkAuth();
-    console.log('TicketsApp: Auth check completed, setting up event listeners...');
     this.setupEventListeners();
-    console.log('TicketsApp: Event listeners setup completed');
   }
 
   checkAuth() {
     const token = localStorage.getItem('token');
     
     if (!token) {
-      console.log('No token found, redirecting to login');
       window.location.href = '/connexion.html';
       return;
     }
@@ -34,7 +32,6 @@ class TicketsApp {
       // Vérifier si le token n'est pas expiré
       const now = Math.floor(Date.now() / 1000);
       if (tokenData.exp && tokenData.exp < now) {
-        console.log('Token expired, redirecting to login');
         localStorage.removeItem('token');
         window.location.href = '/connexion.html';
         return;
@@ -46,7 +43,7 @@ class TicketsApp {
         role: tokenData.role
       };
       
-      console.log('User authenticated:', this.currentUser);
+      
       
       // Charger les données réelles depuis l'API
       this.loadRealData();
@@ -83,7 +80,7 @@ class TicketsApp {
   }
 
   setupEventListeners() {
-    console.log('setupEventListeners: Starting...');
+    
     
     // Profile menu toggle
     const profileAvatar = document.getElementById('profileAvatar');
@@ -262,7 +259,6 @@ class TicketsApp {
       if (target.classList.contains('status-filter-item')) {
         e.preventDefault();
         const status = target.dataset.status;
-        console.log('Status filter clicked:', status);
         this.setStatusFilter(status);
         return;
       }
@@ -272,7 +268,6 @@ class TicketsApp {
       if (statusFilterParent) {
         e.preventDefault();
         const status = statusFilterParent.dataset.status;
-        console.log('Status filter parent clicked:', status);
         this.setStatusFilter(status);
         return;
       }
@@ -282,10 +277,7 @@ class TicketsApp {
       if (target.classList.contains('dropdown-toggle') || target.closest('.dropdown-toggle')) {
         e.preventDefault();
         const dropdown = target.closest('.dropdown');
-        if (dropdown) {
-          console.log('Dropdown toggle clicked');
-          this.toggleDropdown(dropdown);
-        }
+        if (dropdown) this.toggleDropdown(dropdown);
         return;
       }
       
@@ -475,14 +467,16 @@ class TicketsApp {
             'in_progress': 'En cours',
             'waiting_client': 'En attente',
             'resolved': 'Résolu',
-            'closed': 'Fermé'
+            // Afficher "Résolu" pour closed
+            'closed': 'Résolu'
           }[ticket.status] || ticket.status;
           
           const priorityText = {
             'low': 'Faible',
-            'normal': 'Normal',
-            'high': 'Élevé', 
-            'urgent': 'Urgent'
+            'normal': 'Moyenne',
+            'medium': 'Moyenne',
+            'high': 'Élevée', 
+            'urgent': 'Urgente'
           }[ticket.priority] || ticket.priority;
           
           const statusColor = {
@@ -490,7 +484,7 @@ class TicketsApp {
             'in_progress': '#f59e0b', 
             'waiting_client': '#06b6d4',
             'resolved': '#10b981',
-            'closed': '#6b7280'
+            'closed': '#10b981'
           }[ticket.status] || '#6b7280';
           
           const formatDate = (dateStr) => {
@@ -536,6 +530,7 @@ class TicketsApp {
                   <button class="btn btn-primary btn-sm view-ticket-btn" data-ticket-id="${ticket.id}" style="padding: 6px 12px; font-size: 13px; background: #0e2433; border: 1px solid #0e2433; color: white; border-radius: 6px;">💬 Conversation</button>
                 </div>
               </div>
+              <div id="conv-${ticket.id}" class="conversation-inline" style="display:none; border:1px solid #e5e7eb; border-radius:8px; padding:12px; background:#f8fafc;"></div>
             </div>
           `;
         } catch (ticketError) {
@@ -546,6 +541,14 @@ class TicketsApp {
       
       console.log('✅ HTML content généré, longueur:', htmlContent.length);
       container.innerHTML = htmlContent;
+      // Lier explicitement les boutons Conversation (robuste, sans délégation)
+      Array.from(container.querySelectorAll('.view-ticket-btn')).forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const id = parseInt(btn.dataset.ticketId);
+          if (!isNaN(id)) this.openConversation(id);
+        });
+      });
       
       // Start countdown updates
       this.startCountdownUpdates();
@@ -659,7 +662,7 @@ class TicketsApp {
             <div class="form-group">
               <label class="form-label">Priorité</label>
               <select name="priority" class="form-select">
-                <option value="normal">Normale - Dans les temps</option>
+                <option value="normal">Moyenne - Dans les temps</option>
                 <option value="high">Élevée - Urgent</option>
                 <option value="urgent">Urgente - Critique</option>
                 <option value="low">Faible - Quand possible</option>
@@ -829,7 +832,7 @@ class TicketsApp {
       'in_progress': 'En cours',
       'waiting_client': 'En attente',
       'resolved': 'Résolu',
-      'closed': 'Fermé'
+      'closed': 'Résolu'
     };
     return labels[status] || status;
   }
@@ -847,9 +850,9 @@ class TicketsApp {
 
   getPriorityLabel(priority) {
     const labels = {
-      'low': 'Basse',
-      'normal': 'Normale',
-      'high': 'Haute',
+      'low': 'Faible',
+      'normal': 'Moyenne',
+      'high': 'Élevée',
       'urgent': 'Urgente'
     };
     return labels[priority] || priority;
@@ -910,10 +913,36 @@ class TicketsApp {
     return thresholds[priority] || 'Délai de réponse (heures ouvrables)';
   }
 
+  async openConversation(ticketId) {
+    // Essayer la modale, avec fallback en inline si non visible
+    await this.showTicketModal(ticketId);
+    setTimeout(() => {
+      const modal = document.querySelector('.modal-overlay');
+      if (!modal || !(modal.offsetWidth > 0 || modal.offsetHeight > 0)) {
+        this.showInlineConversation(ticketId);
+      }
+    }, 50);
+  }
+
+  async showInlineConversation(ticketId) {
+    const container = document.getElementById(`conv-${ticketId}`);
+    if (!container) return;
+    container.style.display = 'block';
+    container.innerHTML = '<div class="loading">Chargement…</div>';
+    try {
+      const comments = await this.loadComments(ticketId);
+      const html = `
+        <div style="font-weight:600; margin-bottom:8px; color:#111827;">Conversation</div>
+        ${this.renderComments(comments)}
+      `;
+      container.innerHTML = html;
+    } catch (e) {
+      container.innerHTML = '<div class="error-message">Impossible de charger la conversation</div>';
+    }
+  }
+
   viewTicket(ticketId) {
-    console.log('viewTicket called with ID:', ticketId);
-    console.log('Available tickets:', this.tickets);
-    this.showTicketModal(ticketId);
+    this.showTicketModal(parseInt(ticketId, 10));
   }
 
   addComment(ticketId) {
@@ -922,24 +951,34 @@ class TicketsApp {
   }
 
   async showTicketModal(ticketId) {
-    console.log('showTicketModal called with ID:', ticketId);
-    const ticket = this.tickets.find(t => t.id === ticketId);
+    const idNum = parseInt(ticketId, 10);
+    let ticket = this.tickets.find(t => Number(t.id) === idNum);
     if (!ticket) {
-      console.error('Ticket not found with ID:', ticketId);
-      return;
+      // Fallback: récupérer le ticket depuis l'API
+      try {
+        const resp = await api.getTicket(idNum);
+        ticket = resp?.data?.ticket;
+      } catch (e) {
+        alert("Ticket introuvable ou inaccessible.");
+        return;
+      }
+      if (!ticket) { alert("Ticket introuvable."); return; }
     }
 
     try {
-      // Charger les commentaires du ticket (incluant les commentaires de test)
-      const comments = await this.loadComments(ticketId);
-      console.log('Comments loaded for modal:', comments);
+      // Charger les commentaires après affichage de la modale
+      let comments = [];
       
       // Attendre les labels asynchrones
       const statusLabel = await this.getStatusLabel(ticket.status);
       const priorityLabel = await this.getPriorityLabel(ticket.priority);
 
+      // Supprimer une éventuelle modale existante
+      const existing = document.querySelector('.modal-overlay');
+      if (existing) existing.remove();
+
       const modalHtml = `
-        <div class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;">
+        <div class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100000; display: flex; align-items: center; justify-content: center; padding: 20px;">
           <div class="modal-content" style="background: white; border-radius: 8px; width: 100%; max-width: 1000px; max-height: 90%; overflow-y: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
             
             <!-- Header -->
@@ -963,7 +1002,7 @@ class TicketsApp {
                   <div><strong>Statut:</strong> <span class="status-badge status-${ticket.status}">${statusLabel}</span></div>
                   <div><strong>Priorité:</strong> <span class="priority-badge priority-${ticket.priority}">${priorityLabel}</span></div>
                   <div><strong>Projet:</strong> ${this.getProjectName(ticket.project_id)}</div>
-                  <div><strong>Créé le:</strong> ${new Date(ticket.created_at).toLocaleDateString('fr-FR')}</div>
+                  <div><strong>Créé le:</strong> ${api.formatDate ? api.formatDate(ticket.created_at) : new Date(ticket.created_at).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' })}</div>
                 </div>
               </div>
 
@@ -978,14 +1017,10 @@ class TicketsApp {
               <!-- Conversation avec l'équipe -->
               <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 20px;">
                 <div style="padding: 20px; border-bottom: 1px solid #f3f4f6;">
-                  <h3 style="font-size: 18px; font-weight: 600; color: #1f2937; margin: 0;">Conversation avec l'équipe (<span id="commentsCount">${comments.length}</span>)</h3>
-                  <div style="font-size: 14px; color: #6b7280; margin-top: 4px;" id="lastCommentTime">
-                    ${comments.length > 0 ? 'Dernière réponse ' + this.formatTimeAgo(comments[comments.length - 1].created_at) : 'Tous les échanges entre vous et notre équipe support'}
-                  </div>
+                  <h3 style="font-size: 18px; font-weight: 600; color: #1f2937; margin: 0;">Conversation avec l'équipe (<span id="commentsCount">0</span>)</h3>
+                  <div style="font-size: 14px; color: #6b7280; margin-top: 4px;" id="lastCommentTime">Chargement des messages…</div>
                 </div>
-                <div id="commentsList" style="max-height: 500px; overflow-y: auto; padding: 16px;">
-                  ${this.renderComments(comments)}
-                </div>
+                <div id="commentsList" style="max-height: 500px; overflow-y: auto; padding: 16px;"><div class="loading">Chargement…</div></div>
               </div>
 
               <!-- Zone d'ajout de commentaire -->
@@ -1054,13 +1089,16 @@ class TicketsApp {
         await this.addCommentToTicket(ticketId, e.target);
       });
       
-      // Scroller automatiquement vers le bas de la conversation
-      setTimeout(() => {
-        const commentsList = document.getElementById('commentsList');
-        if (commentsList) {
-          commentsList.scrollTop = commentsList.scrollHeight;
-        }
-      }, 100); // Petit délai pour s'assurer que le contenu est rendu
+      // Charger et afficher les commentaires
+      try { comments = await this.loadComments(idNum); } catch(e) { comments = []; }
+      const listEl = document.getElementById('commentsList');
+      const countEl = document.getElementById('commentsCount');
+      const lastEl = document.getElementById('lastCommentTime');
+      if (listEl) listEl.innerHTML = this.renderComments(comments);
+      if (countEl) countEl.textContent = String(comments.length);
+      if (lastEl) lastEl.textContent = comments.length > 0 ? `Dernière réponse ${this.formatTimeAgo(comments[comments.length-1].created_at)}` : 'Tous les échanges entre vous et notre équipe support';
+      const commentsList = document.getElementById('commentsList');
+      if (commentsList) commentsList.scrollTop = commentsList.scrollHeight;
       
     } catch (error) {
       console.error('Error showing ticket modal:', error);
@@ -1220,8 +1258,16 @@ class TicketsApp {
   }
 
   formatTimeAgo(dateString) {
-    const now = new Date();
-    const date = new Date(dateString);
+    // Utiliser l'heure de Paris pour les calculs relatifs et la source
+    const now = typeof getCurrentParisTime === 'function' ? getCurrentParisTime() : new Date();
+    const date = (function(ds){
+      try {
+        const base = new Date(ds);
+        // Convertir l'instant ds pour être représenté en heure de Paris
+        const parisStr = base.toLocaleString('en-US', { timeZone: 'Europe/Paris' });
+        return new Date(parisStr);
+      } catch { return new Date(ds); }
+    })(dateString);
     const diffMs = now - date;
     const diffMins = Math.floor(diffMs / (1000 * 60));
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
@@ -1303,13 +1349,16 @@ class TicketsApp {
   }
   
   formatDateTime(dateString) {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    try {
+      return new Date(dateString).toLocaleString('fr-FR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Europe/Paris'
+      });
+    } catch (e) { return String(dateString); }
   }
 
   async addCommentToTicket(ticketId, form) {

@@ -15,6 +15,8 @@ function checkExistingAuth() {
                     redirectUrl = '/admin/';
                 } else if (userRole === 'team') {
                     redirectUrl = '/admin/';
+                } else if (userRole === 'developer') {
+                    redirectUrl = '/dev/kanban.html';
                 } else {
                     redirectUrl = '/client/tickets.html';
                 }
@@ -157,6 +159,9 @@ async function handleLogin(e) {
             } else if (userRole === 'team') {
                 redirectUrl = '/admin/'; // L'équipe va aussi sur l'admin
                 roleLabel = 'Équipe';
+            } else if (userRole === 'developer') {
+                redirectUrl = '/dev/kanban.html';
+                roleLabel = 'Développeur';
             } else {
                 redirectUrl = '/client/tickets.html';
                 roleLabel = 'Client';

@@ -123,11 +123,13 @@ class SettingsService {
     
     const settings = await this.getSettings(keys);
     
+    const normalLabel = settings.priority_normal_label || 'Moyenne';
     return {
       low: settings.priority_low_label || 'Faible',
-      normal: settings.priority_normal_label || 'Normal',
-      high: settings.priority_high_label || 'Élevé',
-      urgent: settings.priority_urgent_label || 'Urgent'
+      normal: normalLabel,
+      medium: normalLabel, // alias pour cohérence des tâches
+      high: settings.priority_high_label || 'Élevée',
+      urgent: settings.priority_urgent_label || 'Urgente'
     };
   }
 
@@ -187,7 +189,7 @@ class SettingsService {
       return {
         labels: {
           status: { open: 'Ouvert', in_progress: 'En cours', waiting_client: 'En attente', resolved: 'Résolu', closed: 'Fermé' },
-          priority: { low: 'Faible', normal: 'Normal', high: 'Élevé', urgent: 'Urgent' }
+          priority: { low: 'Faible', normal: 'Moyenne', medium: 'Moyenne', high: 'Élevée', urgent: 'Urgente' }
         },
         businessHours: { startHour: 9, endHour: 18, workDays: [1,2,3,4,5] },
         app: { name: 'SAV Shape', company: 'Shape Agency' }

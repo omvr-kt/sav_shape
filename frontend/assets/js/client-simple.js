@@ -1,3 +1,5 @@
+// Logs activés par défaut; utilisez ?debug=1 pour mode verbeux
+
 class ClientApp {
   constructor() {
     this.currentUser = null;
@@ -352,7 +354,7 @@ class ClientApp {
       'in_progress': 'En cours',
       'waiting_client': 'En attente',
       'resolved': 'Résolu',
-      'closed': 'Fermé'
+      'closed': 'Résolu'
     };
     return labels[status] || status;
   }
